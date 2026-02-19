@@ -34,11 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Running `scripts/teardown.sh` cleanly destroys the cluster with no Docker artifacts remaining
   3. Running `bootstrap.sh` a second time (without teardown) succeeds idempotently -- no errors, same end state
   4. `kubectl get nodes` shows 3 Ready nodes after bootstrap
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- KIND config, shared helpers, bootstrap and teardown scripts
 
 ### Phase 2: GitOps Core
 **Goal**: ArgoCD manages itself and all future components through a single root Application with ordered sync waves
@@ -184,7 +183,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Cluster Foundation | 0/? | Not started | - |
+| 1. Cluster Foundation | 0/1 | Not started | - |
 | 2. GitOps Core | 0/? | Not started | - |
 | 3. Network Foundation | 0/? | Not started | - |
 | 4. Gateway API Routing | 0/? | Not started | - |
