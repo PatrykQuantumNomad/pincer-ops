@@ -1,0 +1,196 @@
+# Roadmap: Pincer Ops
+
+## Overview
+
+Pincer Ops delivers a fully GitOps-managed Kubernetes platform for OpenClaw on KIND, built in 10 phases that follow the infrastructure dependency chain. The first 8 phases are strictly sequential -- each requires the previous to be operational. Phases 9 and 10 add operational maturity and AI-assisted operations on top of a proven, reproducible platform. The critical user decision to skip ingress-nginx and go straight to Gateway API means Phase 4 carries research risk but eliminates a future migration.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Cluster Foundation** - KIND multi-node cluster with bootstrap and teardown scripts
+- [ ] **Phase 2: GitOps Core** - ArgoCD self-managing via App of Apps with sync wave ordering
+- [ ] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
+- [ ] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
+- [ ] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
+- [ ] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
+- [ ] **Phase 7: Network Security** - NetworkPolicy enforcement with validated egress rules
+- [ ] **Phase 8: Reproducibility Verification** - Teardown/rebuild proves the GitOps contract end-to-end
+- [ ] **Phase 9: Operational Maturity** - CI validation, notifications, backups, and pre-commit guards
+- [ ] **Phase 10: MCP Integration** - AI-assisted cluster operations via Claude Code
+
+## Phase Details
+
+### Phase 1: Cluster Foundation
+**Goal**: Operator has a running multi-node KIND cluster with repeatable lifecycle scripts
+**Depends on**: Nothing (first phase)
+**Requirements**: CLST-01, CLST-02, CLST-03
+**Success Criteria** (what must be TRUE):
+  1. Running `scripts/bootstrap.sh` creates a 3-node KIND cluster (1 CP + 2 workers) with ingress-ready labels and host port mappings for 80/443
+  2. Running `scripts/teardown.sh` cleanly destroys the cluster with no Docker artifacts remaining
+  3. Running `bootstrap.sh` a second time (without teardown) succeeds idempotently -- no errors, same end state
+  4. `kubectl get nodes` shows 3 Ready nodes after bootstrap
+**Plans**: TBD
+
+Plans:
+- [ ] 01-01: TBD
+- [ ] 01-02: TBD
+
+### Phase 2: GitOps Core
+**Goal**: ArgoCD manages itself and all future components through a single root Application with ordered sync waves
+**Depends on**: Phase 1
+**Requirements**: GOPS-01, GOPS-02, GOPS-03, GOPS-04, GOPS-05
+**Success Criteria** (what must be TRUE):
+  1. `kubectl apply -f bootstrap/root-app.yaml` installs ArgoCD and triggers ordered deployment of child Applications
+  2. ArgoCD UI is accessible and shows the root Application plus ArgoCD self-management Application as Healthy/Synced
+  3. Sync waves fire in correct order -- child Applications at lower wave numbers become Healthy before higher waves begin syncing (verified by Lua health check in argocd-cm)
+  4. Deleting the root Application does NOT cascade-delete child resources (preserveResourcesOnDeletion verified)
+  5. Infrastructure and workload AppProjects exist with distinct RBAC boundaries
+**Plans**: TBD
+
+Plans:
+- [ ] 02-01: TBD
+- [ ] 02-02: TBD
+
+### Phase 3: Network Foundation
+**Goal**: MetalLB provides LoadBalancer IP allocation inside the KIND cluster
+**Depends on**: Phase 2
+**Requirements**: NETW-01
+**Success Criteria** (what must be TRUE):
+  1. MetalLB ArgoCD Application is Healthy/Synced at wave -5
+  2. IPAddressPool is configured with an address range derived dynamically from the KIND Docker network CIDR (not hardcoded)
+  3. Creating a test Service of type LoadBalancer results in an assigned external IP from the MetalLB pool
+**Plans**: TBD
+
+Plans:
+- [ ] 03-01: TBD
+
+### Phase 4: Gateway API Routing
+**Goal**: HTTP/HTTPS traffic reaches cluster services via Gateway API, accessible from localhost on the host machine
+**Depends on**: Phase 3
+**Requirements**: NETW-02, NETW-03
+**Success Criteria** (what must be TRUE):
+  1. Gateway API CRDs are installed and a GatewayClass exists for the chosen implementation
+  2. A Gateway resource is deployed and has a valid address (LoadBalancer IP from MetalLB or bound to host ports)
+  3. An HTTPRoute can route traffic to a test backend service, verified by curl from the host machine via localhost:80
+  4. The Gateway API implementation ArgoCD Application is Healthy/Synced at its assigned wave number
+**Plans**: TBD
+
+Plans:
+- [ ] 04-01: TBD
+- [ ] 04-02: TBD
+
+### Phase 5: Secret Management
+**Goal**: Credentials are encrypted for Git-safe storage with automated key lifecycle and TLS certificate infrastructure
+**Depends on**: Phase 2 (ArgoCD manages these components; networking not strictly required)
+**Requirements**: SECR-01, SECR-02, SECR-04
+**Success Criteria** (what must be TRUE):
+  1. Sealed Secrets controller is running and its ArgoCD Application is Healthy/Synced at wave -3
+  2. `kubeseal` can encrypt a Secret and the controller decrypts it into a usable Kubernetes Secret
+  3. Sealing key is backed up during bootstrap and restored on subsequent cluster recreations -- a sealed secret created before teardown is decryptable after rebuild
+  4. cert-manager is running with its ArgoCD Application Healthy/Synced at wave -2, and can issue a self-signed certificate
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
+- [ ] 05-02: TBD
+
+### Phase 6: OpenClaw Deployment
+**Goal**: OpenClaw is running in the cluster with full GitOps management, routable from the host, and configured with encrypted credentials
+**Depends on**: Phase 4 (routing), Phase 5 (secrets)
+**Requirements**: OCLAW-01, OCLAW-02, OCLAW-03, OCLAW-04, OCLAW-05, OCLAW-06, OCLAW-07, OCLAW-08
+**Success Criteria** (what must be TRUE):
+  1. OpenClaw StatefulSet is running with replicas:1 and a 20Gi PVC mounted at /home/node/.openclaw/
+  2. OpenClaw config file (openclaw.json) is mounted from a ConfigMap via subPath without shadowing the PVC directory
+  3. OpenClaw credentials (API keys, gateway token) are stored as SealedSecrets and injected as environment variables
+  4. `curl localhost/health` (or equivalent Gateway route) returns a successful health check response from OpenClaw on port 18789
+  5. Kustomize dev overlay exists and `kustomize build workloads/openclaw/overlays/dev/` produces valid manifests with correct image tags (explicit version, not :latest) and imagePullPolicy: IfNotPresent
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: TBD
+- [ ] 06-02: TBD
+- [ ] 06-03: TBD
+
+### Phase 7: Network Security
+**Goal**: Network traffic is locked down to explicit allow rules with validated egress for OpenClaw's actual traffic patterns
+**Depends on**: Phase 6 (OpenClaw must be running to validate egress patterns)
+**Requirements**: SECR-03
+**Success Criteria** (what must be TRUE):
+  1. Default-deny NetworkPolicy is applied to the openclaw namespace for both ingress and egress
+  2. OpenClaw remains fully functional (health checks pass, LLM API calls succeed) after NetworkPolicy enforcement
+  3. DNS egress (UDP/TCP 53) is explicitly allowed -- OpenClaw can resolve external hostnames
+  4. Ingress is allowed only from the Gateway/Ingress controller namespace on the required ports
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: TBD
+
+### Phase 8: Reproducibility Verification
+**Goal**: The GitOps contract is proven -- destroying and recreating the cluster produces identical operational state
+**Depends on**: Phase 7 (all components deployed and secured)
+**Requirements**: CLST-04, GOPS-06
+**Success Criteria** (what must be TRUE):
+  1. Running teardown.sh followed by bootstrap.sh produces a cluster where all ArgoCD Applications are Healthy/Synced without manual intervention
+  2. OpenClaw is accessible via localhost and responds to health checks after rebuild
+  3. SealedSecrets created before teardown are decryptable after rebuild (sealing key restore verified)
+  4. The entire rebuild cycle completes without manual kubectl commands beyond the initial `kubectl apply -f bootstrap/root-app.yaml`
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: TBD
+
+### Phase 9: Operational Maturity
+**Goal**: The platform has automated guards against broken manifests, alerts on failures, and data protection for OpenClaw
+**Depends on**: Phase 8 (proven platform to add operational tooling to)
+**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04, SECR-05
+**Success Criteria** (what must be TRUE):
+  1. A PR with invalid YAML or a failing kustomize build is rejected by CI before merge (kubeconform + kustomize build validation)
+  2. A pre-commit hook rejects any commit containing a plaintext `kind: Secret` resource
+  3. ArgoCD sends a notification (webhook or configured channel) when an Application sync fails or health degrades
+  4. A CronJob runs on schedule and produces a backup of OpenClaw's PVC data
+  5. Sealing key backup runs automatically as part of the bootstrap process (not manual-only)
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: TBD
+- [ ] 09-02: TBD
+- [ ] 09-03: TBD
+
+### Phase 10: MCP Integration
+**Goal**: Operators can query cluster state and manage ArgoCD applications conversationally through Claude Code
+**Depends on**: Phase 8 (stable cluster required; independent of Phase 9)
+**Requirements**: MCP-01, MCP-02, MCP-03
+**Success Criteria** (what must be TRUE):
+  1. Claude Code can query pod status, logs, and resource state via an MCP server connected to the cluster
+  2. Claude Code can view ArgoCD application sync status and trigger syncs via MCP
+  3. MCP server defaults to read-only operations -- write operations require explicit opt-in configuration
+  4. MCP server configuration is documented and reproducible (not dependent on manual setup steps)
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD
+- [ ] 10-02: TBD
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
+Note: Phases 9 and 10 are independent and could execute in parallel.
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Cluster Foundation | 0/? | Not started | - |
+| 2. GitOps Core | 0/? | Not started | - |
+| 3. Network Foundation | 0/? | Not started | - |
+| 4. Gateway API Routing | 0/? | Not started | - |
+| 5. Secret Management | 0/? | Not started | - |
+| 6. OpenClaw Deployment | 0/? | Not started | - |
+| 7. Network Security | 0/? | Not started | - |
+| 8. Reproducibility Verification | 0/? | Not started | - |
+| 9. Operational Maturity | 0/? | Not started | - |
+| 10. MCP Integration | 0/? | Not started | - |

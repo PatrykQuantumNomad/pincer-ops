@@ -106,45 +106,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLST-01 | — | Pending |
-| CLST-02 | — | Pending |
-| CLST-03 | — | Pending |
-| CLST-04 | — | Pending |
-| GOPS-01 | — | Pending |
-| GOPS-02 | — | Pending |
-| GOPS-03 | — | Pending |
-| GOPS-04 | — | Pending |
-| GOPS-05 | — | Pending |
-| GOPS-06 | — | Pending |
-| NETW-01 | — | Pending |
-| NETW-02 | — | Pending |
-| NETW-03 | — | Pending |
-| SECR-01 | — | Pending |
-| SECR-02 | — | Pending |
-| SECR-03 | — | Pending |
-| SECR-04 | — | Pending |
-| SECR-05 | — | Pending |
-| OCLAW-01 | — | Pending |
-| OCLAW-02 | — | Pending |
-| OCLAW-03 | — | Pending |
-| OCLAW-04 | — | Pending |
-| OCLAW-05 | — | Pending |
-| OCLAW-06 | — | Pending |
-| OCLAW-07 | — | Pending |
-| OCLAW-08 | — | Pending |
-| OPS-01 | — | Pending |
-| OPS-02 | — | Pending |
-| OPS-03 | — | Pending |
-| OPS-04 | — | Pending |
-| MCP-01 | — | Pending |
-| MCP-02 | — | Pending |
-| MCP-03 | — | Pending |
+| CLST-01 | Phase 1: Cluster Foundation | Pending |
+| CLST-02 | Phase 1: Cluster Foundation | Pending |
+| CLST-03 | Phase 1: Cluster Foundation | Pending |
+| CLST-04 | Phase 8: Reproducibility Verification | Pending |
+| GOPS-01 | Phase 2: GitOps Core | Pending |
+| GOPS-02 | Phase 2: GitOps Core | Pending |
+| GOPS-03 | Phase 2: GitOps Core | Pending |
+| GOPS-04 | Phase 2: GitOps Core | Pending |
+| GOPS-05 | Phase 2: GitOps Core | Pending |
+| GOPS-06 | Phase 8: Reproducibility Verification | Pending |
+| NETW-01 | Phase 3: Network Foundation | Pending |
+| NETW-02 | Phase 4: Gateway API Routing | Pending |
+| NETW-03 | Phase 4: Gateway API Routing | Pending |
+| SECR-01 | Phase 5: Secret Management | Pending |
+| SECR-02 | Phase 5: Secret Management | Pending |
+| SECR-03 | Phase 7: Network Security | Pending |
+| SECR-04 | Phase 5: Secret Management | Pending |
+| SECR-05 | Phase 9: Operational Maturity | Pending |
+| OCLAW-01 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-02 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-03 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-04 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-05 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-06 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-07 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-08 | Phase 6: OpenClaw Deployment | Pending |
+| OPS-01 | Phase 9: Operational Maturity | Pending |
+| OPS-02 | Phase 9: Operational Maturity | Pending |
+| OPS-03 | Phase 9: Operational Maturity | Pending |
+| OPS-04 | Phase 9: Operational Maturity | Pending |
+| MCP-01 | Phase 10: MCP Integration | Pending |
+| MCP-02 | Phase 10: MCP Integration | Pending |
+| MCP-03 | Phase 10: MCP Integration | Pending |
 
 **Coverage:**
 - v1 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33
+- Mapped to phases: 33
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after initial definition*
+*Last updated: 2026-02-19 after roadmap creation*
