@@ -138,10 +138,11 @@ Plans:
   2. OpenClaw is accessible via localhost and responds to health checks after rebuild
   3. SealedSecrets created before teardown are decryptable after rebuild (sealing key restore verified)
   4. The entire rebuild cycle completes without manual kubectl commands beyond the initial `kubectl apply -f bootstrap/root-app.yaml`
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md -- Replace placeholder repoURL with real GitHub URL across all manifests and push to main
+- [ ] 08-02-PLAN.md -- Run teardown/rebuild cycle and verify complete GitOps reproducibility
 
 ### Phase 9: Operational Maturity
 **Goal**: The platform has automated guards against broken manifests, alerts on failures, and data protection for OpenClaw
@@ -190,6 +191,6 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 5. Secret Management | 2/2 | Complete | 2026-02-20 |
 | 6. OpenClaw Deployment | 2/2 | Complete | 2026-02-20 |
 | 7. Network Security | 1/1 | Complete | 2026-02-20 |
-| 8. Reproducibility Verification | 0/? | Not started | - |
+| 8. Reproducibility Verification | 0/2 | Not started | - |
 | 9. Operational Maturity | 0/? | Not started | - |
 | 10. MCP Integration | 0/? | Not started | - |
