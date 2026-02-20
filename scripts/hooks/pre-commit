@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# pre-commit -- Reject commits containing plaintext Kubernetes Secrets.
+#
+# This hook scans staged YAML files for `kind: Secret` resources. Plaintext
+# Secrets must NEVER be committed to this repository. All secrets must be
+# encrypted as SealedSecrets using kubeseal before committing.
+#
+# The pattern matches `kind: Secret` exactly but NOT `kind: SealedSecret`
+# because SealedSecret contains additional characters after "Secret".
+#
+# Install: ./scripts/hooks/install-hooks.sh
+# Bypass:  git commit --no-verify (use only when you know what you're doing)
+set -euo pipefail
+
+# Get list of staged YAML files (Added, Copied, Modified only)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.yaml' '*.yml' 2>/dev/null)
+
+# Early exit if no staged YAML files
+if [ -z "${STAGED_FILES}" ]; then
+  exit 0
+fi
+
+FOUND_SECRETS=false
+
+for file in ${STAGED_FILES}; do
+  # Check staged content (not working tree) for plaintext Secret resources.
+  # The pattern anchors on line start (optional whitespace), requires exact
+  # "Secret" followed by optional whitespace and end-of-line. This ensures
+  # "SealedSecret" does NOT match.
+  if git show ":${file}" | grep -qE '^\s*kind:\s*Secret\s*$'; then
+    echo "ERROR: Plaintext Kubernetes Secret detected in: ${file}"
+    echo "       Use kubeseal to encrypt secrets before committing:"
+    echo "       kubeseal --format yaml < secret.yaml > sealed-secret.yaml"
+    echo ""
+    FOUND_SECRETS=true
+  fi
+done
+
+if [ "${FOUND_SECRETS}" = true ]; then
+  echo "COMMIT REJECTED: Plaintext Secrets must not be committed to this repository."
+  echo "All secrets must be encrypted as SealedSecrets. See CLAUDE.md for details."
+  echo ""
+  echo "If you are certain this is intentional, bypass with: git commit --no-verify"
+  exit 1
+fi
