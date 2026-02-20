@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 5 complete: Secret Management (Sealed Secrets + cert-manager deployed, sealing key lifecycle managed, end-to-end verified). Phase 6 (OpenClaw Deployment) is next.
+**Current focus:** Phase 6 in progress: OpenClaw Deployment. Plan 1 complete (workload manifests). Plan 2 (bootstrap integration) is next.
 
 ## Current Position
 
-Phase: 5 of 10 (Secret Management) -- COMPLETE
-Plan: 2 of 2 in current phase (all complete)
-Status: Phase 5 complete, ready for Phase 6 (OpenClaw Deployment)
-Last activity: 2026-02-20 -- Executed 05-02-PLAN.md (bootstrap integration and end-to-end verification)
+Phase: 6 of 10 (OpenClaw Deployment) -- IN PROGRESS
+Plan: 1 of 2 in current phase (plan 1 complete)
+Status: Plan 06-01 complete (workload manifests), ready for Plan 06-02 (bootstrap integration)
+Last activity: 2026-02-20 -- Executed 06-01-PLAN.md (OpenClaw workload manifests)
 
-Progress: [########..] 70%
+Progress: [########..] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 8 min
-- Total execution time: 1.15 hours
+- Total execution time: 1.23 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [########..] 70%
 | 03-network-foundation | 2 | 16 min | 8 min |
 | 04-gateway-api-routing | 2 | 21 min | 10.5 min |
 | 05-secret-management | 2 | 16 min | 8 min |
+| 06-openclaw-deployment | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 3, 18, 3, 13 min
+- Last 5 plans: 3, 18, 3, 13, 5 min
 - Trend: stable (manifest-only plans fast, verification/bootstrap plans take longer)
 
 *Updated after each plan completion*
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [05-02]: cert-manager kustomize fallback split into upstream manifest + separate ClusterIssuer apply to handle CRD registration timing
 - [05-02]: Sealing key restore runs BEFORE controller deployment; controller restart only if key was actually restored
 - [05-02]: Helper library pattern (scripts/lib/sealed-secrets.sh) sourced by bootstrap.sh for domain-specific functions
+- [06-01]: Real SealedSecret created via kubeseal against running cluster (not placeholder) -- encrypted dev-token-placeholder values
+- [06-01]: Exec-based probes using openclaw health CLI instead of HTTP GET /health (safer per research; HTTP availability unconfirmed)
+- [06-01]: CreateNamespace=true in ArgoCD Application instead of namespace.yaml (workloads AppProject cannot manage cluster-scoped resources)
 
 ### Pending Todos
 
@@ -86,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 05-02-PLAN.md (Phase 5 complete -- bootstrap integration and verification)
+Stopped at: Completed 06-01-PLAN.md (OpenClaw workload manifests)
 Resume file: None

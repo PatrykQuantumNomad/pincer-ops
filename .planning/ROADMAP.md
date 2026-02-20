@@ -112,7 +112,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md -- Create OpenClaw workload manifests (StatefulSet, Service, ConfigMap, SealedSecret, HTTPRoute, Kustomize)
+- [x] 06-01-PLAN.md -- Create OpenClaw workload manifests (StatefulSet, Service, ConfigMap, SealedSecret, HTTPRoute, Kustomize)
 - [ ] 06-02-PLAN.md -- Extend bootstrap.sh with OpenClaw deployment step and verify end-to-end
 
 ### Phase 7: Network Security
@@ -188,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
 | 5. Secret Management | 2/2 | Complete | 2026-02-20 |
-| 6. OpenClaw Deployment | 0/2 | Planned | - |
+| 6. OpenClaw Deployment | 1/2 | In Progress | - |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
 | 9. Operational Maturity | 0/? | Not started | - |

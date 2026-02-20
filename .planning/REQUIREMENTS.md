@@ -39,14 +39,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### OpenClaw Workload
 
-- [ ] **OCLAW-01**: OpenClaw runs as a StatefulSet with replicas:1 and PVC-backed storage (20Gi) at /home/node/.openclaw/
-- [ ] **OCLAW-02**: OpenClaw config (openclaw.json) is mounted from ConfigMap via subPath without shadowing PVC
-- [ ] **OCLAW-03**: OpenClaw credentials (API keys, gateway token) are stored as SealedSecrets
-- [ ] **OCLAW-04**: Liveness and readiness probes target GET /health on port 18789
-- [ ] **OCLAW-05**: Resource requests and limits are set on all containers
-- [ ] **OCLAW-06**: OpenClaw is routable via Gateway/Ingress on the openclaw namespace
-- [ ] **OCLAW-07**: Kustomize dev overlay exists for environment-specific configuration
-- [ ] **OCLAW-08**: All images use explicit version tags with imagePullPolicy: IfNotPresent
+- [x] **OCLAW-01**: OpenClaw runs as a StatefulSet with replicas:1 and PVC-backed storage (20Gi) at /home/node/.openclaw/
+- [x] **OCLAW-02**: OpenClaw config (openclaw.json) is mounted from ConfigMap via subPath without shadowing PVC
+- [x] **OCLAW-03**: OpenClaw credentials (API keys, gateway token) are stored as SealedSecrets
+- [x] **OCLAW-04**: Liveness and readiness probes target GET /health on port 18789
+- [x] **OCLAW-05**: Resource requests and limits are set on all containers
+- [x] **OCLAW-06**: OpenClaw is routable via Gateway/Ingress on the openclaw namespace
+- [x] **OCLAW-07**: Kustomize dev overlay exists for environment-specific configuration
+- [x] **OCLAW-08**: All images use explicit version tags with imagePullPolicy: IfNotPresent
 
 ### Operational Maturity
 
@@ -124,14 +124,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SECR-03 | Phase 7: Network Security | Pending |
 | SECR-04 | Phase 5: Secret Management | Complete |
 | SECR-05 | Phase 9: Operational Maturity | Pending |
-| OCLAW-01 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-02 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-03 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-04 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-05 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-06 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-07 | Phase 6: OpenClaw Deployment | Pending |
-| OCLAW-08 | Phase 6: OpenClaw Deployment | Pending |
+| OCLAW-01 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-02 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-03 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-04 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-05 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-06 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-07 | Phase 6: OpenClaw Deployment | Complete |
+| OCLAW-08 | Phase 6: OpenClaw Deployment | Complete |
 | OPS-01 | Phase 9: Operational Maturity | Pending |
 | OPS-02 | Phase 9: Operational Maturity | Pending |
 | OPS-03 | Phase 9: Operational Maturity | Pending |
