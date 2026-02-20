@@ -1,0 +1,25 @@
+# configmap.yaml -- OpenClaw configuration file (openclaw.json).
+#
+# Mounted via subPath at /home/node/.openclaw/openclaw.json to avoid
+# shadowing the PVC directory. Changes require pod restart (subPath
+# limitation -- Kubernetes does not auto-update subPath mounts).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  namespace: openclaw
+data:
+  openclaw.json: |
+    {
+      "gateway": {
+        "port": 18789,
+        "auth": {
+          "mode": "token"
+        }
+      },
+      "agents": {
+        "defaults": {
+          "model": "anthropic/claude-sonnet-4-20250514"
+        }
+      }
+    }
