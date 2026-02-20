@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 9 in progress. Adding operational maturity: notifications configured, CI and backups remaining.
+**Current focus:** Phase 9 complete. CI validation, notifications, and backup CronJobs all in place. Ready for Phase 10 (MCP Integration).
 
 ## Current Position
 
-Phase: 9 of 10 -- IN PROGRESS
-Plan: 2 of 3 in current phase
-Status: 09-02 complete (ArgoCD Notifications). 09-01 and 09-03 remaining.
-Last activity: 2026-02-20 -- Completed 09-02 (ArgoCD Notifications)
+Phase: 9 of 10 -- COMPLETE
+Plan: 3 of 3 in current phase (all plans complete)
+Status: Phase 9 complete. CI validation, notifications, and backup CronJobs deployed.
+Last activity: 2026-02-20 -- Completed 09-03 (backup CronJobs)
 
-Progress: [#########.] 90% (8/10 phases)
+Progress: [#########.] 95% (9/10 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 11 min
-- Total execution time: 2.66 hours
+- Total plans completed: 17
+- Average duration: 10 min
+- Total execution time: 2.77 hours
 
 **By Phase:**
 
@@ -35,11 +35,11 @@ Progress: [#########.] 90% (8/10 phases)
 | 06-openclaw-deployment | 2 | 51 min | 25.5 min |
 | 07-network-security | 1 | 2 min | 2 min |
 | 08-reproducibility-verification | 2 | 37 min | 18.5 min |
-| 09-operational-maturity | 1 | 2 min | 2 min |
+| 09-operational-maturity | 3 | 8 min | 2.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 46, 2, 2, 35, 2 min
-- Trend: manifest-only plans are fast (~2 min); live cluster operations take longer
+- Last 5 plans: 2, 35, 2, 4, 2 min
+- Trend: manifest-only plans are fast (~2-4 min); live cluster operations take longer
 
 *Updated after each plan completion*
 
@@ -91,6 +91,13 @@ Recent decisions affecting current work:
 - [09-02]: Placeholder webhook URL (localhost:9999) for local dev -- notification infrastructure in place for production swap
 - [09-02]: root-app excluded from notification subscriptions -- self-referential App of Apps always has unusual sync state
 - [09-02]: Separate ConfigMap (argocd-notifications-cm) not merged into argocd-cm -- ArgoCD expects this specific name for notifications
+- [09-01]: Skipped kustomize build for metallb, sealed-secrets, cert-manager bases in CI -- remote URLs cause flaky 50MB+ downloads
+- [09-01]: Pre-commit hook checks staged content via git show :file (not working tree) for accuracy
+- [09-01]: Envoy-gateway base is the only infra base validated via kustomize build (local resources only)
+- [09-03]: podAffinity required for RWO PVC co-location -- backup pod must land on same node as StatefulSet
+- [09-03]: hostPath volumes for KIND-local backup storage -- ephemeral, acceptable for dev environment
+- [09-03]: busybox:1.37 for PVC backup (minimal tar image), bitnami/kubectl:1.32 for sealing key export (kubectl access)
+- [09-03]: Staggered schedules: PVC backup at 2AM, sealing key backup at 3AM to avoid resource contention
 
 ### Pending Todos
 
@@ -106,5 +113,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 09-02-PLAN.md (ArgoCD Notifications configured)
+Stopped at: Completed 09-03-PLAN.md (Phase 9 complete -- backup CronJobs)
 Resume file: None

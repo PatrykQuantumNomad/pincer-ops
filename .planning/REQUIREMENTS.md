@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SECR-02**: Sealing key is backed up during bootstrap and restored on cluster recreation
 - [x] **SECR-03**: NetworkPolicy enforces default-deny ingress/egress per namespace with explicit allow rules including DNS egress
 - [x] **SECR-04**: cert-manager provides TLS certificate management for Ingress/Gateway routes
-- [ ] **SECR-05**: Pre-commit hook rejects plaintext `kind: Secret` resources before they reach Git
+- [x] **SECR-05**: Pre-commit hook rejects plaintext `kind: Secret` resources before they reach Git
 
 ### OpenClaw Workload
 
@@ -50,10 +50,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Operational Maturity
 
-- [ ] **OPS-01**: Manifest validation CI (kubeconform + kustomize build) runs on PRs before merge
+- [x] **OPS-01**: Manifest validation CI (kubeconform + kustomize build) runs on PRs before merge
 - [x] **OPS-02**: ArgoCD Notifications alert on sync failures and health degradation
-- [ ] **OPS-03**: PVC backup CronJob protects OpenClaw session data on a schedule
-- [ ] **OPS-04**: Sealing key backup is automated (not manual-only)
+- [x] **OPS-03**: PVC backup CronJob protects OpenClaw session data on a schedule
+- [x] **OPS-04**: Sealing key backup is automated (not manual-only)
 
 ### MCP Integration
 
@@ -123,7 +123,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SECR-02 | Phase 5: Secret Management | Complete |
 | SECR-03 | Phase 7: Network Security | Complete |
 | SECR-04 | Phase 5: Secret Management | Complete |
-| SECR-05 | Phase 9: Operational Maturity | Pending |
+| SECR-05 | Phase 9: Operational Maturity | Complete |
 | OCLAW-01 | Phase 6: OpenClaw Deployment | Complete |
 | OCLAW-02 | Phase 6: OpenClaw Deployment | Complete |
 | OCLAW-03 | Phase 6: OpenClaw Deployment | Complete |
@@ -132,10 +132,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OCLAW-06 | Phase 6: OpenClaw Deployment | Complete |
 | OCLAW-07 | Phase 6: OpenClaw Deployment | Complete |
 | OCLAW-08 | Phase 6: OpenClaw Deployment | Complete |
-| OPS-01 | Phase 9: Operational Maturity | Pending |
+| OPS-01 | Phase 9: Operational Maturity | Complete |
 | OPS-02 | Phase 9: Operational Maturity | Complete |
-| OPS-03 | Phase 9: Operational Maturity | Pending |
-| OPS-04 | Phase 9: Operational Maturity | Pending |
+| OPS-03 | Phase 9: Operational Maturity | Complete |
+| OPS-04 | Phase 9: Operational Maturity | Complete |
 | MCP-01 | Phase 10: MCP Integration | Pending |
 | MCP-02 | Phase 10: MCP Integration | Pending |
 | MCP-03 | Phase 10: MCP Integration | Pending |
