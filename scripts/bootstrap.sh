@@ -187,6 +187,52 @@ spec:
 EOF
 log_info "MetalLB configured with L2 pool: ${METALLB_RANGE}"
 
+# Step 12: Deploy Envoy Gateway controller
+# Apply the Helm Application directly -- ArgoCD will pull the OCI chart from docker.io/envoyproxy.
+# We do NOT wait for root-app to discover it (root-app may have ComparisonError from placeholder repoURL).
+log_step "Deploying Envoy Gateway controller..."
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway.yaml"
+
+EG_WAIT=0
+EG_TIMEOUT=120
+until kubectl get deployment envoy-gateway -n envoy-gateway-system >/dev/null 2>&1; do
+  if [ ${EG_WAIT} -ge ${EG_TIMEOUT} ]; then
+    log_error "Envoy Gateway controller deployment not created after ${EG_TIMEOUT}s"
+    log_error "Check: kubectl get app infra-envoy-gateway -n argocd -o yaml"
+    exit 1
+  fi
+  sleep 5
+  EG_WAIT=$((EG_WAIT + 5))
+done
+run_cmd kubectl wait --for=condition=available deployment/envoy-gateway \
+  -n envoy-gateway-system --timeout=120s
+log_info "Envoy Gateway controller is ready"
+
+# Step 13: Apply Gateway API configuration
+# The config Application uses the placeholder repoURL, so it cannot sync via ArgoCD.
+# Apply the config manifests directly (same pattern as MetalLB fallback).
+EG_CONFIG_DIR="${SCRIPT_DIR}/../infrastructure/envoy-gateway/base"
+log_step "Applying Gateway API configuration..."
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway-config.yaml"
+run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${EG_CONFIG_DIR}")
+log_info "Gateway API configuration applied"
+
+# Wait for Gateway to be programmed (Envoy Gateway creates the DaemonSet after Gateway is applied)
+log_step "Waiting for Envoy proxy DaemonSet..."
+EGP_WAIT=0
+EGP_TIMEOUT=120
+until kubectl get daemonset -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=eg >/dev/null 2>&1; do
+  if [ ${EGP_WAIT} -ge ${EGP_TIMEOUT} ]; then
+    log_error "Envoy proxy DaemonSet not created after ${EGP_TIMEOUT}s"
+    exit 1
+  fi
+  sleep 5
+  EGP_WAIT=$((EGP_WAIT + 5))
+done
+run_cmd kubectl rollout status daemonset -n envoy-gateway-system \
+  -l gateway.envoyproxy.io/owning-gateway-name=eg --timeout=120s
+log_info "Envoy proxy DaemonSet is ready"
+
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
@@ -195,6 +241,7 @@ echo "=============================================="
 echo "  ArgoCD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443"
 echo "  Password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
 echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
+echo "  Gateway:    Envoy Gateway v1.7.0 (localhost:80)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
