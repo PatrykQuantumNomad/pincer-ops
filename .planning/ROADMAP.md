@@ -63,10 +63,11 @@ Plans:
   1. MetalLB ArgoCD Application is Healthy/Synced at wave -5
   2. IPAddressPool is configured with an address range derived dynamically from the KIND Docker network CIDR (not hardcoded)
   3. Creating a test Service of type LoadBalancer results in an assigned external IP from the MetalLB pool
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- Create MetalLB ArgoCD Application, kustomize remote resource, and extend bootstrap.sh with MetalLB configuration
+- [ ] 03-02-PLAN.md -- Run bootstrap, verify MetalLB deployment, test LoadBalancer IP assignment, user verifies
 
 ### Phase 4: Gateway API Routing
 **Goal**: HTTP/HTTPS traffic reaches cluster services via Gateway API, accessible from localhost on the host machine
@@ -185,7 +186,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 |-------|----------------|--------|-----------|
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
-| 3. Network Foundation | 0/? | Not started | - |
+| 3. Network Foundation | 0/2 | Not started | - |
 | 4. Gateway API Routing | 0/? | Not started | - |
 | 5. Secret Management | 0/? | Not started | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
