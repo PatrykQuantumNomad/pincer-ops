@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: GitOps Core** - ArgoCD self-managing via App of Apps with sync wave ordering
 - [x] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
 - [x] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
-- [ ] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
+- [x] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
 - [ ] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
 - [ ] **Phase 7: Network Security** - NetworkPolicy enforcement with validated egress rules
 - [ ] **Phase 8: Reproducibility Verification** - Teardown/rebuild proves the GitOps contract end-to-end
@@ -97,7 +97,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md -- Create Sealed Secrets and cert-manager ArgoCD Applications and kustomize manifests
-- [ ] 05-02-PLAN.md -- Extend bootstrap.sh with deployment steps, sealing key lifecycle, and end-to-end verification
+- [x] 05-02-PLAN.md -- Extend bootstrap.sh with deployment steps, sealing key lifecycle, and end-to-end verification
 
 ### Phase 6: OpenClaw Deployment
 **Goal**: OpenClaw is running in the cluster with full GitOps management, routable from the host, and configured with encrypted credentials
@@ -188,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
-| 5. Secret Management | 1/2 | In Progress | - |
+| 5. Secret Management | 2/2 | Complete | 2026-02-20 |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
