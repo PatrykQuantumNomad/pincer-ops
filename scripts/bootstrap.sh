@@ -89,7 +89,16 @@ else
 fi
 log_info "ConfigMap kind-network-info updated in kube-system"
 
-# Step 5: Install ArgoCD
+# Step 5: Calculate MetalLB IP range from detected CIDR
+# Strategy: use upper range X.Y.255.200-X.Y.255.250 (51 IPs)
+# Avoids gateway (X.Y.0.1) and KIND node IPs (low-numbered)
+log_step "Calculating MetalLB IP range..."
+METALLB_RANGE_START=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.200|')
+METALLB_RANGE_END=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.250|')
+METALLB_RANGE="${METALLB_RANGE_START}-${METALLB_RANGE_END}"
+log_info "MetalLB IP range: ${METALLB_RANGE}"
+
+# Step 6: Install ArgoCD
 # NOTE: Cannot use run_cmd for namespace pipe -- stdout needed by kubectl apply.
 log_step "Installing ArgoCD ${ARGOCD_VERSION}..."
 if [ "${VERBOSE}" = true ]; then
@@ -100,23 +109,69 @@ fi
 run_cmd kubectl apply -n argocd --server-side --force-conflicts -f "${ARGOCD_INSTALL_URL}"
 log_info "ArgoCD ${ARGOCD_VERSION} installed"
 
-# Step 6: Apply ArgoCD configuration (BEFORE root app)
+# Step 7: Apply ArgoCD configuration (BEFORE root app)
 # CRITICAL: argocd-cm must be applied BEFORE root-app -- Lua health check enables sync waves
 log_step "Applying ArgoCD configuration..."
 run_cmd kubectl apply -n argocd -f "${BOOTSTRAP_DIR}/argocd-cm.yaml"
 log_info "ArgoCD configuration applied"
 
-# Step 7: Wait for ArgoCD readiness
+# Step 8: Wait for ArgoCD readiness
 log_step "Waiting for ArgoCD to be ready..."
 run_cmd kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
 run_cmd kubectl wait --for=condition=available deployment/argocd-repo-server -n argocd --timeout=120s
 run_cmd kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=120s
 log_info "ArgoCD is ready"
 
-# Step 8: Apply root Application
+# Step 9: Apply root Application
 log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
 log_info "Root Application created -- ArgoCD will now manage all child Applications"
+
+# Step 10: Wait for MetalLB deployment
+# ArgoCD deploys MetalLB at sync wave -5 after discovering infra-metallb Application.
+# Poll for deployment existence first (ArgoCD may not have synced yet), then wait for readiness.
+log_step "Waiting for MetalLB deployment..."
+METALLB_WAIT=0
+METALLB_TIMEOUT=180
+until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
+  if [ ${METALLB_WAIT} -ge ${METALLB_TIMEOUT} ]; then
+    log_error "Timed out waiting for MetalLB deployment to be created (${METALLB_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  METALLB_WAIT=$((METALLB_WAIT + 5))
+done
+run_cmd kubectl wait --for=condition=available deployment/controller \
+  -n metallb-system --timeout=120s
+run_cmd kubectl rollout status daemonset/speaker \
+  -n metallb-system --timeout=120s
+log_info "MetalLB controller and speaker are ready"
+
+# Step 11: Configure MetalLB L2 address pool
+# IPAddressPool and L2Advertisement are applied imperatively (not via Git)
+# because the address range is derived dynamically from the KIND Docker network.
+log_step "Configuring MetalLB L2 address pool (${METALLB_RANGE})..."
+kubectl apply -f - <<EOF
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: kind-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - ${METALLB_RANGE}
+  avoidBuggyIPs: true
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: kind-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - kind-pool
+EOF
+log_info "MetalLB configured with L2 pool: ${METALLB_RANGE}"
 
 # ---------------------------------------------------------------------------
 # Done
@@ -125,6 +180,7 @@ echo ""
 echo "=============================================="
 echo "  ArgoCD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443"
 echo "  Password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
+echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
