@@ -154,12 +154,12 @@ Plans:
   3. ArgoCD sends a notification (webhook or configured channel) when an Application sync fails or health degrades
   4. A CronJob runs on schedule and produces a backup of OpenClaw's PVC data
   5. Sealing key backup runs automatically as part of the bootstrap process (not manual-only)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
-- [ ] 09-03: TBD
+- [ ] 09-01-PLAN.md -- CI manifest validation (kubeconform + kustomize) and pre-commit hook for plaintext Secret detection
+- [ ] 09-02-PLAN.md -- ArgoCD Notifications ConfigMap with webhook triggers for sync failures and health degradation
+- [ ] 09-03-PLAN.md -- PVC backup CronJob for OpenClaw data and sealing key backup CronJob with RBAC
 
 ### Phase 10: MCP Integration
 **Goal**: Operators can query cluster state and manage ArgoCD applications conversationally through Claude Code
@@ -192,5 +192,5 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 6. OpenClaw Deployment | 2/2 | Complete | 2026-02-20 |
 | 7. Network Security | 1/1 | Complete | 2026-02-20 |
 | 8. Reproducibility Verification | 2/2 | Complete | 2026-02-20 |
-| 9. Operational Maturity | 0/? | Not started | - |
+| 9. Operational Maturity | 0/3 | Not started | - |
 | 10. MCP Integration | 0/? | Not started | - |
