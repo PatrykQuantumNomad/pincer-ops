@@ -87,7 +87,8 @@ parse_args() {
 check_port_free() {
   local port="$1"
   local pid
-  pid=$(lsof -i ":${port}" -sTCP:LISTEN -t 2>/dev/null | head -1)
+  # Use -iTCP to restrict to TCP sockets only (excludes UDP/QUIC on same port)
+  pid=$(lsof -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null | head -1)
   if [ -n "${pid}" ]; then
     local process_name
     process_name=$(ps -p "${pid}" -o comm= 2>/dev/null || echo "unknown")
