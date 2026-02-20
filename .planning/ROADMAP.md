@@ -96,7 +96,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- Create Sealed Secrets and cert-manager ArgoCD Applications and kustomize manifests
+- [x] 05-01-PLAN.md -- Create Sealed Secrets and cert-manager ArgoCD Applications and kustomize manifests
 - [ ] 05-02-PLAN.md -- Extend bootstrap.sh with deployment steps, sealing key lifecycle, and end-to-end verification
 
 ### Phase 6: OpenClaw Deployment
@@ -188,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
-| 5. Secret Management | 0/2 | Not started | - |
+| 5. Secret Management | 1/2 | In Progress | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |

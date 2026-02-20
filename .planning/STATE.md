@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 4 complete: Gateway API Routing (end-to-end HTTP routing verified via Envoy Gateway DaemonSet on KIND). Phase 5 (Secret Management) is next.
+**Current focus:** Phase 5 in progress: Secret Management (Sealed Secrets and cert-manager manifests created, Plan 01 complete). Plan 02 (bootstrap integration and verification) is next.
 
 ## Current Position
 
-Phase: 4 of 10 (Gateway API Routing) -- COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase 4 complete, ready for Phase 5
-Last activity: 2026-02-20 -- Executed 04-02-PLAN.md (Envoy Gateway runtime verification, localhost routing confirmed)
+Phase: 5 of 10 (Secret Management) -- IN PROGRESS
+Plan: 1 of 2 in current phase
+Status: Plan 05-01 complete (manifests created), Plan 05-02 next (bootstrap integration)
+Last activity: 2026-02-20 -- Executed 05-01-PLAN.md (Sealed Secrets and cert-manager ArgoCD Applications and kustomize bases)
 
-Progress: [#######...] 60%
+Progress: [########..] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 8 min
-- Total execution time: 0.88 hours
+- Total plans completed: 8
+- Average duration: 7 min
+- Total execution time: 0.93 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [#######...] 60%
 | 02-gitops-core | 2 | 9 min | 4.5 min |
 | 03-network-foundation | 2 | 16 min | 8 min |
 | 04-gateway-api-routing | 2 | 21 min | 10.5 min |
+| 05-secret-management | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 13, 3, 3, 18 min
+- Last 5 plans: 13, 3, 3, 18, 3 min
 - Trend: stable (manifest-only plans fast, verification plans take longer)
 
 *Updated after each plan completion*
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [04-01]: Direct kubectl apply for controller Application in bootstrap.sh rather than waiting for root-app discovery
 - [04-02]: containerPort values are 10080/10443 (not 8080/8443) -- Envoy Gateway uses 10000+port internal mapping, confirmed at runtime. envoy-proxy-config.yaml corrected.
 - [04-02]: infra-envoy-gateway-config Application remains Unknown (placeholder repoURL) but resources healthy via direct-apply -- acceptable until Phase 8
+- [05-01]: Sealed Secrets targets kube-system (upstream default) to avoid requiring --controller-namespace flag with kubeseal CLI
+- [05-01]: cert-manager kustomization has no namespace field to preserve hard-coded internal namespace references
+- [05-01]: Three ignoreDifferences entries for cert-manager (CRD + MutatingWebhook + ValidatingWebhook caBundle) to prevent perpetual OutOfSync
 
 ### Pending Todos
 
@@ -79,5 +83,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 04-02-PLAN.md (Envoy Gateway runtime verification, Phase 4 complete 2/2 plans)
+Stopped at: Completed 05-01-PLAN.md (Sealed Secrets and cert-manager manifests, Phase 5 plan 1/2)
 Resume file: None

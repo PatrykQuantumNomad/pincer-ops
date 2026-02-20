@@ -31,10 +31,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Security
 
-- [ ] **SECR-01**: Sealed Secrets controller encrypts credentials for Git-safe storage
+- [x] **SECR-01**: Sealed Secrets controller encrypts credentials for Git-safe storage
 - [ ] **SECR-02**: Sealing key is backed up during bootstrap and restored on cluster recreation
 - [ ] **SECR-03**: NetworkPolicy enforces default-deny ingress/egress per namespace with explicit allow rules including DNS egress
-- [ ] **SECR-04**: cert-manager provides TLS certificate management for Ingress/Gateway routes
+- [x] **SECR-04**: cert-manager provides TLS certificate management for Ingress/Gateway routes
 - [ ] **SECR-05**: Pre-commit hook rejects plaintext `kind: Secret` resources before they reach Git
 
 ### OpenClaw Workload
@@ -119,10 +119,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NETW-01 | Phase 3: Network Foundation | Complete |
 | NETW-02 | Phase 4: Gateway API Routing | Complete |
 | NETW-03 | Phase 4: Gateway API Routing | Complete |
-| SECR-01 | Phase 5: Secret Management | Pending |
+| SECR-01 | Phase 5: Secret Management | Complete |
 | SECR-02 | Phase 5: Secret Management | Pending |
 | SECR-03 | Phase 7: Network Security | Pending |
-| SECR-04 | Phase 5: Secret Management | Pending |
+| SECR-04 | Phase 5: Secret Management | Complete |
 | SECR-05 | Phase 9: Operational Maturity | Pending |
 | OCLAW-01 | Phase 6: OpenClaw Deployment | Pending |
 | OCLAW-02 | Phase 6: OpenClaw Deployment | Pending |
