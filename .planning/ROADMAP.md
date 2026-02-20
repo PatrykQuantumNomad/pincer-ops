@@ -13,7 +13,7 @@ Pincer Ops delivers a fully GitOps-managed Kubernetes platform for OpenClaw on K
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Cluster Foundation** - KIND multi-node cluster with bootstrap and teardown scripts
-- [ ] **Phase 2: GitOps Core** - ArgoCD self-managing via App of Apps with sync wave ordering
+- [x] **Phase 2: GitOps Core** - ArgoCD self-managing via App of Apps with sync wave ordering
 - [ ] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
 - [ ] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
 - [ ] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
@@ -53,7 +53,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md -- Create ArgoCD bootstrap manifests and extend bootstrap.sh with installation sequence
-- [ ] 02-02-PLAN.md -- Run bootstrap, verify ArgoCD deployment, validate deletion protection, user verifies UI
+- [x] 02-02-PLAN.md -- Run bootstrap, verify ArgoCD deployment, validate deletion protection, user verifies UI
 
 ### Phase 3: Network Foundation
 **Goal**: MetalLB provides LoadBalancer IP allocation inside the KIND cluster
@@ -184,7 +184,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
-| 2. GitOps Core | 1/2 | In Progress | - |
+| 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 0/? | Not started | - |
 | 4. Gateway API Routing | 0/? | Not started | - |
 | 5. Secret Management | 0/? | Not started | - |

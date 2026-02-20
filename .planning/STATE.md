@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 2 of 10 (GitOps Core)
-Plan: 1 of 2 in current phase
-Status: Plan 02-01 complete, 02-02 next
-Last activity: 2026-02-20 -- Executed 02-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase 2 complete
+Last activity: 2026-02-20 -- Executed 02-02-PLAN.md
 
 Progress: [##........] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 6 min
-- Total execution time: 0.20 hours
+- Total execution time: 0.30 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-cluster-foundation | 1 | 9 min | 9 min |
-| 02-gitops-core | 1 | 3 min | 3 min |
+| 02-gitops-core | 2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 9, 3 min
-- Trend: improving
+- Last 5 plans: 9, 3, 6 min
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -52,6 +52,7 @@ Recent decisions affecting current work:
 - [02-01]: Fetch ArgoCD install manifest at runtime rather than storing in bootstrap/ to avoid root-app field ownership conflicts
 - [02-01]: Basic Lua health check (health-only) chosen over enhanced (health+sync) -- can upgrade if timing issues arise
 - [02-01]: Placeholder repoURL (OWNER/pincer-ops.git) used -- actual GitHub org TBD
+- [02-02]: preserveResourcesOnDeletion not valid in ArgoCD v3.3.1 CRD -- deletion protection uses two safeguards (no finalizers + prune false)
 
 ### Pending Todos
 
@@ -65,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 02-01-PLAN.md (Phase 2 plan 1 of 2, next: 02-02 run bootstrap and verify)
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete, ready for Phase 3)
 Resume file: None
