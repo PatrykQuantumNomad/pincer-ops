@@ -16,11 +16,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### GitOps Core
 
-- [ ] **GOPS-01**: ArgoCD deploys and self-manages via App of Apps pattern with root Application as single entry point
-- [ ] **GOPS-02**: Sync waves enforce correct dependency ordering across all child Applications (Lua health check in argocd-cm)
-- [ ] **GOPS-03**: Root Application has deletion protection (preserveResourcesOnDeletion, prune=false)
-- [ ] **GOPS-04**: Infrastructure and workload components are separated into distinct AppProjects with RBAC boundaries
-- [ ] **GOPS-05**: Resource tracking uses annotation+label hybrid method configured in argocd-cm
+- [x] **GOPS-01**: ArgoCD deploys and self-manages via App of Apps pattern with root Application as single entry point
+- [x] **GOPS-02**: Sync waves enforce correct dependency ordering across all child Applications (Lua health check in argocd-cm)
+- [x] **GOPS-03**: Root Application has deletion protection (preserveResourcesOnDeletion, prune=false)
+- [x] **GOPS-04**: Infrastructure and workload components are separated into distinct AppProjects with RBAC boundaries
+- [x] **GOPS-05**: Resource tracking uses annotation+label hybrid method configured in argocd-cm
 - [ ] **GOPS-06**: `kubectl apply -f bootstrap/root-app.yaml` reconstructs complete cluster state from Git
 
 ### Networking
@@ -110,11 +110,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLST-02 | Phase 1: Cluster Foundation | Complete |
 | CLST-03 | Phase 1: Cluster Foundation | Complete |
 | CLST-04 | Phase 8: Reproducibility Verification | Pending |
-| GOPS-01 | Phase 2: GitOps Core | Pending |
-| GOPS-02 | Phase 2: GitOps Core | Pending |
-| GOPS-03 | Phase 2: GitOps Core | Pending |
-| GOPS-04 | Phase 2: GitOps Core | Pending |
-| GOPS-05 | Phase 2: GitOps Core | Pending |
+| GOPS-01 | Phase 2: GitOps Core | Complete |
+| GOPS-02 | Phase 2: GitOps Core | Complete |
+| GOPS-03 | Phase 2: GitOps Core | Complete |
+| GOPS-04 | Phase 2: GitOps Core | Complete |
+| GOPS-05 | Phase 2: GitOps Core | Complete |
 | GOPS-06 | Phase 8: Reproducibility Verification | Pending |
 | NETW-01 | Phase 3: Network Foundation | Pending |
 | NETW-02 | Phase 4: Gateway API Routing | Pending |

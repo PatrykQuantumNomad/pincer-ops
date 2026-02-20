@@ -52,7 +52,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Create ArgoCD bootstrap manifests and extend bootstrap.sh with installation sequence
+- [x] 02-01-PLAN.md -- Create ArgoCD bootstrap manifests and extend bootstrap.sh with installation sequence
 - [ ] 02-02-PLAN.md -- Run bootstrap, verify ArgoCD deployment, validate deletion protection, user verifies UI
 
 ### Phase 3: Network Foundation
@@ -184,7 +184,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
-| 2. GitOps Core | 0/2 | Not started | - |
+| 2. GitOps Core | 1/2 | In Progress | - |
 | 3. Network Foundation | 0/? | Not started | - |
 | 4. Gateway API Routing | 0/? | Not started | - |
 | 5. Secret Management | 0/? | Not started | - |
