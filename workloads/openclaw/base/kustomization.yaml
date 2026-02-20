@@ -8,3 +8,5 @@ resources:
   - sealed-secret.yaml
   - httproute.yaml
   - networkpolicy.yaml
+  - backup-rbac.yaml
+  - backup-cronjob.yaml
