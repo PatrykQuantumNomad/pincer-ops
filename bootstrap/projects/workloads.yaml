@@ -1,0 +1,19 @@
+# workloads.yaml -- AppProject for application workloads.
+# Restricted to namespace-scoped resources in the 'openclaw' namespace only.
+# No cluster-scoped resources (CRDs, ClusterRoles, etc.) allowed.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: "Application workloads -- namespace-scoped only"
+  sourceRepos:
+    - 'https://github.com/OWNER/pincer-ops.git'
+  destinations:
+    - namespace: 'openclaw'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceBlacklist: []
