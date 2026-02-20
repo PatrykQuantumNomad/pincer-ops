@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
 - [x] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
 - [x] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
-- [ ] **Phase 7: Network Security** - NetworkPolicy enforcement with validated egress rules
+- [x] **Phase 7: Network Security** - NetworkPolicy enforcement with validated egress rules
 - [ ] **Phase 8: Reproducibility Verification** - Teardown/rebuild proves the GitOps contract end-to-end
 - [ ] **Phase 9: Operational Maturity** - CI validation, notifications, backups, and pre-commit guards
 - [ ] **Phase 10: MCP Integration** - AI-assisted cluster operations via Claude Code
@@ -127,7 +127,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md -- Create NetworkPolicy manifests (default-deny + allow rules) and verify enforcement
+- [x] 07-01-PLAN.md -- Create NetworkPolicy manifests (default-deny + allow rules) and verify enforcement
 
 ### Phase 8: Reproducibility Verification
 **Goal**: The GitOps contract is proven -- destroying and recreating the cluster produces identical operational state

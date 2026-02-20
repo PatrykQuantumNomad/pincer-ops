@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 6 complete: OpenClaw Deployment. Both plans done. Ready for Phase 7 (Network Security).
+**Current focus:** Phase 7 complete: Network Security. NetworkPolicy enforcement verified. Ready for Phase 8 (Reproducibility Verification).
 
 ## Current Position
 
-Phase: 6 of 10 (OpenClaw Deployment) -- COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase 6 complete. OpenClaw deployed, verified, and accessible via localhost. Ready for Phase 7.
-Last activity: 2026-02-20 -- Executed 06-02-PLAN.md (bootstrap integration and verification)
+Phase: 7 of 10 (Network Security) -- COMPLETE
+Plan: 1 of 1 in current phase (all plans complete)
+Status: Phase 7 complete. Default-deny + selective-allow NetworkPolicy enforced on openclaw namespace. Ready for Phase 8.
+Last activity: 2026-02-20 -- Executed 07-01-PLAN.md (NetworkPolicy manifests and verification)
 
-Progress: [########..] 80%
+Progress: [########..] 85%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 11 min
-- Total execution time: 1.99 hours
+- Total plans completed: 12
+- Average duration: 10 min
+- Total execution time: 2.02 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [########..] 80%
 | 04-gateway-api-routing | 2 | 21 min | 10.5 min |
 | 05-secret-management | 2 | 16 min | 8 min |
 | 06-openclaw-deployment | 2 | 51 min | 25.5 min |
+| 07-network-security | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 18, 3, 13, 5, 46 min
-- Trend: verification/bootstrap plans take longer due to teardown/rebuild cycles
+- Last 5 plans: 3, 13, 5, 46, 2 min
+- Trend: manifest-only plans are fast; verification/bootstrap plans take longer
 
 *Updated after each plan completion*
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [06-02]: ConfigMap agents section removed -- OpenClaw expects agents.defaults.model as object, not string; defaults work without explicit config
 - [06-02]: Added gateway.mode=local to ConfigMap -- OpenClaw gateway requires explicit mode=local to start on 0.0.0.0
 - [06-02]: Memory limit increased 1Gi to 2Gi -- V8 heap exceeded 512MB during OpenClaw startup, OOM at 1Gi limit
+- [07-01]: Two-resource NetworkPolicy pattern (default-deny-all + openclaw-allow) in single YAML for atomic deployment
+- [07-01]: Namespace-only selector for Envoy Gateway ingress (no pod label filter) -- more robust against version changes
+- [07-01]: Wide HTTPS egress (0.0.0.0/0:443) instead of IP-restricted -- LLM providers use CDNs with rotating IPs
 
 ### Pending Todos
 
@@ -93,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 06-02-PLAN.md (Phase 6 complete -- OpenClaw deployment verified)
+Stopped at: Completed 07-01-PLAN.md (Phase 7 complete -- NetworkPolicy enforcement verified)
 Resume file: None
