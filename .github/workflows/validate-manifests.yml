@@ -1,0 +1,30 @@
+name: Validate Manifests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bootstrap/**'
+      - 'infrastructure/**'
+      - 'workloads/**'
+      - 'cluster/**'
+
+jobs:
+  validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kustomize and kubeconform
+        uses: yokawasa/action-setup-kube-tools@v0.11.2
+        with:
+          setup-tools: |
+            kustomize
+            kubeconform
+          kustomize: '5.7.1'
+          kubeconform: '0.7.0'
+
+      - name: Run manifest validation
+        run: ./scripts/validate-manifests.sh
