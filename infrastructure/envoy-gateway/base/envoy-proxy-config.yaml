@@ -9,7 +9,8 @@
 #   1. Switching from Deployment to DaemonSet mode (envoyDaemonSet)
 #   2. Targeting the control-plane node via nodeSelector (ingress-ready: "true")
 #   3. Adding tolerations for the control-plane taint (CRITICAL or pod stays Pending)
-#   4. Mapping containerPort 8080 -> hostPort 80, containerPort 8443 -> hostPort 443
+#   4. Mapping containerPort 10080 -> hostPort 80, containerPort 10443 -> hostPort 443
+#      (Envoy Gateway v1.7.0 maps privileged ports as 10000+port, not 8000+port)
 #   5. Using ClusterIP service type (no LoadBalancer needed since hostPort handles access)
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -37,11 +38,11 @@ spec:
                   containers:
                     - name: envoy
                       ports:
-                        - containerPort: 8080
+                        - containerPort: 10080
                           hostPort: 80
                           name: http
                           protocol: TCP
-                        - containerPort: 8443
+                        - containerPort: 10443
                           hostPort: 443
                           name: https
                           protocol: TCP
