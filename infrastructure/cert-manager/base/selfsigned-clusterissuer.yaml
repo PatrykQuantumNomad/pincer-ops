@@ -1,0 +1,13 @@
+# selfsigned-clusterissuer.yaml -- Self-signed ClusterIssuer for cert-manager.
+#
+# Provides a cluster-wide issuer for self-signed certificates, used for:
+#   - Verifying cert-manager is operational after deployment
+#   - Issuing dev/internal TLS certificates without external CA dependency
+#
+# For production use, replace with a Let's Encrypt or ACME ClusterIssuer.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}

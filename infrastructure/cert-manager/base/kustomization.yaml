@@ -1,0 +1,14 @@
+# kustomization.yaml -- cert-manager installation via remote resource.
+# References the official cert-manager manifest (CRDs, controller, webhook,
+# cainjector, RBAC) pinned to v1.19.2. Update the URL tag to upgrade.
+#
+# The self-signed ClusterIssuer is included for verification and dev TLS.
+#
+# WARNING: Do NOT add a namespace: field here. cert-manager hard-codes
+# namespace references internally (webhook configs, cainjector targets).
+# Kustomize namespace transformation would break these references.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
+  - selfsigned-clusterissuer.yaml
