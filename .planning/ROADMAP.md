@@ -93,11 +93,11 @@ Plans:
   2. `kubeseal` can encrypt a Secret and the controller decrypts it into a usable Kubernetes Secret
   3. Sealing key is backed up during bootstrap and restored on subsequent cluster recreations -- a sealed secret created before teardown is decryptable after rebuild
   4. cert-manager is running with its ArgoCD Application Healthy/Synced at wave -2, and can issue a self-signed certificate
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md -- Create Sealed Secrets and cert-manager ArgoCD Applications and kustomize manifests
+- [ ] 05-02-PLAN.md -- Extend bootstrap.sh with deployment steps, sealing key lifecycle, and end-to-end verification
 
 ### Phase 6: OpenClaw Deployment
 **Goal**: OpenClaw is running in the cluster with full GitOps management, routable from the host, and configured with encrypted credentials
@@ -188,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
-| 5. Secret Management | 0/? | Not started | - |
+| 5. Secret Management | 0/2 | Not started | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
