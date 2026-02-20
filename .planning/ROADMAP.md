@@ -22,6 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Reproducibility Verification** - Teardown/rebuild proves the GitOps contract end-to-end
 - [x] **Phase 9: Operational Maturity** - CI validation, notifications, backups, and pre-commit guards
 - [x] **Phase 10: MCP Integration** - AI-assisted cluster operations via Claude Code
+- [ ] **Phase 11: Tech Debt Cleanup** - Close audit gaps: stale comments, bootstrap purity, notification docs, NetworkPolicy verification
 
 ## Phase Details
 
@@ -176,11 +177,25 @@ Plans:
 - [x] 10-01-PLAN.md -- Create MCP configuration artifacts (ArgoCD account, RBAC, .mcp.json, setup script)
 - [x] 10-02-PLAN.md -- Wire RBAC into bootstrap and verify MCP integration end-to-end
 
+### Phase 11: Tech Debt Cleanup
+**Goal**: Close all audit gaps from v1.0 milestone audit — stale comments removed, bootstrap consistency improved, notification configuration documented, NetworkPolicy enforcement runtime-verified
+**Depends on**: Phase 10 (all phases complete; cleanup applies across multiple phases)
+**Requirements**: None (tech debt closure, no new requirements)
+**Gap Closure**: Closes gaps from v1.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. No stale "placeholder repoURL" comments remain in bootstrap.sh or ArgoCD Application manifests
+  2. bootstrap.sh Step 13 (envoy-gateway-config) attempts ArgoCD sync first with kustomize direct-apply as fallback, consistent with other components
+  3. argocd-notifications-cm.yaml documents how to swap the webhook URL for a real endpoint, with clear inline comments
+  4. A verification script exists that tests NetworkPolicy enforcement on a live cluster (DNS, HTTPS egress, ingress allow, default deny)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 11-01-PLAN.md -- Fix stale comments, add ArgoCD-first sync for envoy config, document webhook swap, create NetworkPolicy verification script
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
-Note: Phases 9 and 10 are independent and could execute in parallel.
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -194,3 +209,4 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 8. Reproducibility Verification | 2/2 | Complete | 2026-02-20 |
 | 9. Operational Maturity | 3/3 | Complete | 2026-02-20 |
 | 10. MCP Integration | 2/2 | Complete | 2026-02-20 |
+| 11. Tech Debt Cleanup | 0/1 | Pending | — |
