@@ -1,0 +1,83 @@
+# argocd-notifications-cm.yaml -- ArgoCD Notifications configuration.
+#
+# This is SEPARATE from argocd-cm.yaml (which handles core ArgoCD config like
+# resource tracking and health checks). This ConfigMap configures the ArgoCD
+# Notifications controller with webhook services, triggers, and templates.
+#
+# The webhook URL is a placeholder for local dev (KIND cluster has no external
+# endpoint). Replace with a real webhook URL (Slack incoming webhook, PagerDuty,
+# custom HTTP receiver) when deploying to a production cluster.
+#
+# Lives in bootstrap/ so argocd-self discovers it via recursive directory scan.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-notifications-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Webhook service -- POST JSON payloads to this URL when triggers fire.
+  # Placeholder URL for local dev; replace for production.
+  service.webhook.platform-webhook: |
+    url: http://localhost:9999/webhook
+    headers:
+      - name: Content-Type
+        value: application/json
+
+  # Trigger: fires when an Application sync operation fails or errors.
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Error', 'Failed']
+      send: [app-sync-failed]
+
+  # Trigger: fires when an Application health status becomes Degraded.
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [app-health-degraded]
+
+  # Trigger: fires when an Application sync status becomes Unknown.
+  trigger.on-sync-status-unknown: |
+    - when: app.status.sync.status == 'Unknown'
+      send: [app-sync-status-unknown]
+
+  # Template: sync failure notification payload.
+  template.app-sync-failed: |
+    webhook:
+      platform-webhook:
+        method: POST
+        body: |
+          {
+            "event": "sync-failed",
+            "app": "{{.app.metadata.name}}",
+            "message": "{{.app.status.operationState.message}}",
+            "phase": "{{.app.status.operationState.phase}}",
+            "timestamp": "{{.app.status.operationState.finishedAt}}"
+          }
+
+  # Template: health degraded notification payload.
+  template.app-health-degraded: |
+    webhook:
+      platform-webhook:
+        method: POST
+        body: |
+          {
+            "event": "health-degraded",
+            "app": "{{.app.metadata.name}}",
+            "healthStatus": "{{.app.status.health.status}}",
+            "message": "{{.app.status.health.message}}",
+            "timestamp": "{{.app.metadata.creationTimestamp}}"
+          }
+
+  # Template: sync status unknown notification payload.
+  template.app-sync-status-unknown: |
+    webhook:
+      platform-webhook:
+        method: POST
+        body: |
+          {
+            "event": "sync-status-unknown",
+            "app": "{{.app.metadata.name}}",
+            "syncStatus": "{{.app.status.sync.status}}",
+            "timestamp": "{{.app.metadata.creationTimestamp}}"
+          }
