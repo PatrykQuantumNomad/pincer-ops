@@ -109,12 +109,11 @@ Plans:
   3. OpenClaw credentials (API keys, gateway token) are stored as SealedSecrets and injected as environment variables
   4. `curl localhost/health` (or equivalent Gateway route) returns a successful health check response from OpenClaw on port 18789
   5. Kustomize dev overlay exists and `kustomize build workloads/openclaw/overlays/dev/` produces valid manifests with correct image tags (explicit version, not :latest) and imagePullPolicy: IfNotPresent
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md -- Create OpenClaw workload manifests (StatefulSet, Service, ConfigMap, SealedSecret, HTTPRoute, Kustomize)
+- [ ] 06-02-PLAN.md -- Extend bootstrap.sh with OpenClaw deployment step and verify end-to-end
 
 ### Phase 7: Network Security
 **Goal**: Network traffic is locked down to explicit allow rules with validated egress for OpenClaw's actual traffic patterns
@@ -189,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
 | 5. Secret Management | 2/2 | Complete | 2026-02-20 |
-| 6. OpenClaw Deployment | 0/? | Not started | - |
+| 6. OpenClaw Deployment | 0/2 | Planned | - |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
 | 9. Operational Maturity | 0/? | Not started | - |
