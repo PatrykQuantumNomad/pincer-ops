@@ -2,9 +2,11 @@
 # All Applications and AppProjects are discovered by scanning bootstrap/ recursively.
 #
 # DELETION PROTECTION (GOPS-03):
-# 1. No finalizers -- prevents cascade deletion if root app is accidentally deleted
-# 2. prune: false -- removing a child YAML from Git does NOT auto-delete the child
-# 3. preserveResourcesOnDeletion: true -- child resources survive even if root is deleted
+# 1. No finalizers -- ArgoCD's cascade-deletion finalizer is NOT set, so deleting this
+#    Application does NOT trigger ArgoCD's resource cleanup of child Applications.
+# 2. prune: false -- removing a child YAML from Git does NOT auto-delete the child.
+#
+# These two safeguards ensure that accidental deletion of root does not cascade.
 #
 # No sync-wave annotation -- root is applied manually via kubectl, not discovered by another app.
 apiVersion: argoproj.io/v1alpha1
@@ -31,6 +33,3 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
-    # GOPS-03: Preserve child resources even if root app is deleted.
-    # Must be set at creation time -- cannot be added after.
-    preserveResourcesOnDeletion: true
