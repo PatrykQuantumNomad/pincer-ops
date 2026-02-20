@@ -31,3 +31,7 @@ data:
       end
     end
     return hs
+
+  # MCP-02: Local account for MCP API access (apiKey only, no UI login)
+  accounts.mcp-readonly: apiKey
+  accounts.mcp-readonly.enabled: "true"
