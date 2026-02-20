@@ -25,7 +25,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Networking
 
-- [ ] **NETW-01**: MetalLB L2 provides LoadBalancer IP allocation derived dynamically from KIND's Docker network CIDR
+- [x] **NETW-01**: MetalLB L2 provides LoadBalancer IP allocation derived dynamically from KIND's Docker network CIDR
 - [ ] **NETW-02**: Gateway API implementation routes HTTP/HTTPS traffic to cluster services (specific implementation determined by phase research)
 - [ ] **NETW-03**: OpenClaw is accessible via localhost:80/443 from the host machine
 
@@ -116,7 +116,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GOPS-04 | Phase 2: GitOps Core | Complete |
 | GOPS-05 | Phase 2: GitOps Core | Complete |
 | GOPS-06 | Phase 8: Reproducibility Verification | Pending |
-| NETW-01 | Phase 3: Network Foundation | Pending |
+| NETW-01 | Phase 3: Network Foundation | Complete |
 | NETW-02 | Phase 4: Gateway API Routing | Pending |
 | NETW-03 | Phase 4: Gateway API Routing | Pending |
 | SECR-01 | Phase 5: Secret Management | Pending |

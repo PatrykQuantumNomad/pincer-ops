@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 2: GitOps Core
+**Current focus:** Phase 3: Network Foundation
 
 ## Current Position
 
-Phase: 2 of 10 (GitOps Core)
-Plan: 2 of 2 in current phase
-Status: Phase 2 complete
-Last activity: 2026-02-20 -- Executed 02-02-PLAN.md
+Phase: 3 of 10 (Network Foundation)
+Plan: 1 of 2 in current phase
+Status: Executing phase 3
+Last activity: 2026-02-20 -- Executed 03-01-PLAN.md
 
-Progress: [##........] 20%
+Progress: [###.......] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 6 min
-- Total execution time: 0.30 hours
+- Total plans completed: 4
+- Average duration: 5 min
+- Total execution time: 0.35 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [##........] 20%
 |-------|-------|-------|----------|
 | 01-cluster-foundation | 1 | 9 min | 9 min |
 | 02-gitops-core | 2 | 9 min | 4.5 min |
+| 03-network-foundation | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 9, 3, 6 min
-- Trend: stable
+- Last 5 plans: 9, 3, 6, 3 min
+- Trend: improving
 
 *Updated after each plan completion*
 
@@ -53,6 +54,9 @@ Recent decisions affecting current work:
 - [02-01]: Basic Lua health check (health-only) chosen over enhanced (health+sync) -- can upgrade if timing issues arise
 - [02-01]: Placeholder repoURL (OWNER/pincer-ops.git) used -- actual GitHub org TBD
 - [02-02]: preserveResourcesOnDeletion not valid in ArgoCD v3.3.1 CRD -- deletion protection uses two safeguards (no finalizers + prune false)
+- [03-01]: MetalLB Application in bootstrap/ for root-app discovery, source path points to infrastructure/metallb/base
+- [03-01]: IPAddressPool/L2Advertisement applied imperatively by bootstrap.sh (not GitOps) due to dynamic IP range from KIND CIDR
+- [03-01]: ignoreDifferences for CRD caBundle field to prevent perpetual OutOfSync from MetalLB controller mutations
 
 ### Pending Todos
 
@@ -66,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 02-02-PLAN.md (Phase 2 complete, ready for Phase 3)
+Stopped at: Completed 03-01-PLAN.md (Phase 3 plan 1 of 2 complete)
 Resume file: None
