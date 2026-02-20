@@ -124,10 +124,10 @@ Plans:
   2. OpenClaw remains fully functional (health checks pass, LLM API calls succeed) after NetworkPolicy enforcement
   3. DNS egress (UDP/TCP 53) is explicitly allowed -- OpenClaw can resolve external hostnames
   4. Ingress is allowed only from the Gateway/Ingress controller namespace on the required ports
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md -- Create NetworkPolicy manifests (default-deny + allow rules) and verify enforcement
 
 ### Phase 8: Reproducibility Verification
 **Goal**: The GitOps contract is proven -- destroying and recreating the cluster produces identical operational state
@@ -189,7 +189,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
 | 5. Secret Management | 2/2 | Complete | 2026-02-20 |
 | 6. OpenClaw Deployment | 2/2 | Complete | 2026-02-20 |
-| 7. Network Security | 0/? | Not started | - |
+| 7. Network Security | 0/1 | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
 | 9. Operational Maturity | 0/? | Not started | - |
 | 10. MCP Integration | 0/? | Not started | - |
