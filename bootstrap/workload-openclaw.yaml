@@ -1,0 +1,32 @@
+# workload-openclaw.yaml -- ArgoCD Application for OpenClaw Gateway.
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+# Deploys at wave 10 (after all infrastructure). Uses the workloads AppProject
+# which restricts to namespace-scoped resources in the openclaw namespace.
+# CreateNamespace=true lets ArgoCD create the namespace without requiring
+# cluster-resource permissions in the workloads project.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workload-openclaw
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/manifest-generate-paths: workloads/openclaw
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: workloads
+  source:
+    repoURL: https://github.com/OWNER/pincer-ops.git
+    targetRevision: main
+    path: workloads/openclaw/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openclaw
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
