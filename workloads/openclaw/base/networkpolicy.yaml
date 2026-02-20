@@ -1,0 +1,59 @@
+# networkpolicy.yaml -- Default-deny + selective allow for openclaw namespace.
+#
+# Two NetworkPolicy resources:
+#   1. default-deny-all: Blocks all ingress and egress for every pod in the namespace.
+#   2. openclaw-allow: Permits DNS egress, HTTPS egress, and ingress from Envoy Gateway.
+#
+# CRITICAL: Both resources must be deployed together. Deploying deny-all without
+# allow rules will break OpenClaw connectivity immediately (no DNS, no API calls,
+# no ingress from the gateway proxy).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: openclaw
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-allow
+  namespace: openclaw
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from Envoy Gateway proxy namespace on the gateway port
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - protocol: TCP
+          port: 18789
+  egress:
+    # Allow DNS resolution via CoreDNS in kube-system
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS egress to external LLM APIs (Anthropic, OpenAI, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443

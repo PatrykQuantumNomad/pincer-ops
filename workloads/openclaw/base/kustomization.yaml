@@ -7,3 +7,4 @@ resources:
   - configmap.yaml
   - sealed-secret.yaml
   - httproute.yaml
+  - networkpolicy.yaml
