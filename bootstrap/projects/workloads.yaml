@@ -1,6 +1,6 @@
 # workloads.yaml -- AppProject for application workloads.
-# Restricted to namespace-scoped resources in the 'openclaw' namespace only.
-# No cluster-scoped resources (CRDs, ClusterRoles, etc.) allowed.
+# Restricted to the 'openclaw' namespace. Only cluster-scoped resource
+# allowed is Namespace (required by CreateNamespace=true sync option).
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -15,5 +15,7 @@ spec:
   destinations:
     - namespace: 'openclaw'
       server: https://kubernetes.default.svc
-  clusterResourceWhitelist: []
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
   namespaceResourceBlacklist: []
