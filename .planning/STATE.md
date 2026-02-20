@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 8 in progress: Reproducibility Verification. Placeholder repoURL replaced with real GitHub URL. Ready for Plan 02 (teardown/rebuild cycle).
+**Current focus:** Phase 8 complete. GitOps contract proven via teardown/rebuild cycle. Ready for Phase 9 (Operational Maturity) or Phase 10 (MCP Integration).
 
 ## Current Position
 
-Phase: 8 of 10 (Reproducibility Verification)
-Plan: 1 of 2 in current phase (Plan 01 complete)
-Status: Placeholder repoURL replaced with real GitHub URL across all ArgoCD manifests. Pushed to origin/main. Ready for Plan 02 (teardown/rebuild).
-Last activity: 2026-02-20 -- Executed 08-01-PLAN.md (repoURL replacement and push)
+Phase: 8 of 10 -- COMPLETE
+Plan: 2 of 2 in current phase (all plans complete)
+Status: Phase 8 complete. GitOps contract proven. Teardown/rebuild produces identical operational state. Ready for Phase 9.
+Last activity: 2026-02-20 -- Completed 08-02 (teardown/rebuild verification)
 
-Progress: [########..] 87%
+Progress: [#########.] 90% (8/10 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 9 min
-- Total execution time: 2.05 hours
+- Total plans completed: 14
+- Average duration: 11 min
+- Total execution time: 2.63 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [########..] 87%
 | 05-secret-management | 2 | 16 min | 8 min |
 | 06-openclaw-deployment | 2 | 51 min | 25.5 min |
 | 07-network-security | 1 | 2 min | 2 min |
-| 08-reproducibility-verification | 1 | 2 min | 2 min |
+| 08-reproducibility-verification | 2 | 37 min | 18.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 13, 5, 46, 2, 2 min
-- Trend: manifest-only plans are fast; verification/bootstrap plans take longer
+- Last 5 plans: 5, 46, 2, 2, 35 min
+- Trend: verification plans with live cluster operations take longer; manifest-only plans are fast
 
 *Updated after each plan completion*
 
@@ -85,6 +85,8 @@ Recent decisions affecting current work:
 - [07-01]: Namespace-only selector for Envoy Gateway ingress (no pod label filter) -- more robust against version changes
 - [07-01]: Wide HTTPS egress (0.0.0.0/0:443) instead of IP-restricted -- LLM providers use CDNs with rotating IPs
 - [08-01]: Combined Task 1 (file edits) and Task 2 (commit/push) into single commit -- both produce same commit artifact
+- [08-02]: Fixed workloads AppProject clusterResourceWhitelist to include Namespace -- required for CreateNamespace=true
+- [08-02]: Accepted argocd-self/root Progressing as known issue -- circular self-management dependency, all actual resources healthy
 
 ### Pending Todos
 
@@ -95,9 +97,10 @@ None yet.
 - Phase 4 (Gateway API): RESOLVED -- both plans complete. Runtime verification confirmed Envoy Gateway DaemonSet + hostPort approach works on KIND/macOS. containerPort fix applied (10080/10443).
 - Phase 10 (MCP): MCP ecosystem is pre-1.0. Server availability and APIs may shift before implementation.
 - Placeholder repoURL blocker: RESOLVED in 08-01. All ArgoCD manifests now reference https://github.com/PatrykQuantumNomad/pincer-ops.git. Pushed to origin/main.
+- argocd-self/root circular dependency: argocd-self and root Applications show Progressing/OutOfSync permanently due to circular self-management. All actual resources healthy. Cosmetic issue -- does not affect cluster operation. May address in future phase.
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 08-01-PLAN.md (repoURL replacement -- ready for teardown/rebuild in 08-02)
+Stopped at: Completed 08-02-PLAN.md (Phase 8 complete -- GitOps contract proven)
 Resume file: None

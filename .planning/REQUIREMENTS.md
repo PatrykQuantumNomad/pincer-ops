@@ -12,7 +12,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLST-01**: Operator can create a multi-node KIND cluster (1 CP + 2 workers) with ingress-ready labels and extraPortMappings for host 80/443
 - [x] **CLST-02**: Operator can bootstrap the entire platform with a single idempotent script (bootstrap.sh)
 - [x] **CLST-03**: Operator can tear down the cluster cleanly with a teardown script
-- [ ] **CLST-04**: Operator can destroy and recreate the cluster and arrive at identical operational state (teardown/rebuild verification)
+- [x] **CLST-04**: Operator can destroy and recreate the cluster and arrive at identical operational state (teardown/rebuild verification)
 
 ### GitOps Core
 
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLST-01 | Phase 1: Cluster Foundation | Complete |
 | CLST-02 | Phase 1: Cluster Foundation | Complete |
 | CLST-03 | Phase 1: Cluster Foundation | Complete |
-| CLST-04 | Phase 8: Reproducibility Verification | Pending |
+| CLST-04 | Phase 8: Reproducibility Verification | Complete |
 | GOPS-01 | Phase 2: GitOps Core | Complete |
 | GOPS-02 | Phase 2: GitOps Core | Complete |
 | GOPS-03 | Phase 2: GitOps Core | Complete |
