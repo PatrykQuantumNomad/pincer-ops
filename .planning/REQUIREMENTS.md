@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Operational Maturity
 
 - [ ] **OPS-01**: Manifest validation CI (kubeconform + kustomize build) runs on PRs before merge
-- [ ] **OPS-02**: ArgoCD Notifications alert on sync failures and health degradation
+- [x] **OPS-02**: ArgoCD Notifications alert on sync failures and health degradation
 - [ ] **OPS-03**: PVC backup CronJob protects OpenClaw session data on a schedule
 - [ ] **OPS-04**: Sealing key backup is automated (not manual-only)
 
@@ -133,7 +133,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OCLAW-07 | Phase 6: OpenClaw Deployment | Complete |
 | OCLAW-08 | Phase 6: OpenClaw Deployment | Complete |
 | OPS-01 | Phase 9: Operational Maturity | Pending |
-| OPS-02 | Phase 9: Operational Maturity | Pending |
+| OPS-02 | Phase 9: Operational Maturity | Complete |
 | OPS-03 | Phase 9: Operational Maturity | Pending |
 | OPS-04 | Phase 9: Operational Maturity | Pending |
 | MCP-01 | Phase 10: MCP Integration | Pending |

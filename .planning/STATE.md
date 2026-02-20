@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 8 complete. GitOps contract proven via teardown/rebuild cycle. Ready for Phase 9 (Operational Maturity) or Phase 10 (MCP Integration).
+**Current focus:** Phase 9 in progress. Adding operational maturity: notifications configured, CI and backups remaining.
 
 ## Current Position
 
-Phase: 8 of 10 -- COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase 8 complete. GitOps contract proven. Teardown/rebuild produces identical operational state. Ready for Phase 9.
-Last activity: 2026-02-20 -- Completed 08-02 (teardown/rebuild verification)
+Phase: 9 of 10 -- IN PROGRESS
+Plan: 2 of 3 in current phase
+Status: 09-02 complete (ArgoCD Notifications). 09-01 and 09-03 remaining.
+Last activity: 2026-02-20 -- Completed 09-02 (ArgoCD Notifications)
 
 Progress: [#########.] 90% (8/10 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 11 min
-- Total execution time: 2.63 hours
+- Total execution time: 2.66 hours
 
 **By Phase:**
 
@@ -35,10 +35,11 @@ Progress: [#########.] 90% (8/10 phases)
 | 06-openclaw-deployment | 2 | 51 min | 25.5 min |
 | 07-network-security | 1 | 2 min | 2 min |
 | 08-reproducibility-verification | 2 | 37 min | 18.5 min |
+| 09-operational-maturity | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 5, 46, 2, 2, 35 min
-- Trend: verification plans with live cluster operations take longer; manifest-only plans are fast
+- Last 5 plans: 46, 2, 2, 35, 2 min
+- Trend: manifest-only plans are fast (~2 min); live cluster operations take longer
 
 *Updated after each plan completion*
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [08-01]: Combined Task 1 (file edits) and Task 2 (commit/push) into single commit -- both produce same commit artifact
 - [08-02]: Fixed workloads AppProject clusterResourceWhitelist to include Namespace -- required for CreateNamespace=true
 - [08-02]: Accepted argocd-self/root Progressing as known issue -- circular self-management dependency, all actual resources healthy
+- [09-02]: Placeholder webhook URL (localhost:9999) for local dev -- notification infrastructure in place for production swap
+- [09-02]: root-app excluded from notification subscriptions -- self-referential App of Apps always has unusual sync state
+- [09-02]: Separate ConfigMap (argocd-notifications-cm) not merged into argocd-cm -- ArgoCD expects this specific name for notifications
 
 ### Pending Todos
 
@@ -102,5 +106,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 08-02-PLAN.md (Phase 8 complete -- GitOps contract proven)
+Stopped at: Completed 09-02-PLAN.md (ArgoCD Notifications configured)
 Resume file: None
