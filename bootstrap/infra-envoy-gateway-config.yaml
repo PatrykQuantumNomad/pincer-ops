@@ -7,8 +7,8 @@
 # Depends on infra-envoy-gateway (wave -4) being healthy first -- the CRDs for
 # EnvoyProxy and Gateway API kinds are installed by the controller chart.
 #
-# NOTE: Placeholder repoURL will cause ComparisonError in ArgoCD. bootstrap.sh
-# handles this via kustomize direct-apply fallback (same pattern as MetalLB).
+# NOTE: bootstrap.sh tries ArgoCD sync first with kustomize direct-apply fallback
+# if the repo is unreachable (same pattern as MetalLB, Sealed Secrets, cert-manager).
 #
 # Lives in bootstrap/ so root-app discovers it via recursive directory scan.
 apiVersion: argoproj.io/v1alpha1

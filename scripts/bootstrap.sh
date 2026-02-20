@@ -131,7 +131,7 @@ log_info "Root Application created -- ArgoCD will now manage all child Applicati
 
 # Step 10: Deploy MetalLB
 # Strategy: Try ArgoCD-managed deployment first (root-app discovers infra-metallb).
-# If ArgoCD cannot sync (e.g., placeholder repoURL), fall back to direct kustomize apply.
+# If ArgoCD cannot sync (e.g., repo unreachable), fall back to direct kustomize apply.
 # Either path produces the same result: MetalLB controller + speaker running.
 METALLB_BASE_DIR="${SCRIPT_DIR}/../infrastructure/metallb/base"
 log_step "Waiting for MetalLB deployment..."
@@ -191,7 +191,7 @@ log_info "MetalLB configured with L2 pool: ${METALLB_RANGE}"
 
 # Step 12: Deploy Envoy Gateway controller
 # Apply the Helm Application directly -- ArgoCD will pull the OCI chart from docker.io/envoyproxy.
-# We do NOT wait for root-app to discover it (root-app may have ComparisonError from placeholder repoURL).
+# We apply directly because Helm OCI sources sync independently of root-app's Git source.
 log_step "Deploying Envoy Gateway controller..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway.yaml"
 
@@ -211,12 +211,30 @@ run_cmd kubectl wait --for=condition=available deployment/envoy-gateway \
 log_info "Envoy Gateway controller is ready"
 
 # Step 13: Apply Gateway API configuration
-# The config Application uses the placeholder repoURL, so it cannot sync via ArgoCD.
-# Apply the config manifests directly (same pattern as MetalLB fallback).
+# Strategy: Apply the ArgoCD Application, then poll for the Gateway resource to appear
+# (ArgoCD syncing from Git). Fall back to direct kustomize apply if ArgoCD cannot sync.
 EG_CONFIG_DIR="${SCRIPT_DIR}/../infrastructure/envoy-gateway/base"
 log_step "Applying Gateway API configuration..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway-config.yaml"
-run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${EG_CONFIG_DIR}")
+
+# Wait for Gateway resource to be created (ArgoCD sync or fallback)
+EGC_WAIT=0
+EGC_TIMEOUT=180
+until kubectl get gateway eg -n envoy-gateway-system >/dev/null 2>&1; do
+  if [ ${EGC_WAIT} -ge ${EGC_TIMEOUT} ]; then
+    # Check if root-app has a ComparisonError (repo unreachable)
+    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying Gateway config directly"
+      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${EG_CONFIG_DIR}")
+      break
+    fi
+    log_error "Timed out waiting for Gateway resource to be created (${EGC_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  EGC_WAIT=$((EGC_WAIT + 5))
+done
 log_info "Gateway API configuration applied"
 
 # Wait for Gateway to be programmed (Envoy Gateway creates the DaemonSet after Gateway is applied)

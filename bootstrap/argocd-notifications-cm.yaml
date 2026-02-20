@@ -25,6 +25,13 @@ data:
     headers:
       - name: Content-Type
         value: application/json
+  # ^^^ PRODUCTION SETUP: Replace the URL above with your webhook endpoint.
+  # Examples:
+  #   Slack incoming webhook: https://hooks.slack.com/services/T.../B.../xxx
+  #   PagerDuty Events API:  https://events.pagerduty.com/v2/enqueue
+  #   Custom HTTP receiver:  https://your-domain.com/argocd-webhook
+  # The payload format (JSON body in templates below) works with any HTTP endpoint
+  # that accepts POST requests with Content-Type: application/json.
 
   # Trigger: fires when an Application sync operation fails or errors.
   trigger.on-sync-failed: |
