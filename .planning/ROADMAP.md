@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Cluster Foundation** - KIND multi-node cluster with bootstrap and teardown scripts
 - [x] **Phase 2: GitOps Core** - ArgoCD self-managing via App of Apps with sync wave ordering
-- [ ] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
+- [x] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
 - [ ] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
 - [ ] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
 - [ ] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
@@ -66,8 +66,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Create MetalLB ArgoCD Application, kustomize remote resource, and extend bootstrap.sh with MetalLB configuration
-- [ ] 03-02-PLAN.md -- Run bootstrap, verify MetalLB deployment, test LoadBalancer IP assignment, user verifies
+- [x] 03-01-PLAN.md -- Create MetalLB ArgoCD Application, kustomize remote resource, and extend bootstrap.sh with MetalLB configuration
+- [x] 03-02-PLAN.md -- Run bootstrap, verify MetalLB deployment, test LoadBalancer IP assignment, user verifies
 
 ### Phase 4: Gateway API Routing
 **Goal**: HTTP/HTTPS traffic reaches cluster services via Gateway API, accessible from localhost on the host machine
@@ -186,7 +186,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 |-------|----------------|--------|-----------|
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
-| 3. Network Foundation | 0/2 | Not started | - |
+| 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 0/? | Not started | - |
 | 5. Secret Management | 0/? | Not started | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
