@@ -7,13 +7,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 KIND_CONFIG="${SCRIPT_DIR}/../cluster/kind-config.yaml"
+ARGOCD_VERSION="v3.3.1"
+ARGOCD_INSTALL_URL="https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
+BOOTSTRAP_DIR="${SCRIPT_DIR}/../bootstrap"
 
 usage() {
   cat <<USAGE
 Usage: bootstrap.sh [--verbose|-v] [-h|--help]
 
-Create the '${CLUSTER_NAME}' KIND cluster and store network metadata.
-If the cluster already exists, skip creation and update the ConfigMap.
+Create the '${CLUSTER_NAME}' KIND cluster, store network metadata,
+install ArgoCD, and apply the root Application for GitOps management.
+If the cluster already exists, skip creation and re-apply configuration.
 
 Options:
   --verbose, -v   Show full output from kind, kubectl, and docker commands
@@ -85,4 +89,42 @@ else
 fi
 log_info "ConfigMap kind-network-info updated in kube-system"
 
+# Step 5: Install ArgoCD
+# NOTE: Cannot use run_cmd for namespace pipe -- stdout needed by kubectl apply.
+log_step "Installing ArgoCD ${ARGOCD_VERSION}..."
+if [ "${VERBOSE}" = true ]; then
+  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+else
+  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+fi
+run_cmd kubectl apply -n argocd --server-side --force-conflicts -f "${ARGOCD_INSTALL_URL}"
+log_info "ArgoCD ${ARGOCD_VERSION} installed"
+
+# Step 6: Apply ArgoCD configuration (BEFORE root app)
+# CRITICAL: argocd-cm must be applied BEFORE root-app -- Lua health check enables sync waves
+log_step "Applying ArgoCD configuration..."
+run_cmd kubectl apply -n argocd -f "${BOOTSTRAP_DIR}/argocd-cm.yaml"
+log_info "ArgoCD configuration applied"
+
+# Step 7: Wait for ArgoCD readiness
+log_step "Waiting for ArgoCD to be ready..."
+run_cmd kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
+run_cmd kubectl wait --for=condition=available deployment/argocd-repo-server -n argocd --timeout=120s
+run_cmd kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=120s
+log_info "ArgoCD is ready"
+
+# Step 8: Apply root Application
+log_step "Applying root Application..."
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
+log_info "Root Application created -- ArgoCD will now manage all child Applications"
+
+# ---------------------------------------------------------------------------
+# Done
+# ---------------------------------------------------------------------------
+echo ""
+echo "=============================================="
+echo "  ArgoCD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443"
+echo "  Password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
+echo "=============================================="
+echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
