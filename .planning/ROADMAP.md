@@ -49,11 +49,11 @@ Plans:
   3. Sync waves fire in correct order -- child Applications at lower wave numbers become Healthy before higher waves begin syncing (verified by Lua health check in argocd-cm)
   4. Deleting the root Application does NOT cascade-delete child resources (preserveResourcesOnDeletion verified)
   5. Infrastructure and workload AppProjects exist with distinct RBAC boundaries
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md -- Create ArgoCD bootstrap manifests and extend bootstrap.sh with installation sequence
+- [ ] 02-02-PLAN.md -- Run bootstrap, verify ArgoCD deployment, validate deletion protection, user verifies UI
 
 ### Phase 3: Network Foundation
 **Goal**: MetalLB provides LoadBalancer IP allocation inside the KIND cluster
@@ -184,7 +184,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
-| 2. GitOps Core | 0/? | Not started | - |
+| 2. GitOps Core | 0/2 | Not started | - |
 | 3. Network Foundation | 0/? | Not started | - |
 | 4. Gateway API Routing | 0/? | Not started | - |
 | 5. Secret Management | 0/? | Not started | - |
