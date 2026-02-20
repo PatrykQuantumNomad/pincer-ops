@@ -13,13 +13,9 @@ data:
     {
       "gateway": {
         "port": 18789,
+        "mode": "local",
         "auth": {
           "mode": "token"
-        }
-      },
-      "agents": {
-        "defaults": {
-          "model": "anthropic/claude-sonnet-4-20250514"
         }
       }
     }

@@ -327,6 +327,36 @@ if [ -f "${CM_CLUSTERISSUER}" ]; then
 fi
 log_info "cert-manager controller and webhook are ready"
 
+# Step 16: Deploy OpenClaw
+# Strategy: Apply ArgoCD Application directly, poll for StatefulSet creation,
+# kustomize direct-apply fallback on ComparisonError timeout, then wait for rollout.
+OC_OVERLAY_DIR="${SCRIPT_DIR}/../workloads/openclaw/overlays/dev"
+log_step "Deploying OpenClaw..."
+
+# Apply the workload-openclaw Application directly
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/workload-openclaw.yaml"
+
+# Wait for StatefulSet to be created (ArgoCD sync or fallback)
+OC_WAIT=0
+OC_TIMEOUT=180
+until kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; do
+  if [ ${OC_WAIT} -ge ${OC_TIMEOUT} ]; then
+    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+      log_warn "ArgoCD cannot sync from repo -- applying OpenClaw directly"
+      run_cmd kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f -
+      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${OC_OVERLAY_DIR}")
+      break
+    fi
+    log_error "Timed out waiting for OpenClaw StatefulSet (${OC_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  OC_WAIT=$((OC_WAIT + 5))
+done
+run_cmd kubectl rollout status statefulset/openclaw-gateway -n openclaw --timeout=300s
+log_info "OpenClaw gateway is running"
+
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
@@ -338,6 +368,7 @@ echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
 echo "  Gateway:    Envoy Gateway v1.7.0 (localhost:80)"
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
 echo "  TLS:        cert-manager v1.19.2 (cert-manager namespace)"
+echo "  OpenClaw:   openclaw-gateway in openclaw namespace (port 18789)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
