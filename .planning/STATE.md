@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 4 in progress: Gateway API Routing (Envoy Gateway manifests created, runtime verification next)
+**Current focus:** Phase 4 complete: Gateway API Routing (end-to-end HTTP routing verified via Envoy Gateway DaemonSet on KIND). Phase 5 (Secret Management) is next.
 
 ## Current Position
 
-Phase: 4 of 10 (Gateway API Routing)
-Plan: 1 of 2 in current phase (04-01 complete, 04-02 remaining)
-Status: Executing Phase 4
-Last activity: 2026-02-20 -- Executed 04-01-PLAN.md (Envoy Gateway manifests)
+Phase: 4 of 10 (Gateway API Routing) -- COMPLETE
+Plan: 2 of 2 in current phase (all plans complete)
+Status: Phase 4 complete, ready for Phase 5
+Last activity: 2026-02-20 -- Executed 04-02-PLAN.md (Envoy Gateway runtime verification, localhost routing confirmed)
 
-Progress: [######....] 50%
+Progress: [#######...] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 6 min
-- Total execution time: 0.62 hours
+- Total plans completed: 7
+- Average duration: 8 min
+- Total execution time: 0.88 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [######....] 50%
 | 01-cluster-foundation | 1 | 9 min | 9 min |
 | 02-gitops-core | 2 | 9 min | 4.5 min |
 | 03-network-foundation | 2 | 16 min | 8 min |
-| 04-gateway-api-routing | 1 | 3 min | 3 min |
+| 04-gateway-api-routing | 2 | 21 min | 10.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 6, 3, 13, 3 min
+- Last 5 plans: 3, 13, 3, 3, 18 min
 - Trend: stable (manifest-only plans fast, verification plans take longer)
 
 *Updated after each plan completion*
@@ -63,6 +63,8 @@ Recent decisions affecting current work:
 - [04-01]: OCI Helm source (docker.io/envoyproxy) for controller -- first non-Git ArgoCD source, required sourceRepos update in AppProject
 - [04-01]: DaemonSet with hostPort 80/443 on control-plane node -- only viable path for localhost access on macOS/KIND
 - [04-01]: Direct kubectl apply for controller Application in bootstrap.sh rather than waiting for root-app discovery
+- [04-02]: containerPort values are 10080/10443 (not 8080/8443) -- Envoy Gateway uses 10000+port internal mapping, confirmed at runtime. envoy-proxy-config.yaml corrected.
+- [04-02]: infra-envoy-gateway-config Application remains Unknown (placeholder repoURL) but resources healthy via direct-apply -- acceptable until Phase 8
 
 ### Pending Todos
 
@@ -70,12 +72,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4 (Gateway API): Manifest layer complete (04-01). Research risk partially mitigated -- EnvoyProxy DaemonSet + hostPort approach validated at manifest level, runtime verification in 04-02.
+- Phase 4 (Gateway API): RESOLVED -- both plans complete. Runtime verification confirmed Envoy Gateway DaemonSet + hostPort approach works on KIND/macOS. containerPort fix applied (10080/10443).
 - Phase 10 (MCP): MCP ecosystem is pre-1.0. Server availability and APIs may shift before implementation.
 - Placeholder repoURL (OWNER/pincer-ops.git) causes ArgoCD ComparisonError on all Applications. Bootstrap works via kustomize fallback, but ArgoCD sync-based management requires real repoURL. This will need resolution before Phase 8 (Reproducibility Verification).
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 04-01-PLAN.md (Envoy Gateway manifests, 1/2 plans in Phase 4)
+Stopped at: Completed 04-02-PLAN.md (Envoy Gateway runtime verification, Phase 4 complete 2/2 plans)
 Resume file: None
