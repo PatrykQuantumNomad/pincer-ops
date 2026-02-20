@@ -1,0 +1,7 @@
+# kustomization.yaml -- MetalLB native installation via remote resource.
+# References the official MetalLB manifest (CRDs, controller, speaker,
+# webhooks, RBAC) pinned to v0.15.3. Update the ref to upgrade MetalLB.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - github.com/metallb/metallb/config/native?ref=v0.15.3
