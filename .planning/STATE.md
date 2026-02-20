@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-19)
+See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 11 (Tech Debt Cleanup) — closing audit gaps from v1.0-MILESTONE-AUDIT.md.
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 11 of 11 -- COMPLETE
-Plan: 1 of 1 in current phase
-Status: All phases complete. v1.0 milestone audit-clean.
-Last activity: 2026-02-20 -- Completed Phase 11 tech debt cleanup
+Phase: 11 of 11 -- v1.0 COMPLETE
+Plan: N/A
+Status: v1.0 shipped. Ready for next milestone.
+Last activity: 2026-02-20 -- v1.0 milestone complete
 
-Progress: [###########] 100% (11/11 phases)
+Progress: [###########] 100% (11/11 phases for v1.0)
 
 ## Performance Metrics
 
@@ -39,88 +39,25 @@ Progress: [###########] 100% (11/11 phases)
 | 10-mcp-integration | 2 | 7 min | 3.5 min |
 | 11-tech-debt-cleanup | 1 | 3 min | 3 min |
 
-**Recent Trend:**
-- Last 5 plans: 4, 2, 3, 4, 3 min
-- Trend: manifest-only plans are fast (~2-4 min); live cluster operations take longer
-
-*Updated after each plan completion*
+*Updated after v1.0 milestone completion*
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: Skip ingress-nginx entirely, go straight to Gateway API (Envoy Gateway first choice, alternatives evaluated in Phase 4)
-- [Roadmap]: NetworkPolicy separated into Phase 7 (after OpenClaw deployment) to allow egress pattern validation against running workload
-- [Roadmap]: Pre-commit hook (SECR-05) grouped with operational maturity (Phase 9) rather than security infrastructure
-- [01-01]: Used lsof -iTCP (not -i) for port checks to avoid false positives from UDP/QUIC connections
-- [01-01]: ConfigMap pipe handled inline (not via run_cmd) because run_cmd suppresses stdout needed by kubectl apply
-- [01-01]: SKIP_PORT_CHECK pattern for idempotent bootstrap re-runs where cluster already holds ports
-- [02-01]: Fetch ArgoCD install manifest at runtime rather than storing in bootstrap/ to avoid root-app field ownership conflicts
-- [02-01]: Basic Lua health check (health-only) chosen over enhanced (health+sync) -- can upgrade if timing issues arise
-- [02-01]: Placeholder repoURL (OWNER/pincer-ops.git) used -- actual GitHub org TBD
-- [02-02]: preserveResourcesOnDeletion not valid in ArgoCD v3.3.1 CRD -- deletion protection uses two safeguards (no finalizers + prune false)
-- [03-01]: MetalLB Application in bootstrap/ for root-app discovery, source path points to infrastructure/metallb/base
-- [03-01]: IPAddressPool/L2Advertisement applied imperatively by bootstrap.sh (not GitOps) due to dynamic IP range from KIND CIDR
-- [03-01]: ignoreDifferences for CRD caBundle field to prevent perpetual OutOfSync from MetalLB controller mutations
-- [03-02]: Kustomize direct-apply fallback in bootstrap.sh when ArgoCD cannot sync from placeholder repoURL -- after 180s timeout, apply MetalLB manifests directly
-- [04-01]: Two-Application pattern for Envoy Gateway: Helm controller (wave -4) separate from kustomize config (wave -1) to decouple CRD installation from resource creation
-- [04-01]: OCI Helm source (docker.io/envoyproxy) for controller -- first non-Git ArgoCD source, required sourceRepos update in AppProject
-- [04-01]: DaemonSet with hostPort 80/443 on control-plane node -- only viable path for localhost access on macOS/KIND
-- [04-01]: Direct kubectl apply for controller Application in bootstrap.sh rather than waiting for root-app discovery
-- [04-02]: containerPort values are 10080/10443 (not 8080/8443) -- Envoy Gateway uses 10000+port internal mapping, confirmed at runtime. envoy-proxy-config.yaml corrected.
-- [04-02]: infra-envoy-gateway-config Application remains Unknown (placeholder repoURL) but resources healthy via direct-apply -- acceptable until Phase 8
-- [05-01]: Sealed Secrets targets kube-system (upstream default) to avoid requiring --controller-namespace flag with kubeseal CLI
-- [05-01]: cert-manager kustomization has no namespace field to preserve hard-coded internal namespace references
-- [05-01]: Three ignoreDifferences entries for cert-manager (CRD + MutatingWebhook + ValidatingWebhook caBundle) to prevent perpetual OutOfSync
-- [05-02]: cert-manager kustomize fallback split into upstream manifest + separate ClusterIssuer apply to handle CRD registration timing
-- [05-02]: Sealing key restore runs BEFORE controller deployment; controller restart only if key was actually restored
-- [05-02]: Helper library pattern (scripts/lib/sealed-secrets.sh) sourced by bootstrap.sh for domain-specific functions
-- [06-01]: Real SealedSecret created via kubeseal against running cluster (not placeholder) -- encrypted dev-token-placeholder values
-- [06-01]: Exec-based probes using openclaw health CLI instead of HTTP GET /health (safer per research; HTTP availability unconfirmed)
-- [06-01]: CreateNamespace=true in ArgoCD Application instead of namespace.yaml (workloads AppProject cannot manage cluster-scoped resources)
-- [06-02]: ConfigMap agents section removed -- OpenClaw expects agents.defaults.model as object, not string; defaults work without explicit config
-- [06-02]: Added gateway.mode=local to ConfigMap -- OpenClaw gateway requires explicit mode=local to start on 0.0.0.0
-- [06-02]: Memory limit increased 1Gi to 2Gi -- V8 heap exceeded 512MB during OpenClaw startup, OOM at 1Gi limit
-- [07-01]: Two-resource NetworkPolicy pattern (default-deny-all + openclaw-allow) in single YAML for atomic deployment
-- [07-01]: Namespace-only selector for Envoy Gateway ingress (no pod label filter) -- more robust against version changes
-- [07-01]: Wide HTTPS egress (0.0.0.0/0:443) instead of IP-restricted -- LLM providers use CDNs with rotating IPs
-- [08-01]: Combined Task 1 (file edits) and Task 2 (commit/push) into single commit -- both produce same commit artifact
-- [08-02]: Fixed workloads AppProject clusterResourceWhitelist to include Namespace -- required for CreateNamespace=true
-- [08-02]: Accepted argocd-self/root Progressing as known issue -- circular self-management dependency, all actual resources healthy
-- [09-02]: Placeholder webhook URL (localhost:9999) for local dev -- notification infrastructure in place for production swap
-- [09-02]: root-app excluded from notification subscriptions -- self-referential App of Apps always has unusual sync state
-- [09-02]: Separate ConfigMap (argocd-notifications-cm) not merged into argocd-cm -- ArgoCD expects this specific name for notifications
-- [09-01]: Skipped kustomize build for metallb, sealed-secrets, cert-manager bases in CI -- remote URLs cause flaky 50MB+ downloads
-- [09-01]: Pre-commit hook checks staged content via git show :file (not working tree) for accuracy
-- [09-01]: Envoy-gateway base is the only infra base validated via kustomize build (local resources only)
-- [09-03]: podAffinity required for RWO PVC co-location -- backup pod must land on same node as StatefulSet
-- [09-03]: hostPath volumes for KIND-local backup storage -- ephemeral, acceptable for dev environment
-- [09-03]: busybox:1.37 for PVC backup (minimal tar image), bitnami/kubectl:1.32 for sealing key export (kubectl access)
-- [09-03]: Staggered schedules: PVC backup at 2AM, sealing key backup at 3AM to avoid resource contention
-- [10-01]: No secrets in .mcp.json -- ARGOCD_API_TOKEN uses Claude Code env var expansion
-- [10-01]: NODE_TLS_REJECT_UNAUTHORIZED=0 required for ArgoCD self-signed cert on KIND
-- [10-01]: argocd-rbac-cm.yaml auto-synced by argocd-self Application (no bootstrap.sh changes needed)
-- [10-01]: Version-pinned MCP servers (mcp-server-kubernetes@3.2.0, argocd-mcp@0.5.0) to prevent unexpected changes
-- [10-02]: argocd-rbac-cm.yaml applied in bootstrap step 7 alongside argocd-cm.yaml for first-boot RBAC availability
-- [11-01]: Step 13 polls for Gateway resource (not deployment) as sentinel for Envoy Gateway config sync completion
-- [11-01]: NetworkPolicy tests use Node.js via kubectl exec since OpenClaw container has Node.js but not curl
+All v1.0 decisions have been reviewed and outcomes recorded.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-- Phase 4 (Gateway API): RESOLVED -- both plans complete. Runtime verification confirmed Envoy Gateway DaemonSet + hostPort approach works on KIND/macOS. containerPort fix applied (10080/10443).
-- Phase 10 (MCP): MCP ecosystem is pre-1.0. Server availability and APIs may shift before implementation.
-- Placeholder repoURL blocker: RESOLVED in 08-01. All ArgoCD manifests now reference https://github.com/PatrykQuantumNomad/pincer-ops.git. Pushed to origin/main.
-- argocd-self/root circular dependency: argocd-self and root Applications show Progressing/OutOfSync permanently due to circular self-management. All actual resources healthy. Cosmetic issue -- does not affect cluster operation. May address in future phase.
+- argocd-self/root circular dependency: Cosmetic Progressing/OutOfSync — accepted, does not affect operations.
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 11-01-PLAN.md (tech debt cleanup). All 11 phases complete. v1.0 milestone audit-clean.
+Stopped at: v1.0 milestone complete. All archives created.
 Resume file: None
