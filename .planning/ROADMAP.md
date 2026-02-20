@@ -78,11 +78,11 @@ Plans:
   2. A Gateway resource is deployed and has a valid address (LoadBalancer IP from MetalLB or bound to host ports)
   3. An HTTPRoute can route traffic to a test backend service, verified by curl from the host machine via localhost:80
   4. The Gateway API implementation ArgoCD Application is Healthy/Synced at its assigned wave number
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- Create Envoy Gateway ArgoCD Applications, kustomize manifests, and extend bootstrap.sh
+- [ ] 04-02-PLAN.md -- Run bootstrap, verify Envoy Gateway deployment, test HTTP routing from localhost
 
 ### Phase 5: Secret Management
 **Goal**: Credentials are encrypted for Git-safe storage with automated key lifecycle and TLS certificate infrastructure
@@ -187,7 +187,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
-| 4. Gateway API Routing | 0/? | Not started | - |
+| 4. Gateway API Routing | 0/2 | Planning complete | - |
 | 5. Secret Management | 0/? | Not started | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
 | 7. Network Security | 0/? | Not started | - |
