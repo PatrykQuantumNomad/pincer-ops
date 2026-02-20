@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 6 in progress: OpenClaw Deployment. Plan 1 complete (workload manifests). Plan 2 (bootstrap integration) is next.
+**Current focus:** Phase 6 complete: OpenClaw Deployment. Both plans done. Ready for Phase 7 (Network Security).
 
 ## Current Position
 
-Phase: 6 of 10 (OpenClaw Deployment) -- IN PROGRESS
-Plan: 1 of 2 in current phase (plan 1 complete)
-Status: Plan 06-01 complete (workload manifests), ready for Plan 06-02 (bootstrap integration)
-Last activity: 2026-02-20 -- Executed 06-01-PLAN.md (OpenClaw workload manifests)
+Phase: 6 of 10 (OpenClaw Deployment) -- COMPLETE
+Plan: 2 of 2 in current phase (all plans complete)
+Status: Phase 6 complete. OpenClaw deployed, verified, and accessible via localhost. Ready for Phase 7.
+Last activity: 2026-02-20 -- Executed 06-02-PLAN.md (bootstrap integration and verification)
 
-Progress: [########..] 75%
+Progress: [########..] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 8 min
-- Total execution time: 1.23 hours
+- Total plans completed: 11
+- Average duration: 11 min
+- Total execution time: 1.99 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [########..] 75%
 | 03-network-foundation | 2 | 16 min | 8 min |
 | 04-gateway-api-routing | 2 | 21 min | 10.5 min |
 | 05-secret-management | 2 | 16 min | 8 min |
-| 06-openclaw-deployment | 1 | 5 min | 5 min |
+| 06-openclaw-deployment | 2 | 51 min | 25.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 18, 3, 13, 5 min
-- Trend: stable (manifest-only plans fast, verification/bootstrap plans take longer)
+- Last 5 plans: 18, 3, 13, 5, 46 min
+- Trend: verification/bootstrap plans take longer due to teardown/rebuild cycles
 
 *Updated after each plan completion*
 
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - [06-01]: Real SealedSecret created via kubeseal against running cluster (not placeholder) -- encrypted dev-token-placeholder values
 - [06-01]: Exec-based probes using openclaw health CLI instead of HTTP GET /health (safer per research; HTTP availability unconfirmed)
 - [06-01]: CreateNamespace=true in ArgoCD Application instead of namespace.yaml (workloads AppProject cannot manage cluster-scoped resources)
+- [06-02]: ConfigMap agents section removed -- OpenClaw expects agents.defaults.model as object, not string; defaults work without explicit config
+- [06-02]: Added gateway.mode=local to ConfigMap -- OpenClaw gateway requires explicit mode=local to start on 0.0.0.0
+- [06-02]: Memory limit increased 1Gi to 2Gi -- V8 heap exceeded 512MB during OpenClaw startup, OOM at 1Gi limit
 
 ### Pending Todos
 
@@ -90,5 +93,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 06-01-PLAN.md (OpenClaw workload manifests)
+Stopped at: Completed 06-02-PLAN.md (Phase 6 complete -- OpenClaw deployment verified)
 Resume file: None

@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Network Foundation** - MetalLB L2 providing LoadBalancer IPs from KIND's Docker CIDR
 - [x] **Phase 4: Gateway API Routing** - Gateway API implementation routing traffic to cluster services via localhost
 - [x] **Phase 5: Secret Management** - Sealed Secrets with key backup/restore and cert-manager for TLS
-- [ ] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
+- [x] **Phase 6: OpenClaw Deployment** - OpenClaw running as a StatefulSet with full GitOps management
 - [ ] **Phase 7: Network Security** - NetworkPolicy enforcement with validated egress rules
 - [ ] **Phase 8: Reproducibility Verification** - Teardown/rebuild proves the GitOps contract end-to-end
 - [ ] **Phase 9: Operational Maturity** - CI validation, notifications, backups, and pre-commit guards
@@ -113,7 +113,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md -- Create OpenClaw workload manifests (StatefulSet, Service, ConfigMap, SealedSecret, HTTPRoute, Kustomize)
-- [ ] 06-02-PLAN.md -- Extend bootstrap.sh with OpenClaw deployment step and verify end-to-end
+- [x] 06-02-PLAN.md -- Extend bootstrap.sh with OpenClaw deployment step and verify end-to-end
 
 ### Phase 7: Network Security
 **Goal**: Network traffic is locked down to explicit allow rules with validated egress for OpenClaw's actual traffic patterns
@@ -188,7 +188,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
 | 4. Gateway API Routing | 2/2 | Complete | 2026-02-20 |
 | 5. Secret Management | 2/2 | Complete | 2026-02-20 |
-| 6. OpenClaw Deployment | 1/2 | In Progress | - |
+| 6. OpenClaw Deployment | 2/2 | Complete | 2026-02-20 |
 | 7. Network Security | 0/? | Not started | - |
 | 8. Reproducibility Verification | 0/? | Not started | - |
 | 9. Operational Maturity | 0/? | Not started | - |
