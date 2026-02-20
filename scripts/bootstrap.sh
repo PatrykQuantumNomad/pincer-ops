@@ -141,6 +141,8 @@ until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
       log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying MetalLB directly"
+      # Apply AppProjects first (infra-metallb references the infrastructure project)
+      run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
       # Apply the infra-metallb Application so it exists as a resource
       run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-metallb.yaml"
       # Apply MetalLB manifests directly via kustomize
