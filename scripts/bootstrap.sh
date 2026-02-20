@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/sealed-secrets.sh"
 
 KIND_CONFIG="${SCRIPT_DIR}/../cluster/kind-config.yaml"
 ARGOCD_VERSION="v3.3.1"
@@ -233,6 +234,99 @@ run_cmd kubectl rollout status daemonset -n envoy-gateway-system \
   -l gateway.envoyproxy.io/owning-gateway-name=eg --timeout=120s
 log_info "Envoy proxy DaemonSet is ready"
 
+# Step 14: Deploy Sealed Secrets
+# Strategy: Restore sealing key BEFORE controller starts (critical for key persistence
+# across cluster rebuilds). Then deploy controller via ArgoCD Application with
+# kustomize fallback (same pattern as MetalLB in Step 10). Finally backup current key.
+SS_BASE_DIR="${SCRIPT_DIR}/../infrastructure/sealed-secrets/base"
+log_step "Deploying Sealed Secrets..."
+
+# Try to restore sealing key from backup (BEFORE controller starts)
+KEY_RESTORED=false
+if restore_sealing_key; then
+  KEY_RESTORED=true
+fi
+
+# Apply the infra-sealed-secrets Application directly
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-sealed-secrets.yaml"
+
+# Wait for Sealed Secrets controller deployment to be created
+SS_WAIT=0
+SS_TIMEOUT=180
+until kubectl get deployment sealed-secrets-controller -n kube-system >/dev/null 2>&1; do
+  if [ ${SS_WAIT} -ge ${SS_TIMEOUT} ]; then
+    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying Sealed Secrets directly"
+      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${SS_BASE_DIR}")
+      break
+    fi
+    log_error "Timed out waiting for Sealed Secrets deployment to be created (${SS_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  SS_WAIT=$((SS_WAIT + 5))
+done
+run_cmd kubectl wait --for=condition=available deployment/sealed-secrets-controller \
+  -n kube-system --timeout=120s
+
+# If key was restored, restart controller to pick up restored keys
+if [ "${KEY_RESTORED}" = true ]; then
+  restart_sealed_secrets_controller
+fi
+
+# Backup sealing key (new key on first run, updated backup on subsequent runs)
+backup_sealing_key
+log_info "Sealed Secrets controller is ready"
+
+# Step 15: Deploy cert-manager
+# Simpler than Sealed Secrets -- no key lifecycle to manage.
+# Deploy via ArgoCD Application with kustomize fallback, then wait for
+# both the controller and webhook to be ready.
+CM_BASE_DIR="${SCRIPT_DIR}/../infrastructure/cert-manager/base"
+log_step "Deploying cert-manager..."
+
+# Apply the infra-cert-manager Application directly
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-cert-manager.yaml"
+
+# Wait for cert-manager controller deployment to be created
+CM_WAIT=0
+CM_TIMEOUT=180
+until kubectl get deployment cert-manager -n cert-manager >/dev/null 2>&1; do
+  if [ ${CM_WAIT} -ge ${CM_TIMEOUT} ]; then
+    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying cert-manager directly"
+      # Apply the upstream cert-manager manifest first (CRDs + core resources).
+      # The ClusterIssuer must be applied separately AFTER CRDs are established,
+      # otherwise kubectl rejects the unknown resource kind.
+      CM_UPSTREAM_URL="https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml"
+      run_cmd kubectl apply --server-side --force-conflicts -f "${CM_UPSTREAM_URL}"
+      break
+    fi
+    log_error "Timed out waiting for cert-manager deployment to be created (${CM_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  CM_WAIT=$((CM_WAIT + 5))
+done
+run_cmd kubectl wait --for=condition=available deployment/cert-manager \
+  -n cert-manager --timeout=120s
+run_cmd kubectl wait --for=condition=available deployment/cert-manager-webhook \
+  -n cert-manager --timeout=120s
+
+# Apply ClusterIssuer after CRDs are established and webhook is ready.
+# This is separate from the main cert-manager apply because CRDs must be
+# registered before custom resources can be created.
+CM_CLUSTERISSUER="${CM_BASE_DIR}/selfsigned-clusterissuer.yaml"
+if [ -f "${CM_CLUSTERISSUER}" ]; then
+  run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
+  log_info "Self-signed ClusterIssuer applied"
+fi
+log_info "cert-manager controller and webhook are ready"
+
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
@@ -242,6 +336,8 @@ echo "  ArgoCD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443"
 echo "  Password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
 echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
 echo "  Gateway:    Envoy Gateway v1.7.0 (localhost:80)"
+echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
+echo "  TLS:        cert-manager v1.19.2 (cert-manager namespace)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
