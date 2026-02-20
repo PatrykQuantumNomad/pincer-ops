@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 7 complete: Network Security. NetworkPolicy enforcement verified. Ready for Phase 8 (Reproducibility Verification).
+**Current focus:** Phase 8 in progress: Reproducibility Verification. Placeholder repoURL replaced with real GitHub URL. Ready for Plan 02 (teardown/rebuild cycle).
 
 ## Current Position
 
-Phase: 7 of 10 (Network Security) -- COMPLETE
-Plan: 1 of 1 in current phase (all plans complete)
-Status: Phase 7 complete. Default-deny + selective-allow NetworkPolicy enforced on openclaw namespace. Ready for Phase 8.
-Last activity: 2026-02-20 -- Executed 07-01-PLAN.md (NetworkPolicy manifests and verification)
+Phase: 8 of 10 (Reproducibility Verification)
+Plan: 1 of 2 in current phase (Plan 01 complete)
+Status: Placeholder repoURL replaced with real GitHub URL across all ArgoCD manifests. Pushed to origin/main. Ready for Plan 02 (teardown/rebuild).
+Last activity: 2026-02-20 -- Executed 08-01-PLAN.md (repoURL replacement and push)
 
-Progress: [########..] 85%
+Progress: [########..] 87%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 10 min
-- Total execution time: 2.02 hours
+- Total plans completed: 13
+- Average duration: 9 min
+- Total execution time: 2.05 hours
 
 **By Phase:**
 
@@ -34,9 +34,10 @@ Progress: [########..] 85%
 | 05-secret-management | 2 | 16 min | 8 min |
 | 06-openclaw-deployment | 2 | 51 min | 25.5 min |
 | 07-network-security | 1 | 2 min | 2 min |
+| 08-reproducibility-verification | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 13, 5, 46, 2 min
+- Last 5 plans: 13, 5, 46, 2, 2 min
 - Trend: manifest-only plans are fast; verification/bootstrap plans take longer
 
 *Updated after each plan completion*
@@ -83,6 +84,7 @@ Recent decisions affecting current work:
 - [07-01]: Two-resource NetworkPolicy pattern (default-deny-all + openclaw-allow) in single YAML for atomic deployment
 - [07-01]: Namespace-only selector for Envoy Gateway ingress (no pod label filter) -- more robust against version changes
 - [07-01]: Wide HTTPS egress (0.0.0.0/0:443) instead of IP-restricted -- LLM providers use CDNs with rotating IPs
+- [08-01]: Combined Task 1 (file edits) and Task 2 (commit/push) into single commit -- both produce same commit artifact
 
 ### Pending Todos
 
@@ -92,10 +94,10 @@ None yet.
 
 - Phase 4 (Gateway API): RESOLVED -- both plans complete. Runtime verification confirmed Envoy Gateway DaemonSet + hostPort approach works on KIND/macOS. containerPort fix applied (10080/10443).
 - Phase 10 (MCP): MCP ecosystem is pre-1.0. Server availability and APIs may shift before implementation.
-- Placeholder repoURL (OWNER/pincer-ops.git) causes ArgoCD ComparisonError on all Applications. Bootstrap works via kustomize fallback, but ArgoCD sync-based management requires real repoURL. This will need resolution before Phase 8 (Reproducibility Verification).
+- Placeholder repoURL blocker: RESOLVED in 08-01. All ArgoCD manifests now reference https://github.com/PatrykQuantumNomad/pincer-ops.git. Pushed to origin/main.
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 07-01-PLAN.md (Phase 7 complete -- NetworkPolicy enforcement verified)
+Stopped at: Completed 08-01-PLAN.md (repoURL replacement -- ready for teardown/rebuild in 08-02)
 Resume file: None

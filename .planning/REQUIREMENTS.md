@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GOPS-03**: Root Application has deletion protection (preserveResourcesOnDeletion, prune=false)
 - [x] **GOPS-04**: Infrastructure and workload components are separated into distinct AppProjects with RBAC boundaries
 - [x] **GOPS-05**: Resource tracking uses annotation+label hybrid method configured in argocd-cm
-- [ ] **GOPS-06**: `kubectl apply -f bootstrap/root-app.yaml` reconstructs complete cluster state from Git
+- [x] **GOPS-06**: `kubectl apply -f bootstrap/root-app.yaml` reconstructs complete cluster state from Git
 
 ### Networking
 
@@ -115,7 +115,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GOPS-03 | Phase 2: GitOps Core | Complete |
 | GOPS-04 | Phase 2: GitOps Core | Complete |
 | GOPS-05 | Phase 2: GitOps Core | Complete |
-| GOPS-06 | Phase 8: Reproducibility Verification | Pending |
+| GOPS-06 | Phase 8: Reproducibility Verification | Complete |
 | NETW-01 | Phase 3: Network Foundation | Complete |
 | NETW-02 | Phase 4: Gateway API Routing | Complete |
 | NETW-03 | Phase 4: Gateway API Routing | Complete |
