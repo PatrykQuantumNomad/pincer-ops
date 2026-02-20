@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 3 complete. Ready for Phase 4: Gateway API Routing
+**Current focus:** Phase 4 in progress: Gateway API Routing (Envoy Gateway manifests created, runtime verification next)
 
 ## Current Position
 
-Phase: 3 of 10 (Network Foundation) -- COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase 3 complete, ready for Phase 4
-Last activity: 2026-02-20 -- Executed 03-02-PLAN.md (Phase 3 final plan)
+Phase: 4 of 10 (Gateway API Routing)
+Plan: 1 of 2 in current phase (04-01 complete, 04-02 remaining)
+Status: Executing Phase 4
+Last activity: 2026-02-20 -- Executed 04-01-PLAN.md (Envoy Gateway manifests)
 
-Progress: [####......] 40%
+Progress: [######....] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 6 min
-- Total execution time: 0.57 hours
+- Total execution time: 0.62 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [####......] 40%
 | 01-cluster-foundation | 1 | 9 min | 9 min |
 | 02-gitops-core | 2 | 9 min | 4.5 min |
 | 03-network-foundation | 2 | 16 min | 8 min |
+| 04-gateway-api-routing | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 9, 3, 6, 3, 13 min
-- Trend: stable (verification plans take longer due to full bootstrap cycles)
+- Last 5 plans: 3, 6, 3, 13, 3 min
+- Trend: stable (manifest-only plans fast, verification plans take longer)
 
 *Updated after each plan completion*
 
@@ -58,6 +59,10 @@ Recent decisions affecting current work:
 - [03-01]: IPAddressPool/L2Advertisement applied imperatively by bootstrap.sh (not GitOps) due to dynamic IP range from KIND CIDR
 - [03-01]: ignoreDifferences for CRD caBundle field to prevent perpetual OutOfSync from MetalLB controller mutations
 - [03-02]: Kustomize direct-apply fallback in bootstrap.sh when ArgoCD cannot sync from placeholder repoURL -- after 180s timeout, apply MetalLB manifests directly
+- [04-01]: Two-Application pattern for Envoy Gateway: Helm controller (wave -4) separate from kustomize config (wave -1) to decouple CRD installation from resource creation
+- [04-01]: OCI Helm source (docker.io/envoyproxy) for controller -- first non-Git ArgoCD source, required sourceRepos update in AppProject
+- [04-01]: DaemonSet with hostPort 80/443 on control-plane node -- only viable path for localhost access on macOS/KIND
+- [04-01]: Direct kubectl apply for controller Application in bootstrap.sh rather than waiting for root-app discovery
 
 ### Pending Todos
 
@@ -65,12 +70,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4 (Gateway API) carries research risk: Envoy Gateway on KIND with MetalLB L2 is less documented than ingress-nginx. Fallback options should be evaluated during planning.
+- Phase 4 (Gateway API): Manifest layer complete (04-01). Research risk partially mitigated -- EnvoyProxy DaemonSet + hostPort approach validated at manifest level, runtime verification in 04-02.
 - Phase 10 (MCP): MCP ecosystem is pre-1.0. Server availability and APIs may shift before implementation.
 - Placeholder repoURL (OWNER/pincer-ops.git) causes ArgoCD ComparisonError on all Applications. Bootstrap works via kustomize fallback, but ArgoCD sync-based management requires real repoURL. This will need resolution before Phase 8 (Reproducibility Verification).
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 03-02-PLAN.md (Phase 3 complete, all 2/2 plans done)
+Stopped at: Completed 04-01-PLAN.md (Envoy Gateway manifests, 1/2 plans in Phase 4)
 Resume file: None

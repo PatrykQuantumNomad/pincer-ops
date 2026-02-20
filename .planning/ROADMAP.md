@@ -81,7 +81,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- Create Envoy Gateway ArgoCD Applications, kustomize manifests, and extend bootstrap.sh
+- [x] 04-01-PLAN.md -- Create Envoy Gateway ArgoCD Applications, kustomize manifests, and extend bootstrap.sh
 - [ ] 04-02-PLAN.md -- Run bootstrap, verify Envoy Gateway deployment, test HTTP routing from localhost
 
 ### Phase 5: Secret Management
@@ -187,7 +187,7 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 1. Cluster Foundation | 1/1 | Complete | 2026-02-19 |
 | 2. GitOps Core | 2/2 | Complete | 2026-02-20 |
 | 3. Network Foundation | 2/2 | Complete | 2026-02-20 |
-| 4. Gateway API Routing | 0/2 | Planning complete | - |
+| 4. Gateway API Routing | 1/2 | In progress | - |
 | 5. Secret Management | 0/? | Not started | - |
 | 6. OpenClaw Deployment | 0/? | Not started | - |
 | 7. Network Security | 0/? | Not started | - |
