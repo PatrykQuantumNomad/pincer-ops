@@ -1,0 +1,17 @@
+# gateway-class.yaml -- GatewayClass linked to EnvoyProxy config via parametersRef.
+#
+# CRITICAL: The parametersRef is what tells Envoy Gateway to use our custom
+# DaemonSet + hostPort configuration instead of the default Deployment +
+# LoadBalancer service. Without it, Envoy creates a LoadBalancer service
+# that is unusable on macOS/KIND (MetalLB VIPs unreachable from host).
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: kind-proxy-config
+    namespace: envoy-gateway-system

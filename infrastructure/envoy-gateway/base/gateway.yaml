@@ -1,0 +1,21 @@
+# gateway.yaml -- Gateway resource with HTTP listener for all namespaces.
+#
+# Single HTTP listener on port 80. HTTPS listener will be added when
+# cert-manager is available (Phase 5 or later).
+#
+# allowedRoutes.namespaces.from: All -- permits HTTPRoutes from any namespace,
+# including OpenClaw in the 'openclaw' namespace.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: eg
+  namespace: envoy-gateway-system
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All

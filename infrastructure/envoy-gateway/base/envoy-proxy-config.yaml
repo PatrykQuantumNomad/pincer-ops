@@ -1,0 +1,49 @@
+# envoy-proxy-config.yaml -- EnvoyProxy CRD configuring Envoy as DaemonSet for KIND.
+#
+# KIND networking on macOS: MetalLB VIPs are unreachable from the host because
+# Docker Desktop runs containers in a Linux VM with a separate network namespace.
+# The only way to reach cluster services from localhost is via hostPort mappings
+# on the control-plane node (which has extraPortMappings in kind-config.yaml).
+#
+# This EnvoyProxy config achieves that by:
+#   1. Switching from Deployment to DaemonSet mode (envoyDaemonSet)
+#   2. Targeting the control-plane node via nodeSelector (ingress-ready: "true")
+#   3. Adding tolerations for the control-plane taint (CRITICAL or pod stays Pending)
+#   4. Mapping containerPort 8080 -> hostPort 80, containerPort 8443 -> hostPort 443
+#   5. Using ClusterIP service type (no LoadBalancer needed since hostPort handles access)
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: kind-proxy-config
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDaemonSet:
+        pod:
+          nodeSelector:
+            ingress-ready: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: envoy
+                      ports:
+                        - containerPort: 8080
+                          hostPort: 80
+                          name: http
+                          protocol: TCP
+                        - containerPort: 8443
+                          hostPort: 443
+                          name: https
+                          protocol: TCP
+      envoyService:
+        type: ClusterIP
