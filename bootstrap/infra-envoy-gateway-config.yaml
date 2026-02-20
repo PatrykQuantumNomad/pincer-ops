@@ -1,0 +1,39 @@
+# infra-envoy-gateway-config.yaml -- ArgoCD Application for Gateway API config resources.
+#
+# Kustomize-source Application managing EnvoyProxy, GatewayClass, and Gateway
+# resources at infrastructure/envoy-gateway/base. These configure the Envoy proxy
+# as a DaemonSet with hostPort binding for KIND/macOS localhost access.
+#
+# Depends on infra-envoy-gateway (wave -4) being healthy first -- the CRDs for
+# EnvoyProxy and Gateway API kinds are installed by the controller chart.
+#
+# NOTE: Placeholder repoURL will cause ComparisonError in ArgoCD. bootstrap.sh
+# handles this via kustomize direct-apply fallback (same pattern as MetalLB).
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-envoy-gateway-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/envoy-gateway/base
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://github.com/OWNER/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/envoy-gateway/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

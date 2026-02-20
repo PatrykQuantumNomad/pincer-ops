@@ -1,6 +1,6 @@
 # infrastructure.yaml -- AppProject for infrastructure components.
 # Allows cluster-scoped resources (CRDs, ClusterRoles, Namespaces, etc.)
-# for MetalLB, Ingress, Sealed Secrets, Cert-Manager, and ArgoCD itself.
+# for MetalLB, Envoy Gateway, Sealed Secrets, Cert-Manager, and ArgoCD itself.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -12,6 +12,7 @@ spec:
   description: "Infrastructure components -- cluster-scoped resources allowed"
   sourceRepos:
     - 'https://github.com/OWNER/pincer-ops.git'
+    - 'docker.io/envoyproxy'
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc
