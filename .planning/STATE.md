@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 9 complete. CI validation, notifications, and backup CronJobs all in place. Ready for Phase 10 (MCP Integration).
+**Current focus:** Phase 10 in progress. MCP configuration artifacts created (plan 01 complete). Awaiting plan 02 (bootstrap wiring and end-to-end verification).
 
 ## Current Position
 
-Phase: 9 of 10 -- COMPLETE
-Plan: 3 of 3 in current phase (all plans complete)
-Status: Phase 9 complete. CI validation, notifications, and backup CronJobs deployed.
-Last activity: 2026-02-20 -- Completed 09-03 (backup CronJobs)
+Phase: 10 of 10 -- IN PROGRESS
+Plan: 1 of 2 in current phase
+Status: Plan 10-01 complete. MCP account, RBAC, .mcp.json, and setup script created.
+Last activity: 2026-02-20 -- Completed 10-01 (MCP configuration artifacts)
 
-Progress: [#########.] 95% (9/10 phases)
+Progress: [#########.] 95% (9.5/10 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 10 min
-- Total execution time: 2.77 hours
+- Total execution time: 2.82 hours
 
 **By Phase:**
 
@@ -36,9 +36,10 @@ Progress: [#########.] 95% (9/10 phases)
 | 07-network-security | 1 | 2 min | 2 min |
 | 08-reproducibility-verification | 2 | 37 min | 18.5 min |
 | 09-operational-maturity | 3 | 8 min | 2.7 min |
+| 10-mcp-integration | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 2, 35, 2, 4, 2 min
+- Last 5 plans: 35, 2, 4, 2, 3 min
 - Trend: manifest-only plans are fast (~2-4 min); live cluster operations take longer
 
 *Updated after each plan completion*
@@ -98,6 +99,10 @@ Recent decisions affecting current work:
 - [09-03]: hostPath volumes for KIND-local backup storage -- ephemeral, acceptable for dev environment
 - [09-03]: busybox:1.37 for PVC backup (minimal tar image), bitnami/kubectl:1.32 for sealing key export (kubectl access)
 - [09-03]: Staggered schedules: PVC backup at 2AM, sealing key backup at 3AM to avoid resource contention
+- [10-01]: No secrets in .mcp.json -- ARGOCD_API_TOKEN uses Claude Code env var expansion
+- [10-01]: NODE_TLS_REJECT_UNAUTHORIZED=0 required for ArgoCD self-signed cert on KIND
+- [10-01]: argocd-rbac-cm.yaml auto-synced by argocd-self Application (no bootstrap.sh changes needed)
+- [10-01]: Version-pinned MCP servers (mcp-server-kubernetes@3.2.0, argocd-mcp@0.5.0) to prevent unexpected changes
 
 ### Pending Todos
 
@@ -113,5 +118,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 09-03-PLAN.md (Phase 9 complete -- backup CronJobs)
+Stopped at: Completed 10-01-PLAN.md (MCP configuration artifacts)
 Resume file: None

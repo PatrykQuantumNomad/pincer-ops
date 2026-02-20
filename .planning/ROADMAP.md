@@ -173,7 +173,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Create MCP configuration artifacts (ArgoCD account, RBAC, .mcp.json, setup script)
+- [x] 10-01-PLAN.md -- Create MCP configuration artifacts (ArgoCD account, RBAC, .mcp.json, setup script)
 - [ ] 10-02-PLAN.md -- Wire RBAC into bootstrap and verify MCP integration end-to-end
 
 ## Progress
@@ -193,4 +193,4 @@ Note: Phases 9 and 10 are independent and could execute in parallel.
 | 7. Network Security | 1/1 | Complete | 2026-02-20 |
 | 8. Reproducibility Verification | 2/2 | Complete | 2026-02-20 |
 | 9. Operational Maturity | 3/3 | Complete | 2026-02-20 |
-| 10. MCP Integration | 0/2 | Not started | - |
+| 10. MCP Integration | 1/2 | In progress | - |

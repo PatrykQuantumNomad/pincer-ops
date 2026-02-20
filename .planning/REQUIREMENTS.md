@@ -57,9 +57,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### MCP Integration
 
-- [ ] **MCP-01**: MCP server provides kubectl access to cluster state via Claude Code
-- [ ] **MCP-02**: MCP server provides ArgoCD application management via Claude Code
-- [ ] **MCP-03**: MCP server defaults to read-only with explicit opt-in for write operations
+- [x] **MCP-01**: MCP server provides kubectl access to cluster state via Claude Code
+- [x] **MCP-02**: MCP server provides ArgoCD application management via Claude Code
+- [x] **MCP-03**: MCP server defaults to read-only with explicit opt-in for write operations
 
 ## v2 Requirements
 
@@ -136,9 +136,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OPS-02 | Phase 9: Operational Maturity | Complete |
 | OPS-03 | Phase 9: Operational Maturity | Complete |
 | OPS-04 | Phase 9: Operational Maturity | Complete |
-| MCP-01 | Phase 10: MCP Integration | Pending |
-| MCP-02 | Phase 10: MCP Integration | Pending |
-| MCP-03 | Phase 10: MCP Integration | Pending |
+| MCP-01 | Phase 10: MCP Integration | Complete |
+| MCP-02 | Phase 10: MCP Integration | Complete |
+| MCP-03 | Phase 10: MCP Integration | Complete |
 
 **Coverage:**
 - v1 requirements: 33 total
