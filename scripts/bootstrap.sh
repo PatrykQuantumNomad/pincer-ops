@@ -114,6 +114,7 @@ log_info "ArgoCD ${ARGOCD_VERSION} installed"
 # CRITICAL: argocd-cm must be applied BEFORE root-app -- Lua health check enables sync waves
 log_step "Applying ArgoCD configuration..."
 run_cmd kubectl apply -n argocd -f "${BOOTSTRAP_DIR}/argocd-cm.yaml"
+run_cmd kubectl apply -n argocd -f "${BOOTSTRAP_DIR}/argocd-rbac-cm.yaml"
 log_info "ArgoCD configuration applied"
 
 # Step 8: Wait for ArgoCD readiness
