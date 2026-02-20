@@ -1,0 +1,45 @@
+# backup-rbac.yaml -- RBAC for the Sealed Secrets key backup CronJob.
+#
+# The CronJob needs to read secrets in kube-system labeled with
+# sealedsecrets.bitnami.com/sealed-secrets-key to export sealing keys.
+# This ServiceAccount + Role + RoleBinding grants minimal read-only access
+# to secrets in kube-system only.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sealed-secrets-key-backup
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: sealed-secrets-key-backup
+    app.kubernetes.io/component: backup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sealed-secrets-key-reader
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: sealed-secrets-key-backup
+    app.kubernetes.io/component: backup
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sealed-secrets-key-backup
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: sealed-secrets-key-backup
+    app.kubernetes.io/component: backup
+subjects:
+  - kind: ServiceAccount
+    name: sealed-secrets-key-backup
+    namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sealed-secrets-key-reader
