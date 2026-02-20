@@ -127,14 +127,26 @@ log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
 log_info "Root Application created -- ArgoCD will now manage all child Applications"
 
-# Step 10: Wait for MetalLB deployment
-# ArgoCD deploys MetalLB at sync wave -5 after discovering infra-metallb Application.
-# Poll for deployment existence first (ArgoCD may not have synced yet), then wait for readiness.
+# Step 10: Deploy MetalLB
+# Strategy: Try ArgoCD-managed deployment first (root-app discovers infra-metallb).
+# If ArgoCD cannot sync (e.g., placeholder repoURL), fall back to direct kustomize apply.
+# Either path produces the same result: MetalLB controller + speaker running.
+METALLB_BASE_DIR="${SCRIPT_DIR}/../infrastructure/metallb/base"
 log_step "Waiting for MetalLB deployment..."
 METALLB_WAIT=0
 METALLB_TIMEOUT=180
 until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
   if [ ${METALLB_WAIT} -ge ${METALLB_TIMEOUT} ]; then
+    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying MetalLB directly"
+      # Apply the infra-metallb Application so it exists as a resource
+      run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-metallb.yaml"
+      # Apply MetalLB manifests directly via kustomize
+      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${METALLB_BASE_DIR}")
+      break
+    fi
     log_error "Timed out waiting for MetalLB deployment to be created (${METALLB_TIMEOUT}s)"
     exit 1
   fi
