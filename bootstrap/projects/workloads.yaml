@@ -11,7 +11,7 @@ metadata:
 spec:
   description: "Application workloads -- namespace-scoped only"
   sourceRepos:
-    - 'https://github.com/OWNER/pincer-ops.git'
+    - 'https://github.com/PatrykQuantumNomad/pincer-ops.git'
   destinations:
     - namespace: 'openclaw'
       server: https://kubernetes.default.svc

@@ -21,7 +21,7 @@ metadata:
 spec:
   project: infrastructure
   source:
-    repoURL: https://github.com/OWNER/pincer-ops.git
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
     targetRevision: main
     path: infrastructure/cert-manager/base
   destination:

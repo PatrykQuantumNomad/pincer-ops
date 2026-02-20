@@ -18,7 +18,7 @@ metadata:
 spec:
   project: workloads
   source:
-    repoURL: https://github.com/OWNER/pincer-ops.git
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
     targetRevision: main
     path: workloads/openclaw/overlays/dev
   destination:

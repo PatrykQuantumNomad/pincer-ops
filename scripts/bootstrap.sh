@@ -138,10 +138,10 @@ METALLB_WAIT=0
 METALLB_TIMEOUT=180
 until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
   if [ ${METALLB_WAIT} -ge ${METALLB_TIMEOUT} ]; then
-    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    # Check if root-app has a ComparisonError (repo unreachable)
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying MetalLB directly"
+      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying MetalLB directly"
       # Apply AppProjects first (infra-metallb references the infrastructure project)
       run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
       # Apply the infra-metallb Application so it exists as a resource
@@ -255,10 +255,10 @@ SS_WAIT=0
 SS_TIMEOUT=180
 until kubectl get deployment sealed-secrets-controller -n kube-system >/dev/null 2>&1; do
   if [ ${SS_WAIT} -ge ${SS_TIMEOUT} ]; then
-    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    # Check if root-app has a ComparisonError (repo unreachable)
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying Sealed Secrets directly"
+      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying Sealed Secrets directly"
       run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${SS_BASE_DIR}")
       break
     fi
@@ -295,10 +295,10 @@ CM_WAIT=0
 CM_TIMEOUT=180
 until kubectl get deployment cert-manager -n cert-manager >/dev/null 2>&1; do
   if [ ${CM_WAIT} -ge ${CM_TIMEOUT} ]; then
-    # Check if root-app has a ComparisonError (repo unreachable / placeholder URL)
+    # Check if root-app has a ComparisonError (repo unreachable)
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo (placeholder URL?) -- applying cert-manager directly"
+      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying cert-manager directly"
       # Apply the upstream cert-manager manifest first (CRDs + core resources).
       # The ClusterIssuer must be applied separately AFTER CRDs are established,
       # otherwise kubectl rejects the unknown resource kind.

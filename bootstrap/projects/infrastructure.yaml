@@ -11,7 +11,7 @@ metadata:
 spec:
   description: "Infrastructure components -- cluster-scoped resources allowed"
   sourceRepos:
-    - 'https://github.com/OWNER/pincer-ops.git'
+    - 'https://github.com/PatrykQuantumNomad/pincer-ops.git'
     - 'docker.io/envoyproxy'
   destinations:
     - namespace: '*'
