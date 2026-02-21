@@ -1,0 +1,195 @@
+---
+const layers = [
+  {
+    wave: '-10',
+    name: 'ArgoCD',
+    description: 'Self-managing GitOps controller. App of Apps pattern.',
+    color: '#EF7B4D',
+    icon: '&#x21BB;',
+  },
+  {
+    wave: '-5',
+    name: 'MetalLB',
+    description: 'L2 LoadBalancer IP allocation for bare-metal.',
+    color: '#00E5FF',
+    icon: '&#x2316;',
+  },
+  {
+    wave: '-4',
+    name: 'Envoy Gateway',
+    description: 'Gateway API ingress. DaemonSet + hostPort routing.',
+    color: '#AC6199',
+    icon: '&#x2B95;',
+  },
+  {
+    wave: '-3',
+    name: 'Sealed Secrets',
+    description: 'Encrypted secrets in Git. Cluster-side decryption.',
+    color: '#2EA44F',
+    icon: '&#x1F512;',
+  },
+  {
+    wave: '-2',
+    name: 'cert-manager',
+    description: 'TLS certificate automation. Self-signed issuer.',
+    color: '#F5A623',
+    icon: '&#x2713;',
+  },
+  {
+    wave: '+10',
+    name: 'OpenClaw',
+    description: 'AI Gateway. StatefulSet, single replica, PVC-backed.',
+    color: '#FF6B35',
+    icon: '&#x2699;',
+  },
+];
+---
+
+<section id="architecture" class="relative py-32 px-6">
+  <div class="max-w-6xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-20 fade-in">
+      <span class="font-mono text-xs text-neon-cyan tracking-widest uppercase">Architecture</span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
+        Sync wave <span class="text-neon-cyan glow-cyan">orchestration</span>
+      </h2>
+      <p class="text-dim mt-4 max-w-xl mx-auto">
+        Infrastructure deploys before workloads via ArgoCD sync waves.
+        One <code class="font-mono text-xs bg-deep-navy px-2 py-0.5 rounded text-neon-cyan">kubectl apply</code> reconstructs everything.
+      </p>
+    </div>
+
+    <!-- Horizontal pipeline (desktop) -->
+    <div class="hidden md:block fade-in">
+      <div class="relative">
+        <!-- SVG connecting line -->
+        <svg class="absolute top-1/2 left-0 w-full h-1 -translate-y-1/2 overflow-visible" id="arch-line" aria-hidden="true">
+          <line x1="8%" y1="0" x2="92%" y2="0" stroke="url(#arch-gradient)" stroke-width="2" stroke-dasharray="4 4" />
+          <defs>
+            <linearGradient id="arch-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#EF7B4D" />
+              <stop offset="40%" stop-color="#00E5FF" />
+              <stop offset="100%" stop-color="#FF6B35" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <!-- Pipeline nodes -->
+        <div class="relative grid grid-cols-6 gap-3">
+          {layers.map((layer) => (
+            <div class="arch-node flex flex-col items-center text-center">
+              <!-- Node circle -->
+              <div
+                class="w-14 h-14 rounded-xl glass-card flex items-center justify-center text-xl mb-3 border-2 relative z-10"
+                style={`border-color: ${layer.color}; color: ${layer.color}`}
+              >
+                <span set:html={layer.icon} />
+              </div>
+              <!-- Wave badge -->
+              <span class="font-mono text-xs font-bold mb-1" style={`color: ${layer.color}`}>
+                {layer.wave}
+              </span>
+              <!-- Name -->
+              <h3 class="font-mono text-xs font-bold text-light mb-1">
+                {layer.name}
+              </h3>
+              <!-- Description -->
+              <p class="text-dim text-xs leading-relaxed">
+                {layer.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Vertical pipeline (mobile) -->
+    <div class="md:hidden space-y-4">
+      {layers.map((layer) => (
+        <div class="fade-in glass-card p-4 flex items-start gap-4">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 border"
+            style={`border-color: ${layer.color}; color: ${layer.color}; background: ${layer.color}10`}
+          >
+            <span set:html={layer.icon} />
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-mono text-sm font-bold text-light">{layer.name}</h3>
+              <span class="font-mono text-xs px-1.5 py-0.5 rounded" style={`color: ${layer.color}; background: ${layer.color}15`}>
+                {layer.wave}
+              </span>
+            </div>
+            <p class="text-dim text-xs leading-relaxed">{layer.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Desktop: pipeline nodes reveal with scrub
+    const archNodes = document.querySelectorAll('.arch-node');
+    if (archNodes.length > 0) {
+      gsap.fromTo(archNodes,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          stagger: 0.15,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: '#architecture',
+            start: 'top 60%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+
+      // SVG line draw-in
+      const line = document.querySelector('#arch-line line');
+      if (line) {
+        const length = 800;
+        gsap.fromTo(line,
+          { strokeDashoffset: length, strokeDasharray: `${length} ${length}` },
+          {
+            strokeDashoffset: 0,
+            duration: 1.5,
+            ease: 'power2.inOut',
+            scrollTrigger: {
+              trigger: '#architecture',
+              start: 'top 60%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+      }
+    }
+
+    // Mobile: cards fade in
+    document.querySelectorAll('#architecture .fade-in').forEach((el) => {
+      gsap.fromTo(el,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    });
+  }
+</script>

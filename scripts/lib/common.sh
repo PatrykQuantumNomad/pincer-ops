@@ -28,6 +28,30 @@
 # ---------------------------------------------------------------------------
 PINCER_VERSION="1.0.0"
 CLUSTER_NAME="openclaw-dev"
+CANONICAL_REPO_URL="https://github.com/PatrykQuantumNomad/pincer-ops.git"
+
+# ---------------------------------------------------------------------------
+# Git URL helpers
+# ---------------------------------------------------------------------------
+
+# Normalize any git remote URL to HTTPS format ending in .git.
+# Handles SSH shorthand (git@host:user/repo), SSH protocol (ssh://git@...),
+# and plain HTTPS. Appends .git suffix if missing.
+# Args: $1 - git remote URL
+normalize_git_url() {
+  local url="$1"
+  # SSH shorthand: git@github.com:user/repo.git
+  if [[ "${url}" =~ ^git@([^:]+):(.+)$ ]]; then
+    url="https://${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  fi
+  # SSH protocol: ssh://git@github.com/user/repo.git
+  if [[ "${url}" =~ ^ssh://git@([^/]+)/(.+)$ ]]; then
+    url="https://${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  fi
+  # Ensure .git suffix
+  [[ "${url}" != *.git ]] && url="${url}.git"
+  echo "${url}"
+}
 
 # ---------------------------------------------------------------------------
 # Color / output setup

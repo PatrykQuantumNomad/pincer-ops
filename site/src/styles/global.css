@@ -1,0 +1,268 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-void: #0A0E1A;
+  --color-deep-navy: #0F1729;
+  --color-card: #131B2E;
+  --color-neon-cyan: #00E5FF;
+  --color-coral: #FF6B35;
+  --color-terminal-green: #39FF14;
+  --color-muted: #8892A4;
+  --color-light: #F0F4F8;
+  --color-dim: #94A3B8;
+
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-light);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-neon-cyan) 30%, transparent);
+  color: white;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neon-cyan);
+}
+
+/* Glow utilities */
+.glow-cyan {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-neon-cyan) 50%, transparent),
+               0 0 40px color-mix(in srgb, var(--color-neon-cyan) 20%, transparent);
+}
+
+.glow-coral {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-coral) 50%, transparent),
+               0 0 40px color-mix(in srgb, var(--color-coral) 20%, transparent);
+}
+
+.glow-green {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-terminal-green) 50%, transparent),
+               0 0 40px color-mix(in srgb, var(--color-terminal-green) 20%, transparent);
+}
+
+/* Glass card — frosted glass effect */
+.glass-card {
+  background: color-mix(in srgb, var(--color-deep-navy) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-neon-cyan) 12%, transparent);
+  border-radius: 12px;
+}
+
+/* Terminal window styling */
+.terminal-window {
+  background: var(--color-deep-navy);
+  border: 1px solid color-mix(in srgb, var(--color-neon-cyan) 20%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--color-deep-navy) 80%, black);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-neon-cyan) 10%, transparent);
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.terminal-body {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--color-neon-cyan), #7C3AED, var(--color-coral), var(--color-neon-cyan));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Grain texture overlay */
+.grain {
+  position: relative;
+}
+
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+.grain > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Section background variants */
+.bg-section-coral {
+  background: linear-gradient(180deg, var(--color-void) 0%, color-mix(in srgb, var(--color-coral) 4%, var(--color-void)) 50%, var(--color-void) 100%);
+}
+
+.bg-section-deep {
+  background: linear-gradient(180deg, var(--color-void) 0%, var(--color-deep-navy) 50%, var(--color-void) 100%);
+}
+
+.bg-section-green {
+  background: linear-gradient(180deg, var(--color-void) 0%, color-mix(in srgb, var(--color-terminal-green) 3%, var(--color-void)) 50%, var(--color-void) 100%);
+}
+
+/* Accordion */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.accordion-item.open .accordion-content {
+  max-height: 500px;
+}
+
+.accordion-chevron {
+  transition: transform 0.3s ease;
+}
+
+.accordion-item.open .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+/* Step connector line */
+.step-connector {
+  width: 2px;
+  background: linear-gradient(180deg, var(--color-neon-cyan), var(--color-terminal-green));
+}
+
+/* Fade-in base (GSAP sets initial state, this is fallback) */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Typing cursor */
+.typing-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: var(--color-neon-cyan);
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Drift animation for Features sync card */
+@keyframes drift-heal {
+  0%, 10% { background-color: var(--color-terminal-green); box-shadow: 0 0 6px var(--color-terminal-green); }
+  30%, 40% { background-color: #EF4444; box-shadow: 0 0 6px #EF4444; }
+  60%, 100% { background-color: var(--color-terminal-green); box-shadow: 0 0 6px var(--color-terminal-green); }
+}
+
+.drift-dot {
+  animation: drift-heal 4s ease-in-out infinite;
+}
+
+/* Claw machine subtle swing */
+.claw-swing {
+  animation: claw-sway 4s ease-in-out infinite;
+  transform-origin: top center;
+}
+@keyframes claw-sway {
+  0%, 100% { transform: translateX(-50%) rotate(-1.5deg); }
+  50% { transform: translateX(-50%) rotate(1.5deg); }
+}
+
+/* Focus styles */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-neon-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .fade-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gradient-text {
+    -webkit-text-fill-color: var(--color-neon-cyan);
+    animation: none;
+  }
+
+  .drift-dot {
+    background-color: var(--color-terminal-green);
+    box-shadow: 0 0 6px var(--color-terminal-green);
+    animation: none;
+  }
+
+  .claw-swing {
+    animation: none;
+    transform: translateX(-50%) rotate(0deg);
+  }
+}

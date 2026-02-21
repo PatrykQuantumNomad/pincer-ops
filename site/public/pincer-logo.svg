@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <style>
+      .mark { fill: #1a1a1a; }
+    </style>
+  </defs>
+
+  <!--
+    Golden Ratio Proportions (φ = 1.618):
+    ═══════════════════════════════════════
+    Overall bounding box:  262w × 426h  → 1:1.626 ≈ φ
+    Head : Arms split:     163 : 263    → 1:1.613 ≈ φ
+    Hinge block:           90w × 55h    → 1.636:1 ≈ φ
+    Shaft:                 36w × 58h    → 1:1.611 ≈ φ
+    Arm spread : arm len:  262 : 263    → ≈ 1:1 (circle-like U)
+    Widest point at φ split of arm length: y ≈ 372
+  -->
+
+  <!-- Shaft (36 × 58, ratio 1:1.611 ≈ φ) -->
+  <rect class="mark" x="238" y="46" width="36" height="58"/>
+
+  <!-- Collar (accent band) -->
+  <rect class="mark" x="228" y="104" width="56" height="14"/>
+
+  <!-- Connector -->
+  <rect class="mark" x="222" y="118" width="68" height="36" rx="2"/>
+
+  <!-- Hinge block (90 × 55, ratio 1.636 ≈ φ) -->
+  <rect class="mark" x="211" y="154" width="90" height="55" rx="3"/>
+
+  <!-- Hinge pivot -->
+  <circle cx="256" cy="182" r="14" fill="#fff"/>
+  <circle class="mark" cx="256" cy="182" r="5"/>
+
+  <!-- Left arm -->
+  <path class="mark" d="
+    M 211 196
+    C 195 240, 155 310, 135 370
+    C 125 400, 128 435, 150 458
+    C 162 470, 178 472, 196 466
+    L 210 454
+    C 194 458, 180 454, 172 444
+    C 158 428, 155 400, 164 372
+    C 180 318, 215 252, 238 209
+    Z
+  "/>
+
+  <!-- Left tip - subtle inward nub -->
+  <path class="mark" d="
+    M 196 466
+    L 210 454
+    L 226 460
+    L 234 470
+    L 222 476
+    L 204 472
+    Z
+  "/>
+
+  <!-- Right arm -->
+  <path class="mark" d="
+    M 301 196
+    C 317 240, 357 310, 377 370
+    C 387 400, 384 435, 362 458
+    C 350 470, 334 472, 316 466
+    L 302 454
+    C 318 458, 332 454, 340 444
+    C 354 428, 357 400, 348 372
+    C 332 318, 297 252, 274 209
+    Z
+  "/>
+
+  <!-- Right tip - subtle inward nub -->
+  <path class="mark" d="
+    M 316 466
+    L 302 454
+    L 286 460
+    L 278 470
+    L 290 476
+    L 308 472
+    Z
+  "/>
+</svg>

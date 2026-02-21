@@ -102,6 +102,10 @@ port-forward: ## Port-forward to ArgoCD UI (localhost:8080)
 	@echo "ArgoCD UI: https://localhost:8080  (admin / $$(make -s password))"
 	@kubectl port-forward svc/argocd-server -n $(ARGOCD_NS) 8080:443
 
+.PHONY: setup-repo
+setup-repo: ## Configure ArgoCD to sync from your fork
+	@./scripts/setup-repo.sh
+
 .PHONY: setup-mcp
 setup-mcp: ## Generate ArgoCD API token for MCP integration
 	@./scripts/setup-mcp.sh

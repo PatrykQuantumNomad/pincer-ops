@@ -1,0 +1,87 @@
+---
+const links = [
+  {
+    name: 'Documentation',
+    url: 'https://docs.openclaw.ai/',
+    desc: 'Setup guides, API reference, and configuration docs.',
+    icon: '&#x1F4D6;',
+  },
+  {
+    name: 'ClawHub',
+    url: 'https://clawhub.com/',
+    desc: 'Skills marketplace. Browse and install 50+ integrations.',
+    icon: '&#x1F9E9;',
+  },
+  {
+    name: 'Discord',
+    url: 'https://discord.com/invite/clawd',
+    desc: 'Join the community. Get help, share Skills, chat with devs.',
+    icon: '&#x1F4AC;',
+  },
+  {
+    name: 'GitHub',
+    url: 'https://github.com/OpenClaw/OpenClaw',
+    desc: 'Source code, issues, and contributions. MIT licensed.',
+    icon: '&#x2B50;',
+  },
+];
+---
+
+<section id="ecosystem" class="relative py-24 px-6 bg-section-green">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center mb-12 fade-in">
+      <span class="font-mono text-xs text-terminal-green tracking-widest uppercase">Ecosystem</span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
+        The OpenClaw <span class="text-terminal-green glow-green">universe</span>
+      </h2>
+    </div>
+
+    <!-- Minimal row list -->
+    <div class="fade-in">
+      {links.map((link, i) => (
+        <a href={link.url} target="_blank" rel="noopener"
+           class={`flex items-center gap-4 py-5 group no-underline transition-colors hover:bg-neon-cyan/3 -mx-4 px-4 rounded-lg ${
+             i < links.length - 1 ? 'border-b border-neon-cyan/5' : ''
+           }`}>
+          <span class="text-xl shrink-0" set:html={link.icon} />
+          <div class="flex-1 min-w-0">
+            <h3 class="font-mono font-bold text-sm text-light group-hover:text-neon-cyan transition-colors">
+              {link.name}
+            </h3>
+            <p class="text-dim text-xs leading-relaxed mt-0.5">{link.desc}</p>
+          </div>
+          <span class="text-muted group-hover:text-neon-cyan group-hover:translate-x-1 transition-all shrink-0">
+            &#x2197;
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('#ecosystem .fade-in').forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          delay: i * 0.1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    });
+  }
+</script>

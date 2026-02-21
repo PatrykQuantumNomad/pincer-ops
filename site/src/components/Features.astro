@@ -1,0 +1,191 @@
+---
+---
+
+<section id="features" class="relative py-32 px-6 bg-section-deep">
+  <div class="max-w-6xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-16 fade-in">
+      <span class="font-mono text-xs text-coral tracking-widest uppercase">Features</span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
+        Three commands. <span class="text-coral glow-coral">Full stack.</span>
+      </h2>
+    </div>
+
+    <!-- Asymmetric feature grid -->
+    <div class="grid lg:grid-cols-[1.3fr_1fr] gap-6">
+      <!-- Bootstrap — large card with terminal -->
+      <div class="fade-in feature-bootstrap lg:row-span-2">
+        <div class="terminal-window h-full flex flex-col hover:border-neon-cyan/30 transition-all group">
+          <div class="terminal-titlebar">
+            <span class="terminal-dot bg-red-500"></span>
+            <span class="terminal-dot bg-yellow-500"></span>
+            <span class="terminal-dot bg-green-500"></span>
+            <span class="ml-auto font-mono text-xs text-muted">bootstrap.sh</span>
+          </div>
+
+          <div class="p-6 flex-1 flex flex-col">
+            <!-- Command -->
+            <div class="font-mono text-sm mb-4">
+              <span class="text-muted">$ </span>
+              <span class="text-terminal-green font-bold">make up</span>
+            </div>
+
+            <!-- Title -->
+            <h3 class="font-display font-bold text-xl text-light mb-2 group-hover:text-neon-cyan transition-colors">
+              Bootstrap
+            </h3>
+
+            <!-- Description -->
+            <p class="text-dim text-sm leading-relaxed mb-6">
+              Single command creates a KIND cluster, installs ArgoCD, and deploys the entire stack. Fully idempotent, run it again and nothing changes.
+            </p>
+
+            <!-- Mock terminal output -->
+            <div class="mt-auto font-mono text-xs space-y-1 text-dim bg-void/40 rounded-lg p-4">
+              <div><span class="text-muted">1/4</span> Creating KIND cluster (1 CP + 2 workers)...</div>
+              <div><span class="text-muted">2/4</span> Installing ArgoCD + App of Apps...</div>
+              <div><span class="text-muted">3/4</span> MetalLB + Envoy Gateway networking...</div>
+              <div><span class="text-muted">4/4</span> Sealed Secrets + cert-manager...</div>
+              <div class="text-terminal-green mt-2">&#x2713; Cluster ready. All apps Synced.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync — glass card with drift indicator -->
+      <div class="fade-in feature-sync">
+        <div class="glass-card p-6 h-full hover:border-neon-cyan/30 transition-all group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="font-mono text-sm">
+              <span class="text-muted">$ </span>
+              <span class="text-terminal-green font-bold">make status</span>
+            </div>
+          </div>
+
+          <h3 class="font-display font-bold text-xl text-light mb-2 group-hover:text-neon-cyan transition-colors">
+            Sync
+          </h3>
+
+          <p class="text-dim text-sm leading-relaxed mb-4">
+            ArgoCD watches main branch and auto-syncs. Drift is detected and self-healed. All state is declarative.
+          </p>
+
+          <!-- Drift → heal indicator -->
+          <div class="flex items-center gap-3 font-mono text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full drift-dot"></span>
+              <span class="text-dim">Drift detection</span>
+            </div>
+            <span class="text-muted">&#x2192;</span>
+            <span class="text-terminal-green">Self-heal</span>
+          </div>
+
+          <ul class="mt-4 space-y-1.5">
+            <li class="flex items-start gap-2 text-xs text-dim">
+              <span class="text-neon-cyan mt-0.5 shrink-0">&#x25B8;</span>
+              Sync wave ordering (-10 to +10)
+            </li>
+            <li class="flex items-start gap-2 text-xs text-dim">
+              <span class="text-neon-cyan mt-0.5 shrink-0">&#x25B8;</span>
+              ServerSideApply for CRD-heavy apps
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Operate — glass card with dashboard metrics -->
+      <div class="fade-in feature-operate">
+        <div class="glass-card p-6 h-full hover:border-neon-cyan/30 transition-all group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="font-mono text-sm">
+              <span class="text-muted">$ </span>
+              <span class="text-terminal-green font-bold">make logs</span>
+            </div>
+          </div>
+
+          <h3 class="font-display font-bold text-xl text-light mb-2 group-hover:text-neon-cyan transition-colors">
+            Operate
+          </h3>
+
+          <p class="text-dim text-sm leading-relaxed mb-4">
+            Production-grade operational primitives. NetworkPolicies, daily backups, pre-commit hooks.
+          </p>
+
+          <!-- Dashboard metrics -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="text-center">
+              <div class="font-mono text-2xl font-bold text-neon-cyan">73</div>
+              <div class="font-mono text-xs text-muted">tests</div>
+            </div>
+            <div class="text-center">
+              <div class="font-mono text-2xl font-bold text-terminal-green">0</div>
+              <div class="font-mono text-xs text-muted">leaks</div>
+            </div>
+            <div class="text-center">
+              <div class="font-mono text-2xl font-bold text-coral">24h</div>
+              <div class="font-mono text-xs text-muted">backups</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Bootstrap slides from left
+    gsap.fromTo('.feature-bootstrap',
+      { opacity: 0, x: -40 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.7,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: '#features',
+          start: 'top 70%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+
+    // Sync and Operate slide from right
+    gsap.fromTo('.feature-sync',
+      { opacity: 0, x: 30 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.6,
+        delay: 0.15,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: '#features',
+          start: 'top 70%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+
+    gsap.fromTo('.feature-operate',
+      { opacity: 0, x: 30 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.6,
+        delay: 0.3,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: '#features',
+          start: 'top 70%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
+</script>

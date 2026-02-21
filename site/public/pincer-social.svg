@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <rect width="30" height="30" fill="none"/>
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#151518" stroke-width="0.5"/>
+    </pattern>
+    <bx:export>
+      <bx:file format="png" href="#object-1"/>
+      <bx:file format="png" href="#object-0" path="Untitled 2.png"/>
+      <bx:file format="png" href="#object-2" path="Untitled 3.png"/>
+      <bx:file format="png" href="#object-3" path="Untitled 4.png"/>
+      <bx:file format="png" href="#object-4" path="Untitled 5.png"/>
+      <bx:file format="png" href="#object-5" path="Untitled 6.png"/>
+      <bx:file format="png" path="pincer-git.png"/>
+    </bx:export>
+  </defs>
+  <rect width="1280" height="640" fill="#0c0c0f" id="object-1"/>
+  <rect width="1280" height="640" fill="url(#grid)" id="object-0"/>
+  <g transform="matrix(0.48, 0, 0, 0.48, 517.119995, 129.315643)" id="object-2">
+    <rect x="238" y="46" width="36" height="58" fill="#e5e5e5"/>
+    <rect x="228" y="104" width="56" height="14" fill="#e5e5e5"/>
+    <rect x="222" y="118" width="68" height="36" rx="2" fill="#e5e5e5"/>
+    <rect x="211" y="154" width="90" height="55" rx="3" fill="#e5e5e5"/>
+    <circle cx="256" cy="182" r="14" fill="#0c0c0f"/>
+    <circle cx="256" cy="182" r="5" fill="#e5e5e5"/>
+    <path d="M 211 196 C 195 240, 155 310, 135 370 C 125 400, 128 435, 150 458 C 162 470, 178 472, 196 466 L 210 454 C 194 458, 180 454, 172 444 C 158 428, 155 400, 164 372 C 180 318, 215 252, 238 209 Z" fill="#e5e5e5"/>
+    <path d="M 196 466 L 210 454 L 226 460 L 234 470 L 222 476 L 204 472 Z" fill="#e5e5e5"/>
+    <path d="M 301 196 C 317 240, 357 310, 377 370 C 387 400, 384 435, 362 458 C 350 470, 334 472, 316 466 L 302 454 C 318 458, 332 454, 340 444 C 354 428, 357 400, 348 372 C 332 318, 297 252, 274 209 Z" fill="#e5e5e5"/>
+    <path d="M 316 466 L 302 454 L 286 460 L 278 470 L 290 476 L 308 472 Z" fill="#e5e5e5"/>
+  </g>
+  <text x="640" y="357" font-family="serif" font-size="22" text-anchor="middle" opacity="0.5" style="white-space: pre; font-size: 22px;" id="object-3">🦞</text>
+  <text x="640" y="424" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="800" font-size="64" fill="#e5e5e5" text-anchor="middle" letter-spacing="10" style="white-space: pre; font-size: 64px;" id="object-4">PINCER</text>
+  <text x="640" y="491" font-family="JetBrains Mono, monospace" font-size="18" fill="#777" text-anchor="middle" style="white-space: pre;" id="object-5">GitOps-driven Kubernetes platform for OpenClaw</text>
+</svg>

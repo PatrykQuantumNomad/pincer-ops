@@ -70,6 +70,20 @@ preflight_checks || exit 1
 
 SECONDS=0
 
+# Step 0: Check repository URL configuration
+log_step "Checking repository configuration..."
+ORIGIN_URL=$(git -C "${SCRIPT_DIR}/.." remote get-url origin 2>/dev/null || echo "")
+if [ -n "${ORIGIN_URL}" ]; then
+  NORMALIZED_URL=$(normalize_git_url "${ORIGIN_URL}")
+  if [ "${NORMALIZED_URL}" != "${CANONICAL_REPO_URL}" ]; then
+    if grep -q "${CANONICAL_REPO_URL}" "${BOOTSTRAP_DIR}/root-app.yaml" 2>/dev/null; then
+      log_warn "Git remote: ${NORMALIZED_URL}"
+      log_warn "ArgoCD manifests still point to: ${CANONICAL_REPO_URL}"
+      log_warn "Run 'make setup-repo' to update. Continuing with local fallback..."
+    fi
+  fi
+fi
+
 # Step 1: Create cluster (idempotent)
 if [ "${CLUSTER_EXISTS}" = true ]; then
   log_info "Cluster '${CLUSTER_NAME}' already exists, skipping creation"

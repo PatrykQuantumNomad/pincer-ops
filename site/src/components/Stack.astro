@@ -1,0 +1,188 @@
+---
+const tools = [
+  {
+    name: 'ArgoCD',
+    role: 'GitOps Controller',
+    desc: 'Watches the Git repo and auto-syncs to the cluster. App of Apps pattern, one root Application that discovers everything. Self-heals drift automatically.',
+    breaks: 'Manual kubectl apply for every change. No drift detection. No sync wave ordering.',
+    color: '#EF7B4D',
+    icon: '&#x21BB;',
+  },
+  {
+    name: 'MetalLB',
+    role: 'Bare-Metal Load Balancer',
+    desc: 'Allocates virtual IPs for LoadBalancer Services via L2 ARP announcements. Cloud providers handle this automatically, KIND has no cloud, so MetalLB fills the gap.',
+    breaks: 'Envoy Gateway\'s Service stays Pending forever. No ingress IP allocated.',
+    color: '#00E5FF',
+    icon: '&#x2316;',
+  },
+  {
+    name: 'Envoy Gateway',
+    role: 'Ingress & Reverse Proxy',
+    desc: 'Implements the Gateway API. Runs as a DaemonSet with hostPort on the control-plane node. Routes localhost:80 traffic through an HTTPRoute to OpenClaw.',
+    breaks: 'OpenClaw runs but is unreachable from your browser. No path from host to pod.',
+    color: '#AC6199',
+    icon: '&#x2B95;',
+  },
+  {
+    name: 'Sealed Secrets',
+    role: 'Encrypted Secrets in Git',
+    desc: 'Encrypts Kubernetes Secrets with a public key so they can be committed safely. Only the in-cluster controller has the private key. Daily key backup to ~/.pincer/.',
+    breaks: 'Can\'t store secrets in Git, violates the "everything in Git" principle.',
+    color: '#2EA44F',
+    icon: '&#x1F512;',
+  },
+  {
+    name: 'cert-manager',
+    role: 'TLS Certificate Automation',
+    desc: 'Automates certificate issuance and renewal. Self-signed ClusterIssuer for dev environments. Infrastructure-ready for HTTPS when you need it.',
+    breaks: 'No automated TLS. Future HTTPS listeners require manual certificate management.',
+    color: '#F5A623',
+    icon: '&#x2713;',
+  },
+  {
+    name: 'OpenClaw',
+    role: 'The Workload',
+    desc: 'AI assistant gateway. Single-instance StatefulSet, PVC-backed. Connects to 14+ messaging platforms. The application everything else exists to serve.',
+    breaks: 'There\'s nothing to deploy. This is the whole point of the platform.',
+    color: '#FF6B35',
+    icon: '&#x2699;',
+  },
+];
+
+const flowSteps = [
+  'localhost:80',
+  'KIND port map',
+  'Envoy Gateway',
+  'HTTPRoute',
+  'OpenClaw :18789',
+];
+---
+
+<section id="stack" class="relative py-32 px-6">
+  <div class="max-w-4xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-16 fade-in">
+      <span class="font-mono text-xs text-neon-cyan tracking-widest uppercase">The Stack</span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
+        Why each tool <span class="text-neon-cyan glow-cyan">exists</span>
+      </h2>
+      <p class="text-dim mt-4 max-w-xl mx-auto">
+        Every component in the cluster serves a specific purpose.
+        Remove one and something breaks.
+      </p>
+    </div>
+
+    <!-- Accordion -->
+    <div class="glass-card overflow-hidden fade-in" id="stack-accordion">
+      {tools.map((tool, i) => (
+        <div class={`accordion-item border-b border-neon-cyan/5 last:border-b-0 ${i === 0 ? 'open' : ''}`} data-accordion>
+          <!-- Accordion header -->
+          <button
+            class="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neon-cyan/3 transition-colors"
+            data-accordion-trigger
+          >
+            <!-- Brand color bar -->
+            <div class="w-1 h-8 rounded-full shrink-0" style={`background: ${tool.color}`}></div>
+            <!-- Icon -->
+            <span class="text-lg shrink-0" style={`color: ${tool.color}`} set:html={tool.icon} />
+            <!-- Name + role -->
+            <div class="flex-1 min-w-0">
+              <span class="font-mono font-bold text-sm text-light">{tool.name}</span>
+              <span class="font-mono text-xs text-muted ml-2 hidden sm:inline">{tool.role}</span>
+            </div>
+            <!-- Chevron -->
+            <svg class="w-4 h-4 text-muted accordion-chevron shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Accordion content -->
+          <div class="accordion-content">
+            <div class="px-5 pb-5 pl-16">
+              <p class="text-dim text-sm leading-relaxed mb-3">
+                {tool.desc}
+              </p>
+              <div class="flex items-start gap-2 font-mono text-xs">
+                <span class="text-coral shrink-0">&#x2717;</span>
+                <span class="text-muted">Without it: <span class="text-dim">{tool.breaks}</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Traffic flow diagram -->
+    <div class="fade-in mt-16">
+      <div class="text-center mb-6">
+        <span class="font-mono text-xs text-muted tracking-widest uppercase">Request path</span>
+      </div>
+      <div class="glass-card p-6 max-w-4xl mx-auto">
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-0">
+          {flowSteps.map((step, i) => (
+            <>
+              <span class={`font-mono text-xs sm:text-sm px-3 py-1.5 rounded ${
+                i === 0 ? 'bg-neon-cyan/10 text-neon-cyan' :
+                i === flowSteps.length - 1 ? 'bg-terminal-green/10 text-terminal-green' :
+                'bg-deep-navy text-dim'
+              }`}>
+                {step}
+              </span>
+              {i < flowSteps.length - 1 && (
+                <span class="text-muted font-mono text-xs hidden sm:inline mx-1">&#x2192;</span>
+              )}
+            </>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Accordion behavior
+  document.querySelectorAll('[data-accordion-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const item = trigger.closest('[data-accordion]')!;
+      const accordion = item.closest('#stack-accordion')!;
+      const isOpen = item.classList.contains('open');
+
+      // Close all
+      accordion.querySelectorAll('.accordion-item').forEach((el) => {
+        el.classList.remove('open');
+      });
+
+      // Toggle clicked (if it was closed)
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    });
+  });
+
+  // GSAP scroll animations
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('#stack .fade-in').forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          delay: i * 0.1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    });
+  }
+</script>

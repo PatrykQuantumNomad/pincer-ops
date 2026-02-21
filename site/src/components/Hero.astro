@@ -1,0 +1,309 @@
+---
+---
+
+<section class="relative min-h-screen flex items-center px-6 pt-14 grain">
+  <div class="max-w-6xl mx-auto w-full grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 items-center">
+    <!-- Left: Text content -->
+    <div class="text-center lg:text-left">
+      <!-- Claw machine scene: pincer lifting K8s from a pool of tech toys -->
+      <div class="mb-8 opacity-0 flex justify-center lg:justify-start" id="hero-logo" aria-hidden="true">
+        <div class="relative w-80 h-72 sm:w-[420px] sm:h-80 lg:w-[480px] lg:h-[340px]">
+          <!-- Machine frame: glass walls -->
+          <div class="absolute inset-x-0 top-0 bottom-8 border border-neon-cyan/10 rounded-xl bg-gradient-to-b from-neon-cyan/[0.03] to-transparent"></div>
+          <!-- Top rail -->
+          <div class="absolute top-0 inset-x-0 h-2 rounded-t-xl bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent"></div>
+
+          <!-- Cable + claw + K8s prize (SVG) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="absolute top-2 left-1/2 -translate-x-1/2 w-44 h-44 sm:w-52 sm:h-52 lg:w-56 lg:h-56 claw-swing">
+            <defs>
+              <filter id="prize-glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+            </defs>
+            <!-- Cable -->
+            <line x1="100" y1="0" x2="100" y2="45" stroke="#5a6680" stroke-width="2" stroke-dasharray="5 3"/>
+            <!-- Claw housing -->
+            <rect x="85" y="42" width="30" height="12" rx="3" fill="#2a3550" stroke="#00E5FF" stroke-opacity="0.15"/>
+            <!-- Claw eye -->
+            <circle cx="100" cy="48" r="3" fill="#00E5FF" opacity="0.6"/>
+            <!-- Left arm -->
+            <path d="M 90 54 C 82 72, 68 95, 65 110 C 63 118, 67 123, 75 121 L 80 118" fill="none" stroke="#8892A4" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Right arm -->
+            <path d="M 110 54 C 118 72, 132 95, 135 110 C 137 118, 133 123, 125 121 L 120 118" fill="none" stroke="#8892A4" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- K8s logo being gripped -->
+            <image href="/k8s.svg" x="68" y="100" width="64" height="64" filter="url(#prize-glow)"/>
+          </svg>
+
+          <!-- Pool of toys at bottom -->
+          <div class="absolute bottom-8 inset-x-3 h-24 sm:h-28 lg:h-32 rounded-b-lg border-t border-neon-cyan/8 bg-gradient-to-t from-neon-cyan/[0.04] to-transparent overflow-hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+              <!-- Row 1: main icons spread across -->
+              <!-- Docker -->
+              <g transform="translate(15, 15) scale(0.9)" opacity="0.6">
+                <rect x="0" y="10" width="32" height="20" rx="3" fill="#2496ED"/>
+                <rect x="3" y="0" width="6" height="9" rx="1" fill="#2496ED"/>
+                <rect x="10" y="0" width="6" height="9" rx="1" fill="#2496ED"/>
+                <rect x="17" y="0" width="6" height="9" rx="1" fill="#2496ED"/>
+                <rect x="24" y="4" width="6" height="5" rx="1" fill="#2496ED"/>
+              </g>
+              <!-- Helm -->
+              <g transform="translate(65, 18)" opacity="0.55">
+                <circle cx="14" cy="14" r="12" fill="none" stroke="#0F1689" stroke-width="2.5"/>
+                <circle cx="14" cy="14" r="4" fill="#0F1689"/>
+                <line x1="14" y1="2" x2="14" y2="7" stroke="#0F1689" stroke-width="2"/>
+                <line x1="14" y1="21" x2="14" y2="26" stroke="#0F1689" stroke-width="2"/>
+                <line x1="2" y1="14" x2="7" y2="14" stroke="#0F1689" stroke-width="2"/>
+                <line x1="21" y1="14" x2="26" y2="14" stroke="#0F1689" stroke-width="2"/>
+              </g>
+              <!-- ArgoCD -->
+              <g transform="translate(115, 20)" opacity="0.55">
+                <circle cx="12" cy="12" r="11" fill="none" stroke="#EF7B4D" stroke-width="2"/>
+                <path d="M 6 16 L 12 4 L 18 16 Z" fill="#EF7B4D" opacity="0.7"/>
+              </g>
+              <!-- Terraform -->
+              <g transform="translate(158, 16)" opacity="0.5">
+                <rect x="0" y="8" width="11" height="11" fill="#7B42BC"/>
+                <rect x="13" y="0" width="11" height="11" fill="#7B42BC"/>
+                <rect x="13" y="14" width="11" height="11" fill="#7B42BC"/>
+              </g>
+              <!-- Prometheus -->
+              <g transform="translate(205, 20)" opacity="0.5">
+                <circle cx="10" cy="10" r="10" fill="none" stroke="#E6522C" stroke-width="2"/>
+                <circle cx="10" cy="10" r="4" fill="#E6522C"/>
+              </g>
+              <!-- Grafana -->
+              <g transform="translate(245, 18)" opacity="0.5">
+                <circle cx="12" cy="12" r="11" fill="none" stroke="#F46800" stroke-width="2"/>
+                <circle cx="12" cy="12" r="6" fill="none" stroke="#F46800" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="2" fill="#F46800"/>
+              </g>
+              <!-- Istio -->
+              <g transform="translate(288, 16)" opacity="0.5">
+                <path d="M 10 0 L 20 28 L 0 28 Z" fill="#466BB0" opacity="0.7"/>
+                <rect x="6" y="10" width="8" height="3" fill="#466BB0" opacity="0.5"/>
+                <rect x="6" y="16" width="8" height="3" fill="#466BB0" opacity="0.5"/>
+              </g>
+              <!-- Vault -->
+              <g transform="translate(325, 18)" opacity="0.5">
+                <path d="M 12 0 L 24 14 L 12 28 L 0 14 Z" fill="none" stroke="#FFD814" stroke-width="2"/>
+                <path d="M 12 7 L 17 14 L 12 21 L 7 14 Z" fill="#FFD814" opacity="0.5"/>
+              </g>
+              <!-- Flux -->
+              <g transform="translate(362, 22)" opacity="0.45">
+                <circle cx="10" cy="10" r="9" fill="none" stroke="#5468FF" stroke-width="2"/>
+                <path d="M 6 10 Q 10 4, 14 10 Q 10 16, 6 10" fill="#5468FF" opacity="0.6"/>
+              </g>
+
+              <!-- Row 2: smaller scattered items -->
+              <!-- Nginx -->
+              <g transform="translate(30, 60)" opacity="0.4">
+                <rect x="0" y="0" width="22" height="18" rx="2" fill="#009639"/>
+                <text x="11" y="13" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold" font-family="monospace">N</text>
+              </g>
+              <!-- etcd -->
+              <g transform="translate(75, 65)" opacity="0.38">
+                <circle cx="8" cy="8" r="8" fill="#419EDA"/>
+                <circle cx="8" cy="8" r="3.5" fill="#0A0E1A"/>
+              </g>
+              <!-- CoreDNS -->
+              <g transform="translate(115, 62)" opacity="0.4">
+                <rect x="0" y="2" width="20" height="14" rx="3" fill="#253B60"/>
+                <circle cx="10" cy="9" r="4" fill="none" stroke="#7CBCF7" stroke-width="1.5"/>
+              </g>
+              <!-- Cilium bee -->
+              <g transform="translate(160, 60)" opacity="0.4">
+                <ellipse cx="10" cy="10" rx="10" ry="8" fill="#F6D04D"/>
+                <line x1="3" y1="7" x2="17" y2="7" stroke="#1A1A2E" stroke-width="1"/>
+                <line x1="3" y1="10" x2="17" y2="10" stroke="#1A1A2E" stroke-width="1"/>
+                <line x1="4" y1="13" x2="16" y2="13" stroke="#1A1A2E" stroke-width="1"/>
+              </g>
+              <!-- Calico -->
+              <g transform="translate(202, 62)" opacity="0.38">
+                <rect x="0" y="0" width="18" height="16" rx="2" fill="#FF6C37"/>
+                <path d="M 3 4 L 9 4 L 9 12 L 3 12 Z" fill="#0A0E1A" opacity="0.3"/>
+              </g>
+              <!-- Kustomize -->
+              <g transform="translate(242, 62)" opacity="0.4">
+                <rect x="0" y="0" width="16" height="16" rx="2" fill="#3178C6"/>
+                <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold" font-family="monospace">K</text>
+              </g>
+              <!-- cert-manager lock -->
+              <g transform="translate(280, 60)" opacity="0.4">
+                <rect x="2" y="8" width="14" height="10" rx="2" fill="#326CE5"/>
+                <path d="M 5 8 V 5 C 5 2, 13 2, 13 5 V 8" fill="none" stroke="#326CE5" stroke-width="1.5"/>
+              </g>
+              <!-- MetalLB -->
+              <g transform="translate(318, 64)" opacity="0.38">
+                <rect x="0" y="0" width="20" height="14" rx="2" fill="none" stroke="#C0C0C0" stroke-width="1.5"/>
+                <text x="10" y="11" text-anchor="middle" fill="#C0C0C0" font-size="7" font-weight="bold" font-family="monospace">LB</text>
+              </g>
+              <!-- Envoy -->
+              <g transform="translate(358, 62)" opacity="0.4">
+                <path d="M 10 0 L 20 6 L 20 18 L 10 24 L 0 18 L 0 6 Z" fill="none" stroke="#AC6199" stroke-width="1.5"/>
+                <circle cx="10" cy="12" r="3" fill="#AC6199" opacity="0.6"/>
+              </g>
+
+              <!-- Scattered small blocks for depth -->
+              <rect x="50" y="88" width="14" height="9" rx="2" fill="#39FF14" opacity="0.2"/>
+              <rect x="140" y="90" width="12" height="8" rx="2" fill="#00E5FF" opacity="0.18"/>
+              <rect x="250" y="88" width="14" height="9" rx="2" fill="#FF6B35" opacity="0.18"/>
+              <rect x="340" y="90" width="12" height="8" rx="2" fill="#7B42BC" opacity="0.18"/>
+            </svg>
+          </div>
+
+          <!-- Base plate -->
+          <div class="absolute bottom-0 inset-x-0 h-8 rounded-b-xl bg-gradient-to-t from-[#0d1424] to-transparent border-b border-x border-neon-cyan/8"></div>
+        </div>
+      </div>
+
+      <!-- Tagline -->
+      <h1 class="font-display font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 opacity-0" id="hero-title">
+        <span class="text-light">Grip your</span>
+        <span class="text-neon-cyan glow-cyan"> cluster</span>
+      </h1>
+
+      <p class="font-sans text-dim text-lg sm:text-xl max-w-2xl mx-auto lg:mx-0 mb-8 opacity-0" id="hero-subtitle">
+        GitOps-driven Kubernetes platform for deploying
+        <span class="text-coral font-medium"><a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a></span>
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start opacity-0" id="hero-ctas">
+        <a
+          href="#quickstart"
+          class="px-8 py-3 rounded-lg bg-neon-cyan text-void font-mono font-bold text-sm hover:shadow-[0_0_30px_rgba(0,229,255,0.3)] transition-all hover:-translate-y-0.5"
+        >
+          Get Started
+        </a>
+        <a
+          href="https://github.com/PatrykQuantumNomad/pincer-ops"
+          target="_blank"
+          rel="noopener"
+          class="px-8 py-3 rounded-lg border border-neon-cyan/30 text-neon-cyan font-mono font-bold text-sm hover:bg-neon-cyan/10 transition-all hover:-translate-y-0.5"
+        >
+          View Source
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: Terminal typing animation -->
+    <div class="opacity-0 lg:rotate-1 lg:hover:rotate-0 transition-transform duration-500" id="hero-terminal">
+      <div class="terminal-window w-full max-w-xl mx-auto lg:mx-0">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot bg-red-500"></span>
+          <span class="terminal-dot bg-yellow-500"></span>
+          <span class="terminal-dot bg-green-500"></span>
+          <span class="ml-3 font-mono text-xs text-muted">~/pincer-ops</span>
+        </div>
+        <div class="terminal-body text-terminal-green min-h-[120px]">
+          <div id="typing-target"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-0 animate-bounce" id="scroll-hint">
+    <span class="font-mono text-xs text-muted">scroll</span>
+    <svg class="w-5 h-5 text-neon-cyan/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+    </svg>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    document.querySelectorAll('#hero-logo, #hero-title, #hero-subtitle, #hero-terminal, #hero-ctas, #scroll-hint')
+      .forEach(el => (el as HTMLElement).style.opacity = '1');
+  } else {
+    const tl = gsap.timeline({ delay: 0.3 });
+
+    tl.to('#hero-logo', { opacity: 1, x: 0, duration: 0.7, ease: 'power2.out' })
+      .fromTo('#hero-title', { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3')
+      .fromTo('#hero-subtitle', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3')
+      .fromTo('#hero-ctas', { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, '-=0.2')
+      .fromTo('#hero-terminal', { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.7, ease: 'power2.out' }, '-=0.6')
+      .to('#scroll-hint', { opacity: 1, duration: 0.6 }, '-=0.2');
+  }
+
+  // Typing animation
+  const commands = [
+    { prompt: '$ ', text: 'make up', delay: 800 },
+    { prompt: '', text: '\n  Creating KIND cluster... done', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  Installing ArgoCD... done', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  Bootstrapping apps... done', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  Cluster ready!\n\n', delay: 600, isOutput: true },
+    { prompt: '$ ', text: 'make status', delay: 500 },
+    { prompt: '', text: '\n  argocd-self          Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  infra-metallb        Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  infra-envoy-gateway  Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  workload-openclaw    Synced  Healthy  ← AI Gateway', delay: 100, isOutput: true },
+  ];
+
+  async function typeCommands() {
+    const target = document.getElementById('typing-target')!;
+    await new Promise(r => setTimeout(r, prefersReducedMotion ? 500 : 2000));
+
+    if (prefersReducedMotion) {
+      let html = '';
+      for (const cmd of commands) {
+        if (cmd.prompt) html += `<span class="text-muted">${cmd.prompt}</span>`;
+        if (cmd.isOutput) {
+          let text = cmd.text
+            .replace(/done/g, '<span class="text-terminal-green">done</span>')
+            .replace(/Healthy/g, '<span class="text-terminal-green">Healthy</span>')
+            .replace(/Synced/g, '<span class="text-neon-cyan">Synced</span>')
+            .replace(/ready!/g, '<span class="text-terminal-green">ready!</span>');
+          html += `<span class="text-dim">${text}</span>`;
+        } else {
+          html += `<span class="text-terminal-green font-bold">${cmd.text}</span>`;
+        }
+      }
+      target.innerHTML = html;
+      return;
+    }
+
+    for (const cmd of commands) {
+      if (cmd.prompt) {
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 'text-muted';
+        promptSpan.textContent = cmd.prompt;
+        target.appendChild(promptSpan);
+      }
+
+      if (cmd.isOutput) {
+        await new Promise(r => setTimeout(r, cmd.delay));
+        const span = document.createElement('span');
+        span.className = 'text-dim';
+        let html = cmd.text
+          .replace(/done/g, '<span class="text-terminal-green">done</span>')
+          .replace(/Healthy/g, '<span class="text-terminal-green">Healthy</span>')
+          .replace(/Synced/g, '<span class="text-neon-cyan">Synced</span>')
+          .replace(/ready!/g, '<span class="text-terminal-green">ready!</span>');
+        span.innerHTML = html;
+        target.appendChild(span);
+      } else {
+        const span = document.createElement('span');
+        span.className = 'text-terminal-green font-bold';
+        target.appendChild(span);
+
+        for (const char of cmd.text) {
+          await new Promise(r => setTimeout(r, 50 + Math.random() * 40));
+          span.textContent += char;
+        }
+        await new Promise(r => setTimeout(r, cmd.delay));
+      }
+    }
+
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    target.appendChild(cursor);
+  }
+
+  typeCommands();
+</script>

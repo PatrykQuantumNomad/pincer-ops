@@ -1,0 +1,173 @@
+---
+const steps = [
+  {
+    step: '01',
+    label: 'Fork & clone',
+    commands: [
+      '# Fork on GitHub first, then:',
+      'git clone https://github.com/<you>/pincer-ops.git',
+      'cd pincer-ops',
+      'make setup-repo',
+    ],
+    note: 'Configures ArgoCD to sync from your fork (or skip for a quick try)',
+  },
+  {
+    step: '02',
+    label: 'Bootstrap the cluster',
+    commands: ['make up'],
+    note: 'Creates KIND cluster + deploys full stack (~3 min)',
+  },
+  {
+    step: '03',
+    label: 'Check status',
+    commands: ['make status'],
+    note: 'All apps should show Synced / Healthy',
+  },
+  {
+    step: '04',
+    label: 'Access OpenClaw',
+    commands: [
+      'make openclaw-onboard',
+      '# Open http://localhost in your browser',
+    ],
+    note: 'Configure your AI agent runtime via the web UI',
+  },
+];
+
+const prereqs = [
+  { name: 'Docker', url: 'https://docs.docker.com/get-docker/' },
+  { name: 'kubectl', url: 'https://kubernetes.io/docs/tasks/tools/' },
+  { name: 'KIND', url: 'https://kind.sigs.k8s.io/docs/user/quick-start/#installation' },
+  { name: 'ArgoCD CLI', url: 'https://argo-cd.readthedocs.io/en/stable/cli_installation/' },
+];
+---
+
+<section id="quickstart" class="relative py-32 px-6 bg-section-deep grain">
+  <div class="max-w-4xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-16 fade-in">
+      <span class="font-mono text-xs text-terminal-green tracking-widest uppercase">Quick Start</span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
+        Running in <span class="text-terminal-green glow-green">minutes</span>
+      </h2>
+      <p class="text-dim mt-4 max-w-lg mx-auto text-sm">
+        Prerequisites:
+        {prereqs.map((p, i) => (
+          <span>
+            <a href={p.url} target="_blank" rel="noopener" class="text-neon-cyan hover:underline">{p.name}</a>{i < prereqs.length - 1 ? ', ' : ''}
+          </span>
+        ))}
+      </p>
+    </div>
+
+    <!-- Steps with connecting line -->
+    <div class="relative">
+      <!-- Connecting line (desktop) -->
+      <div class="hidden sm:block absolute left-5 top-5 bottom-5 step-connector" aria-hidden="true"></div>
+
+      <div class="space-y-8">
+        {steps.map((step, i) => (
+          <div class={`fade-in flex gap-6 sm:gap-8 ${i % 2 === 0 ? '' : ''}`}>
+            <!-- Step circle -->
+            <div class="relative shrink-0">
+              <div class="w-10 h-10 rounded-full border-2 border-neon-cyan bg-void flex items-center justify-center font-mono text-xs font-bold text-neon-cyan relative z-10">
+                {step.step}
+              </div>
+            </div>
+
+            <!-- Step content -->
+            <div class="flex-1 min-w-0 pb-2">
+              <span class="font-mono text-sm text-light font-bold mb-3 block">{step.label}</span>
+
+              <div class="terminal-window">
+                <div class="terminal-titlebar">
+                  <span class="terminal-dot bg-red-500"></span>
+                  <span class="terminal-dot bg-yellow-500"></span>
+                  <span class="terminal-dot bg-green-500"></span>
+                  <span class="ml-3 font-mono text-xs text-muted">terminal</span>
+
+                  <!-- Copy button -->
+                  <button
+                    class="copy-btn ml-auto font-mono text-xs text-muted hover:text-neon-cyan transition-colors"
+                    data-commands={step.commands.filter(c => !c.startsWith('#')).join('\n')}
+                  >
+                    copy
+                  </button>
+                </div>
+                <div class="terminal-body">
+                  {step.commands.map((cmd) => (
+                    <div class="mb-1">
+                      {cmd.startsWith('#') ? (
+                        <span class="text-muted">{cmd}</span>
+                      ) : (
+                        <>
+                          <span class="text-muted">$ </span>
+                          <span class="text-terminal-green">{cmd}</span>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {step.note && (
+                <p class="font-mono text-xs text-muted mt-2 ml-1">
+                  &#x25B8; {step.note}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Fallback note -->
+    <p class="text-center text-muted text-xs font-mono mt-10 max-w-lg mx-auto fade-in">
+      Cloning without forking? <span class="text-dim">make up</span> still works &mdash; bootstrap
+      falls back to local apply when ArgoCD can't reach the remote.
+    </p>
+  </div>
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Animate steps
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('#quickstart .fade-in').forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity: 0, x: i % 2 === 0 ? -20 : 20 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.6,
+          delay: i * 0.1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    });
+  }
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const commands = (btn as HTMLButtonElement).dataset.commands || '';
+      await navigator.clipboard.writeText(commands);
+      const original = btn.textContent;
+      btn.textContent = 'copied!';
+      btn.classList.add('text-terminal-green');
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove('text-terminal-green');
+      }, 2000);
+    });
+  });
+</script>
