@@ -1,8 +1,30 @@
-# sealed-secrets.sh -- Sealing key backup/restore helper library for Pincer Ops.
-# Provides: backup, restore, and controller restart functions for Sealed Secrets.
-# Source this file; do not execute directly.
+# =============================================================================
+# scripts/lib/sealed-secrets.sh - Sealing key backup/restore helpers
+# =============================================================================
 #
-# Requires: common.sh must be sourced first (provides log_info, log_step, log_warn, run_cmd).
+# Provides backup, restore, and controller-restart functions for Bitnami
+# Sealed Secrets sealing keys. Used during cluster bootstrap to persist
+# sealing keys across cluster re-creations so that existing SealedSecrets
+# remain decryptable.
+#
+# Usage:
+#   source "${SCRIPT_DIR}/lib/common.sh"          # must be sourced first
+#   source "${SCRIPT_DIR}/lib/sealed-secrets.sh"
+#
+# Exports:
+#   Variables - SEALED_SECRETS_BACKUP_DIR, SEALED_SECRETS_BACKUP_FILE,
+#               SEALED_SECRETS_NAMESPACE
+#   Functions - backup_sealing_key, restore_sealing_key,
+#               restart_sealed_secrets_controller
+#
+# Dependencies:
+#   scripts/lib/common.sh (log_info, log_step, log_warn)
+#   kubectl
+#
+# See also:
+#   infrastructure/sealed-secrets/ - ArgoCD manifests for the controller
+#   scripts/bootstrap.sh           - Invokes backup/restore during setup
+# =============================================================================
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -15,9 +37,9 @@ SEALED_SECRETS_NAMESPACE="kube-system"
 # Functions
 # ---------------------------------------------------------------------------
 
-# Backup all sealing keys from the cluster to a local file.
+# Backup all sealing keys from the cluster to a local YAML file.
 # Creates the backup directory if it does not exist.
-# Returns 0 on success, 1 on failure.
+# Returns 0 on success, 1 on failure (logs a warning).
 backup_sealing_key() {
   log_step "Backing up sealing key to ${SEALED_SECRETS_BACKUP_FILE}..."
 
@@ -39,9 +61,9 @@ backup_sealing_key() {
 }
 
 # Restore sealing keys from a local backup file into the cluster.
-# Must be called BEFORE the Sealed Secrets controller starts (or controller
-# must be restarted after restore to pick up the restored keys).
-# Returns 0 if keys were restored, 1 if no backup exists.
+# Should be called BEFORE the Sealed Secrets controller starts, or the
+# controller must be restarted afterwards to pick up the restored keys.
+# Returns 0 if keys were restored, 1 if no backup file exists or on failure.
 restore_sealing_key() {
   if [ ! -f "${SEALED_SECRETS_BACKUP_FILE}" ]; then
     log_info "No sealing key backup found (first run)"
@@ -65,8 +87,9 @@ restore_sealing_key() {
   fi
 }
 
-# Restart the Sealed Secrets controller to pick up restored keys.
+# Restart the Sealed Secrets controller deployment and wait for rollout.
 # Used after key restore when the controller was already running.
+# Waits up to 60s for the rollout to complete.
 restart_sealed_secrets_controller() {
   log_step "Restarting Sealed Secrets controller to pick up restored keys..."
   kubectl rollout restart deployment/sealed-secrets-controller \

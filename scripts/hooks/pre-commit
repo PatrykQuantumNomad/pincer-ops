@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# pre-commit -- Reject commits containing plaintext Kubernetes Secrets.
+# =============================================================================
+# scripts/hooks/pre-commit - Reject plaintext Kubernetes Secrets
+# =============================================================================
 #
-# This hook scans staged YAML files for `kind: Secret` resources. Plaintext
-# Secrets must NEVER be committed to this repository. All secrets must be
-# encrypted as SealedSecrets using kubeseal before committing.
+# Git pre-commit hook that scans staged YAML files for `kind: Secret`
+# resources. Plaintext Secrets must NEVER be committed to this repository;
+# all secrets must be encrypted as SealedSecrets using kubeseal first.
 #
-# The pattern matches `kind: Secret` exactly but NOT `kind: SealedSecret`
+# The regex matches `kind: Secret` exactly but NOT `kind: SealedSecret`
 # because SealedSecret contains additional characters after "Secret".
 #
-# Install: ./scripts/hooks/install-hooks.sh
-# Bypass:  git commit --no-verify (use only when you know what you're doing)
+# Install:
+#   ./scripts/hooks/install-hooks.sh
+#
+# Bypass (use with caution):
+#   git commit --no-verify
+#
+# See also:
+#   scripts/hooks/install-hooks.sh - Installer for this hook
+#   CLAUDE.md                      - Full project documentation
+# =============================================================================
 set -euo pipefail
 
 # Get list of staged YAML files (Added, Copied, Modified only)

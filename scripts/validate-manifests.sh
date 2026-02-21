@@ -1,31 +1,42 @@
 #!/usr/bin/env bash
-# validate-manifests.sh -- Validate Kubernetes manifests using kubeconform.
+# =============================================================================
+# scripts/validate-manifests.sh - Validate Kubernetes manifests
+# =============================================================================
 #
 # Validates raw YAML files (bootstrap/) and kustomize-built overlays
 # (workloads/, local infrastructure bases) against Kubernetes JSON schemas
 # with CRD support via datreeio/CRDs-catalog.
 #
 # Usage:
-#   ./scripts/validate-manifests.sh          # Run all validations
+#   ./scripts/validate-manifests.sh
 #
-# Requires: kubeconform >= 0.7.0, kustomize >= 5.7.0
-# Designed for both CI (GitHub Actions) and local development use.
+# Dependencies:
+#   kubeconform >= 0.7.0, kubectl (built-in kustomize)
+#
+# See also:
+#   .github/workflows/validate-manifests.yml - CI workflow
+#   CLAUDE.md - Full project documentation
+# =============================================================================
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
 EXIT_CODE=0
 
-# Schema locations: default Kubernetes schemas + datreeio CRD catalog
-SCHEMA_LOCATION="https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
-K8S_VERSION="1.32.0"
+readonly SCHEMA_LOCATION="https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+readonly K8S_VERSION="1.32.0"
+readonly KUBECONFORM_FLAGS="-summary -output text -kubernetes-version ${K8S_VERSION} -schema-location default -schema-location ${SCHEMA_LOCATION}"
 
-# Common kubeconform flags
-KUBECONFORM_FLAGS="-summary -output text -kubernetes-version ${K8S_VERSION} -schema-location default -schema-location ${SCHEMA_LOCATION}"
-
-# validate_raw: Validate raw YAML files in a directory (not kustomize-built).
-# Skips CustomResourceDefinition resources since CRD schemas are not always
-# available and CRDs are validated structurally by the API server.
+# ---------------------------------------------------------------------------
+# validate_raw - Validate raw YAML files in a directory
+# ---------------------------------------------------------------------------
+# Validates raw YAML files (not kustomize-built). Skips CustomResourceDefinition
+# resources since CRD schemas are not always available and CRDs are validated
+# structurally by the API server.
 #
 # Args: $1 = directory path, $2 = label for output
+# ---------------------------------------------------------------------------
 validate_raw() {
   local dir="$1"
   local label="$2"
@@ -40,17 +51,21 @@ validate_raw() {
   echo ""
 }
 
-# validate_kustomize: Build kustomize overlay and validate the rendered output.
-# Does NOT skip CRDs since kustomize output contains resolved resources, not
-# raw CRD definitions.
+# ---------------------------------------------------------------------------
+# validate_kustomize - Build and validate a kustomize overlay
+# ---------------------------------------------------------------------------
+# Builds a kustomize overlay and validates the rendered output. Does NOT skip
+# CRDs since kustomize output contains resolved resources, not raw CRD
+# definitions.
 #
 # Args: $1 = kustomize directory path, $2 = label for output
+# ---------------------------------------------------------------------------
 validate_kustomize() {
   local dir="$1"
   local label="$2"
 
   echo "=== Validating kustomize overlay: ${label} (${dir}) ==="
-  if kustomize build "${dir}" | kubeconform ${KUBECONFORM_FLAGS}; then
+  if kubectl kustomize "${dir}" | kubeconform ${KUBECONFORM_FLAGS}; then
     echo "  PASS: ${label}"
   else
     echo "  FAIL: ${label}"
@@ -59,6 +74,9 @@ validate_kustomize() {
   echo ""
 }
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 echo "Kubernetes manifest validation"
 echo "=============================="
 echo "K8s version: ${K8S_VERSION}"

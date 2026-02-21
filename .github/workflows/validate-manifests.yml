@@ -17,13 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install kustomize and kubeconform
+      - name: Install kubeconform
         uses: yokawasa/action-setup-kube-tools@v0.11.2
         with:
           setup-tools: |
-            kustomize
             kubeconform
-          kustomize: '5.7.1'
           kubeconform: '0.7.0'
 
       - name: Run manifest validation

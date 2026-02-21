@@ -33,69 +33,108 @@ Everything deploys from a single root Application through ArgoCD sync waves:
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [kubeseal](https://github.com/bitnami-labs/sealed-secrets#kubeseal) (for secret management)
 - [ArgoCD CLI](https://argo-cd.readthedocs.io/en/stable/cli_installation/) (for sync operations and status checks)
+- [Kubeconform](https://github.com/yannh/kubeconform) (for manifest validation)
+- [BATS](https://bats-core.readthedocs.io/) (for running tests)
+
+### After Cloning
+
+```bash
+make hooks    # Install git pre-commit hooks
+```
+
+You can verify the hook is installed with:
+
+```bash
+test -x .git/hooks/pre-commit && echo "installed" || echo "not installed"
+```
 
 ### Bootstrap
 
 ```bash
-# Create the cluster and deploy everything
-./scripts/bootstrap.sh
+make up       # Create cluster and deploy everything
 ```
 
-This single script:
-1. Creates a 3-node KIND cluster with ingress-ready port mappings
-2. Installs ArgoCD and applies the root Application
-3. Configures MetalLB with IP range from the KIND Docker network
-4. Deploys Envoy Gateway, Sealed Secrets, and cert-manager
-5. Restores sealing keys (if previously backed up)
-6. Deploys OpenClaw with encrypted credentials and Gateway API routing
+This creates a 3-node KIND cluster, installs ArgoCD with the root Application, configures MetalLB, deploys Envoy Gateway, Sealed Secrets, cert-manager, and OpenClaw. Idempotent -- safe to run multiple times.
 
 After bootstrap completes (~5 minutes), OpenClaw is accessible at `http://localhost`.
 
 ### Teardown
 
 ```bash
-# Destroy the cluster (sealing keys are preserved at ~/.pincer/)
-./scripts/teardown.sh
+make down     # Destroy the cluster (sealing keys preserved at ~/.pincer/)
+make clean    # Destroy cluster + remove Docker network and backups
+make reset    # Full teardown + rebuild from scratch
 ```
 
-### Verify Reproducibility
+## Makefile Targets
 
-```bash
-./scripts/teardown.sh && ./scripts/bootstrap.sh
-# All ArgoCD Applications return to Healthy/Synced
-# SealedSecrets from before teardown still decrypt
-# OpenClaw is accessible at localhost
-```
+Run `make` or `make help` to see all targets:
+
+| Target | Description |
+|---|---|
+| **Lifecycle** | |
+| `make up` | Create cluster and deploy everything (idempotent) |
+| `make up-verbose` | Bootstrap with verbose output |
+| `make down` | Destroy the KIND cluster (preserves sealing keys) |
+| `make clean` | Destroy cluster + remove Docker network and backups |
+| `make reset` | Full reset: teardown --clean then bootstrap |
+| **Development** | |
+| `make hooks` | Install git pre-commit hooks |
+| `make validate` | Validate all Kubernetes manifests (kubeconform) |
+| `make test` | Run all BATS tests (unit + integration) |
+| `make test-unit` | Run unit tests only |
+| `make test-integration` | Run integration tests only |
+| `make check` | Run validation + all tests |
+| **Operations** | |
+| `make status` | Show ArgoCD application sync status |
+| `make sync` | Sync all ArgoCD applications |
+| `make password` | Print the ArgoCD admin password |
+| `make port-forward` | Port-forward to ArgoCD UI (localhost:8080) |
+| `make setup-mcp` | Generate ArgoCD API token for MCP integration |
+| `make verify-netpol` | Run runtime NetworkPolicy enforcement tests |
+| `make load-image IMAGE=name:tag` | Load a local image into KIND |
+| `make seal FILE=secret.yaml` | Encrypt a secret with kubeseal |
+| `make logs` | Tail OpenClaw gateway logs |
+| `make pods` | List all pods across namespaces |
+| `make version` | Show cluster and tool versions |
 
 ## Repository Structure
 
-```
+```bash
 pincer-ops/
+├── Makefile                          # Developer workflow (make help)
 ├── bootstrap/
-│   ├── root-app.yaml              # Single entry point — all state flows from here
-│   ├── argocd-cm.yaml             # ArgoCD ConfigMap (tracking, health checks, notifications)
-│   ├── argocd-self.yaml           # ArgoCD self-management Application
-│   ├── projects/                  # AppProjects (infrastructure + workloads RBAC)
-│   ├── infra-*.yaml               # ArgoCD Applications for infrastructure components
-│   └── workload-openclaw.yaml     # ArgoCD Application for OpenClaw
+│   ├── root-app.yaml                 # Single entry point — all state flows from here
+│   ├── argocd-cm.yaml                # ArgoCD ConfigMap (tracking, health checks, notifications)
+│   ├── argocd-self.yaml              # ArgoCD self-management Application
+│   ├── projects/                     # AppProjects (infrastructure + workloads RBAC)
+│   ├── infra-*.yaml                  # ArgoCD Applications for infrastructure components
+│   └── workload-openclaw.yaml        # ArgoCD Application for OpenClaw
 ├── infrastructure/
-│   ├── metallb/                   # MetalLB L2 LoadBalancer
-│   ├── envoy-gateway/             # Gateway API implementation
-│   ├── sealed-secrets/            # Bitnami Sealed Secrets controller
-│   └── cert-manager/              # TLS certificate management
+│   ├── metallb/                      # MetalLB L2 LoadBalancer
+│   ├── envoy-gateway/                # Gateway API implementation
+│   ├── sealed-secrets/               # Bitnami Sealed Secrets controller
+│   └── cert-manager/                 # TLS certificate management
 ├── workloads/
 │   └── openclaw/
-│       ├── base/                  # StatefulSet, Service, ConfigMap, NetworkPolicy, etc.
-│       └── overlays/dev/          # Kustomize dev overlay
+│       ├── base/                     # StatefulSet, Service, ConfigMap, NetworkPolicy, etc.
+│       └── overlays/dev/             # Kustomize dev overlay
 ├── cluster/
-│   └── kind-config.yaml           # KIND cluster definition (3 nodes)
-└── scripts/
-    ├── bootstrap.sh               # Full cluster creation + deployment
-    ├── teardown.sh                # Cluster destruction
-    ├── setup-mcp.sh               # MCP server configuration for Claude Code
-    ├── validate-manifests.sh      # CI manifest validation (kubeconform + kustomize)
-    ├── verify-networkpolicy.sh    # Runtime NetworkPolicy enforcement tests
-    └── hooks/                     # Pre-commit hook for plaintext Secret detection
+│   └── kind-config.yaml              # KIND cluster definition (3 nodes)
+├── scripts/
+│   ├── bootstrap.sh                  # Full cluster creation + deployment
+│   ├── teardown.sh                   # Cluster destruction
+│   ├── setup-mcp.sh                  # MCP server configuration for Claude Code
+│   ├── validate-manifests.sh         # CI manifest validation (kubeconform)
+│   ├── verify-networkpolicy.sh       # Runtime NetworkPolicy enforcement tests
+│   ├── run-tests.sh                  # BATS test runner
+│   ├── lib/common.sh                 # Shared helper library
+│   ├── lib/sealed-secrets.sh         # Sealing key backup/restore
+│   └── hooks/                        # Pre-commit hook for plaintext Secret detection
+└── tests/
+    ├── test_helper.bash              # Common BATS test infrastructure
+    ├── unit/                         # Unit tests (68 tests)
+    └── integration/                  # Integration tests (5 tests)
 ```
 
 ## Core Invariant
@@ -119,40 +158,33 @@ This single command must reconstruct the complete cluster state. Every resource 
 Claude Code can query cluster state and manage ArgoCD applications through MCP servers:
 
 ```bash
-# Configure MCP servers (kubernetes + argocd)
-./scripts/setup-mcp.sh
+make setup-mcp
 ```
 
 This enables AI-assisted operations: checking pod status, viewing ArgoCD sync state, reading logs, and triggering syncs — all through conversational commands in Claude Code. MCP defaults to read-only; write operations require explicit opt-in.
 
 ## CI & Guards
 
-- **Manifest validation** — `scripts/validate-manifests.sh` runs kubeconform + kustomize build on all local bases (used in CI)
-- **Pre-commit hook** — Rejects any commit containing a plaintext `kind: Secret` resource (`scripts/hooks/install-hooks.sh` to install)
-- **ArgoCD notifications** — Webhook triggers on sync failures and health degradation (configure endpoint in `bootstrap/argocd-notifications-cm.yaml`)
+- **Manifest validation** — `make validate` runs kubeconform against all local bases (also runs in CI on PRs)
+- **Pre-commit hook** — Rejects any commit containing a plaintext `kind: Secret` resource (`make hooks` to install)
+- **BATS test suite** — 73 tests covering all scripts (`make test`)
+- **ArgoCD notifications** — Webhook triggers on sync failures and health degradation
 - **Automated backups** — CronJobs for OpenClaw PVC data (2AM) and sealing key export (3AM)
 
 ## Common Operations
 
 ```bash
-# Check ArgoCD sync status
-argocd app list
-
-# Force sync a specific app
-argocd app sync workload-openclaw
-
-# Seal a secret
-kubeseal --format yaml < secret.yaml > sealed-secret.yaml
-
-# Load a locally built image into KIND
-kind load docker-image openclaw/openclaw:dev --name openclaw-dev
-
-# Validate manifests locally
-./scripts/validate-manifests.sh
-
-# Get ArgoCD admin password
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d
+make status                            # ArgoCD sync status
+make sync                              # Sync all apps
+make password                          # ArgoCD admin password
+make port-forward                      # ArgoCD UI at localhost:8080
+make logs                              # Tail OpenClaw logs
+make pods                              # List all pods
+make load-image IMAGE=app:dev          # Load image into KIND
+make seal FILE=secret.yaml             # Encrypt a secret
+make validate                          # Validate manifests
+make verify-netpol                     # Test NetworkPolicy enforcement
+make check                             # Validate + run all tests
 ```
 
 ## What Doesn't Belong Here

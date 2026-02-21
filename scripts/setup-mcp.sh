@@ -1,9 +1,31 @@
 #!/usr/bin/env bash
-# setup-mcp.sh -- Generate an ArgoCD API token for MCP server integration.
-# Prerequisites: KIND cluster running, ArgoCD deployed, mcp-readonly account configured.
+# =============================================================================
+# scripts/setup-mcp.sh - Generate ArgoCD API token for MCP integration
+# =============================================================================
+#
+# Connects to the local ArgoCD instance running inside the KIND cluster,
+# authenticates as admin, and generates a scoped API token for the
+# mcp-readonly service account. Prints export instructions so Claude Code
+# can use the ArgoCD MCP server.
+#
+# A temporary port-forward is opened for the duration of the script and
+# cleaned up automatically on exit or signal.
+#
+# Usage:
+#   ./scripts/setup-mcp.sh [--verbose|-v] [-h|--help]
+#
+# Prerequisites:
+#   - KIND cluster running (via bootstrap.sh)
+#   - ArgoCD deployed with mcp-readonly account
+#   - argocd CLI installed
+#
+# See also:
+#   scripts/bootstrap.sh - Create the cluster first
+#   CLAUDE.md            - Full project documentation
+# =============================================================================
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 PORT_FORWARD_PID=""
@@ -17,7 +39,7 @@ cleanup() {
     wait "${PORT_FORWARD_PID}" 2>/dev/null || true
   fi
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 usage() {
   cat <<USAGE
@@ -54,7 +76,7 @@ log_info "Cluster '${CLUSTER_NAME}' found"
 
 # Step 2: Verify and set kubectl context
 log_step "Verifying kubectl context..."
-EXPECTED_CONTEXT="kind-${CLUSTER_NAME}"
+readonly EXPECTED_CONTEXT="kind-${CLUSTER_NAME}"
 CURRENT_CONTEXT=$(kubectl config current-context 2>/dev/null || echo "")
 if [ "${CURRENT_CONTEXT}" != "${EXPECTED_CONTEXT}" ]; then
   log_warn "Current context is '${CURRENT_CONTEXT}', switching to '${EXPECTED_CONTEXT}'"
@@ -76,7 +98,7 @@ PORT_FORWARD_PID=$!
 
 # Wait for port-forward to be ready (up to 30 seconds)
 PF_WAIT=0
-PF_TIMEOUT=30
+readonly PF_TIMEOUT=30
 until curl -sk https://localhost:8080 >/dev/null 2>&1; do
   if [ ${PF_WAIT} -ge ${PF_TIMEOUT} ]; then
     log_error "Port-forward to ArgoCD server failed after ${PF_TIMEOUT}s"

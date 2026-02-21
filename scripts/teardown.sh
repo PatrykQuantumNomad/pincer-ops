@@ -1,10 +1,29 @@
 #!/usr/bin/env bash
-# teardown.sh -- Destroy the Pincer Ops KIND cluster
-# Idempotent: safe to run when no cluster exists.
+# =============================================================================
+# scripts/teardown.sh - Destroy the Pincer Ops KIND cluster
+# =============================================================================
+#
+# Idempotent teardown for the Pincer Ops local development cluster. Deletes
+# the KIND cluster and optionally removes external state such as the Docker
+# network and sealing key backups. Safe to run when no cluster exists.
+#
+# Usage:
+#   ./scripts/teardown.sh [--clean] [--verbose|-v] [-h|--help]
+#
+# Dependencies:
+#   docker, kind
+#
+# See also:
+#   scripts/bootstrap.sh  - Create the cluster
+#   scripts/lib/common.sh - Shared helper library
+#   CLAUDE.md              - Full project documentation
+# =============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+
+trap 'echo ""; log_warn "Teardown interrupted by signal"; exit 130' INT TERM
 
 usage() {
   cat <<USAGE

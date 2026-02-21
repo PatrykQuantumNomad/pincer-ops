@@ -1,10 +1,32 @@
-# common.sh -- Shared helper library for Pincer Ops scripts
-# Provides: logging, color output, pre-flight checks, argument parsing, verbose mode
-# Source this file; do not execute directly.
+# =============================================================================
+# scripts/lib/common.sh - Shared helper library for Pincer Ops scripts
+# =============================================================================
+#
+# Provides logging (with color/TTY awareness), pre-flight environment checks,
+# CLI argument parsing, and verbose-mode command execution. Every executable
+# script in scripts/ sources this file as its foundation.
+#
+# Usage:
+#   source "${SCRIPT_DIR}/lib/common.sh"
+#
+# Exports:
+#   Variables - PINCER_VERSION, CLUSTER_NAME, VERBOSE, CLEAN,
+#               RED, GREEN, YELLOW, BLUE, BOLD, NC
+#   Functions - log_info, log_warn, log_error, log_step,
+#               run_cmd, parse_args, check_port_free, preflight_checks
+#
+# Dependencies:
+#   coreutils, docker, kind, kubectl, lsof (for port checks)
+#
+# See also:
+#   scripts/lib/sealed-secrets.sh - Sealed Secrets helper library
+#   scripts/bootstrap.sh          - Primary consumer of this library
+# =============================================================================
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+PINCER_VERSION="1.0.0"
 CLUSTER_NAME="openclaw-dev"
 
 # ---------------------------------------------------------------------------
@@ -30,9 +52,17 @@ fi
 # ---------------------------------------------------------------------------
 # Logging functions
 # ---------------------------------------------------------------------------
+
+# Log an informational message to stdout (green prefix).
 log_info()  { echo -e "${GREEN}[+]${NC} $*"; }
+
+# Log a warning message to stderr (yellow prefix).
 log_warn()  { echo -e "${YELLOW}[!]${NC} $*" >&2; }
+
+# Log an error message to stderr (red prefix).
 log_error() { echo -e "${RED}[x]${NC} $*" >&2; }
+
+# Log a major step heading to stdout (blue + bold).
 log_step()  { echo -e "${BLUE}[>]${NC} ${BOLD}$*${NC}"; }
 
 # ---------------------------------------------------------------------------
@@ -55,6 +85,9 @@ run_cmd() {
 # ---------------------------------------------------------------------------
 CLEAN=false
 
+# Parse common CLI flags (--verbose/-v, --clean, -h/--help).
+# Calls usage() (must be defined by the sourcing script) on -h/--help.
+# Args: "$@" from the caller.
 parse_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -83,7 +116,8 @@ parse_args() {
 # ---------------------------------------------------------------------------
 
 # Check whether a TCP port is free (no listener).
-# Returns 0 if free, 1 if occupied (with error message).
+# Args: $1 - port number to check.
+# Returns 0 if free, 1 if occupied (logs an error message).
 check_port_free() {
   local port="$1"
   local pid

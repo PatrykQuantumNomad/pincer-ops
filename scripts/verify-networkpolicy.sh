@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
-# verify-networkpolicy.sh -- Runtime verification of NetworkPolicy enforcement.
-# Requires: Running KIND cluster with OpenClaw deployed and NetworkPolicies applied.
+# =============================================================================
+# scripts/verify-networkpolicy.sh - Verify NetworkPolicy enforcement
+# =============================================================================
+#
+# Runtime verification of NetworkPolicy enforcement in the OpenClaw namespace.
+# Runs connectivity tests from inside the OpenClaw pod to confirm that allowed
+# traffic succeeds and denied traffic is blocked.
+#
+# Usage:
+#   ./scripts/verify-networkpolicy.sh
+#
+# Dependencies:
+#   kubectl, kind, curl, running KIND cluster with OpenClaw deployed
+#
+# See also:
+#   workloads/openclaw/base/networkpolicy.yaml - NetworkPolicy definitions
+#   CLAUDE.md - Full project documentation
+# =============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+
+trap 'echo ""; log_warn "Verification interrupted"; exit 130' INT TERM
 
 # ---------------------------------------------------------------------------
 # Counters
@@ -13,7 +31,12 @@ PASSED=0
 FAILED=0
 
 # ---------------------------------------------------------------------------
-# Helper: run a named test and track pass/fail
+# run_test - Record a named test result
+# ---------------------------------------------------------------------------
+# Evaluates an exit code and logs PASS or FAIL, incrementing the appropriate
+# counter.
+#
+# Args: $1 = test name, $2 = exit code (0 = pass, non-zero = fail)
 # ---------------------------------------------------------------------------
 run_test() {
   local name="$1"

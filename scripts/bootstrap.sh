@@ -1,16 +1,39 @@
 #!/usr/bin/env bash
-# bootstrap.sh -- Create and configure the Pincer Ops KIND cluster
-# Idempotent: safe to run multiple times; skips creation if cluster exists.
+# =============================================================================
+# scripts/bootstrap.sh - Create and configure the Pincer Ops KIND cluster
+# =============================================================================
+#
+# Idempotent bootstrap for the Pincer Ops local development cluster. Creates a
+# multi-node KIND cluster, installs ArgoCD with the App of Apps pattern, deploys
+# MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, and OpenClaw. Safe to
+# run multiple times; skips creation if the cluster already exists.
+#
+# Usage:
+#   ./scripts/bootstrap.sh [--verbose|-v] [-h|--help]
+#
+# Dependencies:
+#   docker, kind, kubectl, kubeseal, lsof
+#
+# See also:
+#   scripts/teardown.sh  - Destroy the cluster
+#   scripts/lib/common.sh - Shared helper library
+#   CLAUDE.md             - Full project documentation
+# =============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/sealed-secrets.sh"
 
-KIND_CONFIG="${SCRIPT_DIR}/../cluster/kind-config.yaml"
-ARGOCD_VERSION="v3.3.1"
-ARGOCD_INSTALL_URL="https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
-BOOTSTRAP_DIR="${SCRIPT_DIR}/../bootstrap"
+trap 'echo ""; log_warn "Bootstrap interrupted by signal"; exit 130' INT TERM
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+readonly KIND_CONFIG="${SCRIPT_DIR}/../cluster/kind-config.yaml"
+readonly ARGOCD_VERSION="v3.3.1"
+readonly ARGOCD_INSTALL_URL="https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
+readonly BOOTSTRAP_DIR="${SCRIPT_DIR}/../bootstrap"
 
 usage() {
   cat <<USAGE
