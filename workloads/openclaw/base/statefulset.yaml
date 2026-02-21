@@ -30,6 +30,12 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 0
+          env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: openclaw-config
+                  key: OPENCLAW_GATEWAY_TOKEN
           command:
             - sh
             - -c
@@ -39,6 +45,21 @@ spec:
                 echo "seed-config: seeding openclaw.json from ConfigMap"
                 cp /config/openclaw.json "$CFG"
                 chown 1000:1000 "$CFG"
+              else
+                # Ensure the gateway token in the config matches the env var
+                CURRENT=$(node -e "try{const c=require('$CFG');console.log(c.gateway?.auth?.token||'')}catch(e){}" 2>/dev/null)
+                if [ "$CURRENT" != "$OPENCLAW_GATEWAY_TOKEN" ]; then
+                  echo "seed-config: updating gateway token to match env var"
+                  node -e "
+                    const fs=require('fs');
+                    const c=JSON.parse(fs.readFileSync('$CFG','utf8'));
+                    c.gateway=c.gateway||{};
+                    c.gateway.auth=c.gateway.auth||{};
+                    c.gateway.auth.token='$OPENCLAW_GATEWAY_TOKEN';
+                    fs.writeFileSync('$CFG',JSON.stringify(c,null,2)+'\n');
+                  "
+                  chown 1000:1000 "$CFG"
+                fi
               fi
               chown -R 1000:1000 /home/node/.openclaw
           volumeMounts:
@@ -57,6 +78,11 @@ spec:
               name: gateway
               protocol: TCP
           env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: openclaw-config
+                  key: OPENCLAW_GATEWAY_TOKEN
             - name: NODE_ENV
               value: "production"
             - name: HOME

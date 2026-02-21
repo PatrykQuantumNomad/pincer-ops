@@ -3,19 +3,28 @@
 # Copied to the PVC by the seed-config initContainer on first deploy only.
 # Once on the PVC, the onboarding wizard and UI manage this file directly.
 # To re-seed, delete the file from the PVC and restart the pod.
+#
+# OPENCLAW_GATEWAY_TOKEN is also set as an env var on the gateway container.
+# The gateway uses it to auto-pair CLI WebSocket connections (same pattern as
+# the upstream docker-compose). The token in openclaw.json and the env var
+# must match for CLI commands to work without manual device pairing.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: openclaw-config
   namespace: openclaw
 data:
+  # Shared gateway token — used by both openclaw.json and the env var.
+  # To rotate: change this value, delete the PVC config, and restart the pod.
+  OPENCLAW_GATEWAY_TOKEN: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
   openclaw.json: |
     {
       "gateway": {
         "port": 18789,
         "mode": "local",
         "auth": {
-          "mode": "token"
+          "mode": "token",
+          "token": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
         }
       }
     }

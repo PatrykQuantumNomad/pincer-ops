@@ -172,8 +172,16 @@ openclaw-onboard: ## Run OpenClaw onboarding wizard (interactive)
 	@$(OPENCLAW_CLI) onboard --no-install-daemon
 
 .PHONY: openclaw-dashboard
-openclaw-dashboard: ## Show OpenClaw dashboard info
-	@$(OPENCLAW_CLI) dashboard --no-open
+openclaw-dashboard: ## Show OpenClaw dashboard URL (host-accessible)
+	@TOKEN=$$($(OPENCLAW_CLI) dashboard --no-open 2>&1 | grep -o '#token=[a-f0-9]*' | head -1 | cut -d= -f2); \
+	if [ -n "$$TOKEN" ]; then \
+		URL="http://localhost/#token=$$TOKEN"; \
+		echo "Opening $$URL"; \
+		open "$$URL"; \
+	else \
+		echo "Could not extract dashboard token. Is onboarding complete?"; \
+		echo "Run: make openclaw-onboard"; \
+	fi
 
 .PHONY: openclaw-channels
 openclaw-channels: ## List configured OpenClaw channels
