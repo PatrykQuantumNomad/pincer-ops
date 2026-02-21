@@ -76,6 +76,16 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1000m"
+          startupProbe:
+            exec:
+              command:
+                - node
+                - dist/index.js
+                - health
+                - --timeout
+                - "5000"
+            periodSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             exec:
               command:
@@ -84,10 +94,9 @@ spec:
                 - health
                 - --timeout
                 - "5000"
-            initialDelaySeconds: 30
-            periodSeconds: 30
+            periodSeconds: 60
             timeoutSeconds: 10
-            failureThreshold: 3
+            failureThreshold: 5
           readinessProbe:
             exec:
               command:
@@ -96,7 +105,6 @@ spec:
                 - health
                 - --timeout
                 - "5000"
-            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 3
