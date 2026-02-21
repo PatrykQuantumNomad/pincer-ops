@@ -79,33 +79,27 @@ spec:
           startupProbe:
             exec:
               command:
-                - node
-                - dist/index.js
-                - health
-                - --timeout
-                - "5000"
+                - sh
+                - -c
+                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 30
           livenessProbe:
             exec:
               command:
-                - node
-                - dist/index.js
-                - health
-                - --timeout
-                - "5000"
+                - sh
+                - -c
+                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
             periodSeconds: 60
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             exec:
               command:
-                - node
-                - dist/index.js
-                - health
-                - --timeout
-                - "5000"
+                - sh
+                - -c
+                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 3
