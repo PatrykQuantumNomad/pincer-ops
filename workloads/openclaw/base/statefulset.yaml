@@ -37,11 +37,6 @@ spec:
                 secretKeyRef:
                   name: openclaw-credentials
                   key: OPENCLAW_GATEWAY_TOKEN
-            - name: ANTHROPIC_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openclaw-credentials
-                  key: ANTHROPIC_API_KEY
             - name: NODE_ENV
               value: "production"
             - name: HOME

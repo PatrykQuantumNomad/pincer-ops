@@ -155,7 +155,8 @@ Leave gaps between wave numbers for future insertions. Never reuse a wave number
 - **Port 18789:** Gateway HTTP (Control UI, WebChat, API)
 - **Data directory:** `/home/node/.openclaw/` — mounted from PVC (20Gi, ReadWriteOnce)
 - **Config file:** `/home/node/.openclaw/openclaw.json` — mounted from ConfigMap via subPath (changes require pod restart)
-- **Required env vars:** `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY` — sourced from SealedSecret `openclaw-credentials`; `NODE_ENV=production`
+- **Required env vars:** `OPENCLAW_GATEWAY_TOKEN` (from SealedSecret `openclaw-credentials`), `NODE_ENV=production`
+- **LLM provider keys** (`ANTHROPIC_API_KEY`, etc.) are configured post-deployment via the OpenClaw onboarding UI — not set in the deployment manifests
 - **Health check:** `node dist/index.js health --timeout 5000` (exec probe, not HTTP)
 - **Cannot scale horizontally** — always `replicas: 1`, always StatefulSet
 - **NetworkPolicy:** default-deny-all + explicit allow for Envoy ingress on 18789/TCP, DNS on 53, HTTPS egress on 443 (LLM APIs)
