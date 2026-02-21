@@ -77,31 +77,22 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           startupProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
-            periodSeconds: 10
-            timeoutSeconds: 10
+            httpGet:
+              path: /health
+              port: gateway
+            periodSeconds: 5
             failureThreshold: 30
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
+            httpGet:
+              path: /health
+              port: gateway
             periodSeconds: 60
-            timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN" --timeout 5000
+            httpGet:
+              path: /health
+              port: gateway
             periodSeconds: 10
-            timeoutSeconds: 10
             failureThreshold: 3
       volumes:
         - name: config
