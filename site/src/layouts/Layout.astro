@@ -4,7 +4,9 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'GitOps-driven Kubernetes platform for deploying OpenClaw — an open-source AI agent runtime.' } = Astro.props;
+const siteUrl = 'https://pincer.patrykgolabek.dev';
+const { title, description = 'GitOps-driven Kubernetes platform for deploying OpenClaw — an open-source AI agent runtime. Three commands to a production-grade Kubernetes stack.' } = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 ---
 
 <!doctype html>
@@ -13,9 +15,13 @@ const { title, description = 'GitOps-driven Kubernetes platform for deploying Op
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0A0E1A" />
+    <link rel="canonical" href={canonicalUrl} />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,13 +32,63 @@ const { title, description = 'GitOps-driven Kubernetes platform for deploying Op
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://pincer.patrykgolabek.dev" />
-    <meta property="og:image" content="https://pincer.patrykgolabek.dev/pincer-social.png" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="Pincer Ops" />
+    <meta property="og:image" content={`${siteUrl}/pincer-social.png`} />
     <meta property="og:image:width" content="1280" />
     <meta property="og:image:height" content="640" />
     <meta property="og:image:alt" content="Pincer — GitOps-driven Kubernetes platform for OpenClaw" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://pincer.patrykgolabek.dev/pincer-social.png" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`${siteUrl}/pincer-social.png`} />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": `${siteUrl}/#website`,
+          "url": siteUrl,
+          "name": "Pincer Ops",
+          "description": description,
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": `${siteUrl}/#software`,
+          "name": "Pincer Ops",
+          "description": "GitOps-driven Kubernetes platform for deploying and operating OpenClaw, an open-source self-hosted AI agent runtime. Bootstraps a production-grade KIND cluster with MetalLB, Envoy Gateway, ArgoCD, Sealed Secrets, and cert-manager in three commands.",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Linux, macOS",
+          "url": siteUrl,
+          "downloadUrl": "https://github.com/PatrykQuantumNomad/pincer-ops",
+          "codeRepository": "https://github.com/PatrykQuantumNomad/pincer-ops",
+          "license": "https://opensource.org/licenses/MIT",
+          "programmingLanguage": ["Bash", "YAML"],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "softwareRequirements": ["Docker", "kind", "kubectl"],
+          "keywords": "kubernetes, gitops, argocd, openclaw, ai agent runtime, kind cluster, envoy gateway, metallb, sealed secrets, cert-manager, platform engineering"
+        },
+        {
+          "@type": "WebPage",
+          "@id": canonicalUrl,
+          "url": canonicalUrl,
+          "name": title,
+          "description": description,
+          "isPartOf": { "@id": `${siteUrl}/#website` },
+          "about": { "@id": `${siteUrl}/#software` },
+          "inLanguage": "en-US"
+        }
+      ]
+    })} />
 
     <title>{title}</title>
   </head>

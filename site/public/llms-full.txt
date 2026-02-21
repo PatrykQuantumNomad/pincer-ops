@@ -1,0 +1,166 @@
+# Pincer Ops — Full Documentation for LLMs
+
+> GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime.
+
+## What is Pincer Ops?
+
+Pincer Ops is a monorepo containing all declarative Kubernetes infrastructure manifests, ArgoCD Application definitions, bootstrap scripts, tests, and developer tooling needed to run OpenClaw on a local KIND cluster with production-fidelity networking. It is the single source of truth for cluster state.
+
+OpenClaw is an open-source, self-hosted AI agent runtime that supports 14+ LLM platforms, AI skills/tools, and privacy-first operation. Pincer Ops provides the infrastructure to deploy and operate it.
+
+## Architecture
+
+The platform runs on KIND (Kubernetes in Docker) for local development:
+
+```
+KIND multi-node (1 control-plane + 2 workers)
+  -> MetalLB L2 (LoadBalancer IP allocation)
+    -> Envoy Gateway (Gateway API via DaemonSet + hostPort)
+      -> ArgoCD (App of Apps pattern, self-managing)
+        -> OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
+```
+
+### Sync Wave Ordering
+
+Infrastructure deploys before workloads via ArgoCD sync waves:
+
+| Wave | Component              | Purpose                                           |
+|------|------------------------|---------------------------------------------------|
+| -10  | ArgoCD + AppProjects   | Must exist before managing anything else           |
+| -5   | MetalLB                | LoadBalancer IPs needed by Gateway                 |
+| -4   | Envoy Gateway          | Gateway API CRDs and controller (OCI Helm)         |
+| -3   | Sealed Secrets         | Controller must exist before SealedSecrets decrypt |
+| -2   | cert-manager           | TLS certificate infrastructure                     |
+| -1   | Envoy Gateway config   | Gateway + HTTPRoute resources (needs CRDs from -4) |
+| +10  | OpenClaw Gateway       | Depends on all infrastructure                      |
+
+### Core Invariant
+
+`kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state. Every resource is either the root Application or discoverable by it through recursive directory scanning.
+
+## Repository Structure
+
+```
+pincer-ops/
+├── Makefile                    # Developer workflow (make help)
+├── bootstrap/
+│   ├── root-app.yaml           # THE singular entry point
+│   ├── argocd-self.yaml        # ArgoCD self-management (wave -10)
+│   ├── infra-metallb.yaml      # MetalLB (wave -5)
+│   ├── infra-envoy-gateway.yaml        # Envoy Gateway controller (wave -4, OCI Helm)
+│   ├── infra-envoy-gateway-config.yaml # Envoy Gateway config (wave -1)
+│   ├── infra-sealed-secrets.yaml       # Sealed Secrets (wave -3)
+│   ├── infra-cert-manager.yaml         # cert-manager (wave -2)
+│   ├── workload-openclaw.yaml          # OpenClaw (wave +10)
+│   └── projects/
+│       ├── infrastructure.yaml # AppProject: all namespaces
+│       └── workloads.yaml      # AppProject: openclaw namespace only
+├── infrastructure/
+│   ├── metallb/base/           # Remote kustomize: MetalLB v0.15.3
+│   ├── envoy-gateway/base/     # EnvoyProxy DaemonSet, GatewayClass, Gateway
+│   ├── sealed-secrets/base/    # Remote kustomize: Sealed Secrets v0.35.0
+│   └── cert-manager/base/      # Remote kustomize: cert-manager v1.19.2
+├── workloads/
+│   └── openclaw/
+│       ├── base/               # StatefulSet, Service, ConfigMap, HTTPRoute, NetworkPolicy
+│       └── overlays/dev/       # Image tag pinning
+├── cluster/
+│   └── kind-config.yaml        # 3-node KIND cluster config
+├── scripts/
+│   ├── bootstrap.sh            # Full cluster creation + ArgoCD bootstrap (16 steps)
+│   ├── teardown.sh             # Destroy KIND cluster
+│   ├── setup-repo.sh           # Configure ArgoCD repoURL for forks
+│   ├── setup-mcp.sh            # Generate ArgoCD API token for MCP
+│   ├── validate-manifests.sh   # kubeconform validation
+│   └── lib/common.sh           # Shared helpers
+└── tests/                      # 87 unit + 10 integration tests (BATS)
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Docker Desktop (or compatible runtime)
+- kind (Kubernetes in Docker)
+- kubectl
+
+### Commands
+
+```bash
+# Clone and bootstrap
+git clone https://github.com/PatrykQuantumNomad/pincer-ops.git
+cd pincer-ops
+make up          # Creates KIND cluster + deploys full stack (~3 min)
+make status      # All apps should show Synced / Healthy
+
+# Access OpenClaw
+make openclaw-onboard    # Configure AI agent runtime
+# Open http://localhost in your browser
+
+# Other operations
+make down        # Destroy cluster
+make reset       # Full teardown + rebuild
+make sync        # Sync all ArgoCD apps
+make logs        # Tail OpenClaw logs
+make validate    # Validate manifests (kubeconform)
+make test        # Run all 97 BATS tests
+```
+
+### For Forks
+
+If you fork the repo, run `make setup-repo` after cloning to update ArgoCD manifests to sync from your fork instead of the upstream repository.
+
+## OpenClaw Details
+
+- Image: ghcr.io/openclaw/openclaw:{version}
+- Command: `node dist/index.js gateway --bind lan --port 18789`
+- Port 18789: Gateway HTTP (Control UI, WebChat, API)
+- Data directory: /home/node/.openclaw/ (PVC-backed, 20Gi)
+- Config: openclaw.json seeded from ConfigMap, then managed by UI on PVC
+- Health check: httpGet /health on port 18789
+- Cannot scale horizontally — always replicas: 1, always StatefulSet
+- Gateway token and LLM provider keys configured post-deployment via make openclaw-onboard
+
+## Infrastructure Components
+
+### MetalLB (v0.15.3)
+Layer 2 load balancer for KIND. Allocates LoadBalancer IPs from the KIND Docker network CIDR (dynamically computed at bootstrap time). Required because KIND doesn't natively support LoadBalancer services.
+
+### Envoy Gateway (Gateway API)
+Runs as a DaemonSet with hostPort binding on the control-plane node (nodeSelector ingress-ready: "true"). Provides Gateway API routing (HTTPRoute) for localhost access on macOS/KIND. The only viable path for localhost:80/443 access on macOS.
+
+### ArgoCD
+GitOps continuous delivery using App of Apps pattern. Self-managing (argocd-self.yaml). Resource tracking via annotation+label. Includes Lua health check for Application health assessment (required for sync wave ordering).
+
+### Sealed Secrets (v0.35.0)
+Bitnami Sealed Secrets for encrypted secret management. Controller runs in kube-system. Sealing key backup/restore via scripts/lib/sealed-secrets.sh. Daily backup CronJob at 03:00.
+
+### cert-manager (v1.19.2)
+TLS certificate infrastructure with self-signed ClusterIssuer for dev environments.
+
+## Conventions
+
+- All manifests use explicit API versions
+- Every workload has resource requests AND limits
+- Every long-running workload has liveness and readiness probes
+- Image tags are explicit versions (never :latest)
+- All secrets are SealedSecrets (never plaintext)
+- Naming: infra-{component} for infrastructure, workload-{component} for workloads
+- Pre-commit hook rejects plaintext kind: Secret
+
+## Key Facts
+
+- License: MIT
+- Language: Bash + YAML (no application source code, no Dockerfiles)
+- Tests: 97 BATS tests (87 unit + 10 integration)
+- CI: GitHub Actions with kubeconform validation on PRs to main
+- Namespaces: argocd, metallb-system, envoy-gateway-system, kube-system, cert-manager, openclaw
+- KIND cluster name: openclaw-dev
+- Topology: 1 control-plane + 2 workers
+
+## Links
+
+- Website: https://pincer.patrykgolabek.dev
+- Repository: https://github.com/PatrykQuantumNomad/pincer-ops
+- OpenClaw: https://github.com/OpenClaw/OpenClaw
+- Concise version: https://pincer.patrykgolabek.dev/llms.txt

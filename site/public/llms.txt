@@ -1,0 +1,30 @@
+# Pincer Ops
+
+> GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime.
+
+Pincer Ops bootstraps a production-grade local Kubernetes cluster using KIND (Kubernetes in Docker) with a full infrastructure stack: MetalLB for L2 load balancing, Envoy Gateway for Gateway API routing, ArgoCD for GitOps continuous delivery, Sealed Secrets for encrypted secret management, and cert-manager for TLS certificates.
+
+## Quick Start
+
+```
+git clone https://github.com/PatrykQuantumNomad/pincer-ops.git
+cd pincer-ops
+make up       # Creates KIND cluster + deploys full stack (~3 min)
+make status   # All apps should show Synced / Healthy
+```
+
+## Key Facts
+
+- License: MIT
+- Language: Bash scripts + YAML manifests (no application source code)
+- Requirements: Docker, kind, kubectl
+- Cluster: KIND multi-node (1 control-plane + 2 workers)
+- GitOps: ArgoCD App of Apps pattern — `kubectl apply -f bootstrap/root-app.yaml` reconstructs complete cluster state
+- Workload: OpenClaw Gateway (StatefulSet, single replica, PVC-backed at /home/node/.openclaw/)
+
+## Links
+
+- Website: https://pincer.patrykgolabek.dev
+- Repository: https://github.com/PatrykQuantumNomad/pincer-ops
+- OpenClaw: https://github.com/OpenClaw/OpenClaw
+- Full documentation for LLMs: https://pincer.patrykgolabek.dev/llms-full.txt
