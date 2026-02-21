@@ -133,7 +133,7 @@ Run `make` or `make help` to see all targets:
 | `make openclaw-dashboard` | Show dashboard info |
 | `make openclaw-channels` | List configured channels |
 | `make openclaw-devices` | List paired devices |
-| `make openclaw-health` | Authenticated health check |
+| `make openclaw-health` | HTTP health check |
 | `make openclaw-shell` | Interactive shell in the OpenClaw pod |
 | `make openclaw-cli CMD="..."` | Run any OpenClaw CLI command |
 

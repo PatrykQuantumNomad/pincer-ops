@@ -65,7 +65,6 @@ pincer-ops/
 │       │   ├── statefulset.yaml       # replicas: 1, ghcr.io/openclaw/openclaw
 │       │   ├── service.yaml           # ClusterIP, port 18789
 │       │   ├── configmap.yaml         # openclaw.json gateway config
-│       │   ├── sealed-secret.yaml     # ANTHROPIC_API_KEY, OPENCLAW_GATEWAY_TOKEN
 │       │   ├── httproute.yaml         # Gateway API HTTPRoute (PathPrefix /)
 │       │   ├── networkpolicy.yaml     # default-deny-all + openclaw-allow
 │       │   ├── backup-rbac.yaml       # ServiceAccount for backup CronJob
@@ -154,10 +153,10 @@ Leave gaps between wave numbers for future insertions. Never reuse a wave number
 - **Command:** `node dist/index.js gateway --bind lan --port 18789` (`--bind lan` is CRITICAL — without it, gateway binds to loopback only)
 - **Port 18789:** Gateway HTTP (Control UI, WebChat, API)
 - **Data directory:** `/home/node/.openclaw/` — mounted from PVC (20Gi, ReadWriteOnce)
-- **Config file:** `/home/node/.openclaw/openclaw.json` — mounted from ConfigMap via subPath (changes require pod restart)
-- **Required env vars:** `OPENCLAW_GATEWAY_TOKEN` (from SealedSecret `openclaw-credentials`), `NODE_ENV=production`
-- **LLM provider keys** (`ANTHROPIC_API_KEY`, etc.) are configured post-deployment via the OpenClaw onboarding UI — not set in the deployment manifests
-- **Health check:** `node dist/index.js health --timeout 5000` (exec probe, not HTTP)
+- **Config file:** `/home/node/.openclaw/openclaw.json` — seeded from ConfigMap by initContainer on first deploy, then managed by the onboarding wizard and UI on the PVC
+- **Required env vars:** `NODE_ENV=production` — no secrets needed at deploy time
+- **Gateway token and LLM provider keys** are configured post-deployment via `make openclaw-onboard` and stored on the PVC — not in K8s Secrets or env vars
+- **Health check:** `httpGet /health` on port 18789 (startup + liveness + readiness probes)
 - **Cannot scale horizontally** — always `replicas: 1`, always StatefulSet
 - **NetworkPolicy:** default-deny-all + explicit allow for Envoy ingress on 18789/TCP, DNS on 53, HTTPS egress on 443 (LLM APIs)
 

@@ -161,7 +161,7 @@ ifndef CMD
 	@echo "  make openclaw-dashboard     Show dashboard info"
 	@echo "  make openclaw-channels      List channels"
 	@echo "  make openclaw-devices       List devices"
-	@echo "  make openclaw-health        Authenticated health check"
+	@echo "  make openclaw-health        HTTP health check"
 	@echo "  make openclaw-shell         Interactive shell in the pod"
 else
 	@$(OPENCLAW_CLI) $(CMD)
@@ -184,8 +184,8 @@ openclaw-devices: ## List paired OpenClaw devices
 	@$(OPENCLAW_CLI) devices list
 
 .PHONY: openclaw-health
-openclaw-health: ## Run authenticated health check against the gateway
-	@$(OPENCLAW_CLI) health --token "$$(kubectl get secret openclaw-credentials -n $(OPENCLAW_NS) -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 -d)"
+openclaw-health: ## Check gateway health via HTTP
+	@curl -sf http://localhost/health -o /dev/null && echo "OpenClaw gateway: healthy" || echo "OpenClaw gateway: unreachable"
 
 .PHONY: openclaw-shell
 openclaw-shell: ## Open interactive shell in the OpenClaw pod

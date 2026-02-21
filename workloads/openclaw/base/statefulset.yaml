@@ -57,11 +57,6 @@ spec:
               name: gateway
               protocol: TCP
           env:
-            - name: OPENCLAW_GATEWAY_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: openclaw-credentials
-                  key: OPENCLAW_GATEWAY_TOKEN
             - name: NODE_ENV
               value: "production"
             - name: HOME
