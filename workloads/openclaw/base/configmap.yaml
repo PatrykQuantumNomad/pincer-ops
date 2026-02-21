@@ -1,8 +1,8 @@
-# configmap.yaml -- OpenClaw configuration file (openclaw.json).
+# configmap.yaml -- OpenClaw seed configuration (openclaw.json).
 #
-# Mounted via subPath at /home/node/.openclaw/openclaw.json to avoid
-# shadowing the PVC directory. Changes require pod restart (subPath
-# limitation -- Kubernetes does not auto-update subPath mounts).
+# Copied to the PVC by the seed-config initContainer on first deploy only.
+# Once on the PVC, the onboarding wizard and UI manage this file directly.
+# To re-seed, delete the file from the PVC and restart the pod.
 apiVersion: v1
 kind: ConfigMap
 metadata:

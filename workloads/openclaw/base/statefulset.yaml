@@ -1,9 +1,11 @@
 # statefulset.yaml -- OpenClaw Gateway StatefulSet.
 #
-# Single-replica stateful workload with PVC for session data and ConfigMap
-# subPath mount for openclaw.json configuration. The --bind lan flag is
-# CRITICAL: without it the gateway binds to loopback and the Service cannot
-# route traffic to the pod.
+# Single-replica stateful workload with PVC for session data. An initContainer
+# seeds openclaw.json from the ConfigMap on first deploy; subsequent writes
+# (onboarding wizard, UI settings) go directly to the PVC.
+#
+# The --bind lan flag is CRITICAL: without it the gateway binds to loopback
+# and the Service cannot route traffic to the pod.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -22,6 +24,17 @@ spec:
       labels:
         app.kubernetes.io/name: openclaw-gateway
     spec:
+      initContainers:
+        - name: seed-config
+          image: ghcr.io/openclaw/openclaw:2026.2.19
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "test -f /home/node/.openclaw/openclaw.json || cp /config/openclaw.json /home/node/.openclaw/openclaw.json"]
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/.openclaw
+            - name: config
+              mountPath: /config
+              readOnly: true
       containers:
         - name: openclaw-gateway
           image: ghcr.io/openclaw/openclaw:2026.2.19
@@ -44,10 +57,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
-            - name: config
-              mountPath: /home/node/.openclaw/openclaw.json
-              subPath: openclaw.json
-              readOnly: true
           resources:
             requests:
               memory: "512Mi"

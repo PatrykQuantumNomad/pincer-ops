@@ -58,6 +58,37 @@ This creates a 3-node KIND cluster, installs ArgoCD with the root Application, c
 
 After bootstrap completes (~5 minutes), OpenClaw is accessible at `http://localhost`.
 
+### Post-Deployment Setup
+
+Once the cluster is running, configure OpenClaw through its CLI:
+
+```bash
+# 1. Run the onboarding wizard (configures LLM provider keys, gateway settings)
+make openclaw-onboard
+
+# 2. Verify the gateway is healthy
+make openclaw-health
+
+# 3. Open the OpenClaw UI in your browser
+open http://localhost
+```
+
+LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding or through the OpenClaw UI at `http://localhost` — they are **not** set in the deployment manifests.
+
+#### Managing Channels and Devices
+
+```bash
+make openclaw-channels                                           # List configured channels
+make openclaw-cli CMD="channels login"                           # WhatsApp QR login
+make openclaw-cli CMD="channels add --channel telegram --token YOUR_TOKEN"
+make openclaw-cli CMD="channels add --channel discord --token YOUR_TOKEN"
+
+make openclaw-devices                                            # List paired devices
+make openclaw-cli CMD="devices approve <requestId>"              # Approve a device
+```
+
+Run `make openclaw-cli` without arguments to see all available commands.
+
 ### Teardown
 
 ```bash
@@ -97,6 +128,14 @@ Run `make` or `make help` to see all targets:
 | `make logs` | Tail OpenClaw gateway logs |
 | `make pods` | List all pods across namespaces |
 | `make version` | Show cluster and tool versions |
+| **OpenClaw CLI** | |
+| `make openclaw-onboard` | Run onboarding wizard (interactive) |
+| `make openclaw-dashboard` | Show dashboard info |
+| `make openclaw-channels` | List configured channels |
+| `make openclaw-devices` | List paired devices |
+| `make openclaw-health` | Authenticated health check |
+| `make openclaw-shell` | Interactive shell in the OpenClaw pod |
+| `make openclaw-cli CMD="..."` | Run any OpenClaw CLI command |
 
 ## Repository Structure
 
@@ -174,6 +213,7 @@ This enables AI-assisted operations: checking pod status, viewing ArgoCD sync st
 ## Common Operations
 
 ```bash
+# Cluster operations
 make status                            # ArgoCD sync status
 make sync                              # Sync all apps
 make password                          # ArgoCD admin password
@@ -182,6 +222,15 @@ make logs                              # Tail OpenClaw logs
 make pods                              # List all pods
 make load-image IMAGE=app:dev          # Load image into KIND
 make seal FILE=secret.yaml             # Encrypt a secret
+
+# OpenClaw management
+make openclaw-onboard                  # First-time setup wizard
+make openclaw-health                   # Authenticated health check
+make openclaw-channels                 # List channels
+make openclaw-cli CMD="channels login" # WhatsApp QR login
+make openclaw-shell                    # Shell into the pod
+
+# Validation
 make validate                          # Validate manifests
 make verify-netpol                     # Test NetworkPolicy enforcement
 make check                             # Validate + run all tests
@@ -189,7 +238,7 @@ make check                             # Validate + run all tests
 
 ## What Doesn't Belong Here
 
-- **Application source code or Dockerfiles** — see `pincer-app`
+- **Application source code or Dockerfiles** — this is a pure GitOps state repo
 - **CI pipelines that build images** — causes infinite GitOps loops
 - **Horizontal scaling config** — OpenClaw is a single-instance monolith
 - **Production cloud manifests** — this is local-first on KIND

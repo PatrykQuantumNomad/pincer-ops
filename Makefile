@@ -134,6 +134,64 @@ pods: ## List all pods across namespaces
 	@kubectl get pods -A
 
 # ---------------------------------------------------------------------------
+# OpenClaw CLI
+# ---------------------------------------------------------------------------
+
+OPENCLAW_POD := openclaw-gateway-0
+OPENCLAW_NS  := openclaw
+OPENCLAW_CLI := kubectl exec -it $(OPENCLAW_POD) -n $(OPENCLAW_NS) -- node dist/index.js
+
+.PHONY: openclaw-cli
+openclaw-cli: ## Run any OpenClaw CLI command (usage: make openclaw-cli CMD="channels list")
+ifndef CMD
+	@echo "Usage: make openclaw-cli CMD=\"<command>\""
+	@echo ""
+	@echo "Common commands:"
+	@echo "  make openclaw-cli CMD=\"onboard --no-install-daemon\"                # First-time setup"
+	@echo "  make openclaw-cli CMD=\"channels list\"                              # List configured channels"
+	@echo "  make openclaw-cli CMD=\"channels login\"                             # WhatsApp QR login"
+	@echo "  make openclaw-cli CMD=\"channels add --channel telegram --token T\"  # Add Telegram"
+	@echo "  make openclaw-cli CMD=\"channels add --channel discord --token T\"   # Add Discord"
+	@echo "  make openclaw-cli CMD=\"devices list\"                               # List paired devices"
+	@echo "  make openclaw-cli CMD=\"devices approve <requestId>\"                # Approve a device"
+	@echo "  make openclaw-cli CMD=\"dashboard --no-open\"                        # Show dashboard info"
+	@echo ""
+	@echo "Shorthand targets:"
+	@echo "  make openclaw-onboard       Run onboarding wizard"
+	@echo "  make openclaw-dashboard     Show dashboard info"
+	@echo "  make openclaw-channels      List channels"
+	@echo "  make openclaw-devices       List devices"
+	@echo "  make openclaw-health        Authenticated health check"
+	@echo "  make openclaw-shell         Interactive shell in the pod"
+else
+	@$(OPENCLAW_CLI) $(CMD)
+endif
+
+.PHONY: openclaw-onboard
+openclaw-onboard: ## Run OpenClaw onboarding wizard (interactive)
+	@$(OPENCLAW_CLI) onboard --no-install-daemon
+
+.PHONY: openclaw-dashboard
+openclaw-dashboard: ## Show OpenClaw dashboard info
+	@$(OPENCLAW_CLI) dashboard --no-open
+
+.PHONY: openclaw-channels
+openclaw-channels: ## List configured OpenClaw channels
+	@$(OPENCLAW_CLI) channels list
+
+.PHONY: openclaw-devices
+openclaw-devices: ## List paired OpenClaw devices
+	@$(OPENCLAW_CLI) devices list
+
+.PHONY: openclaw-health
+openclaw-health: ## Run authenticated health check against the gateway
+	@$(OPENCLAW_CLI) health --token "$$(kubectl get secret openclaw-credentials -n $(OPENCLAW_NS) -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 -d)"
+
+.PHONY: openclaw-shell
+openclaw-shell: ## Open interactive shell in the OpenClaw pod
+	@kubectl exec -it $(OPENCLAW_POD) -n $(OPENCLAW_NS) -- /bin/sh
+
+# ---------------------------------------------------------------------------
 # Info
 # ---------------------------------------------------------------------------
 
@@ -157,9 +215,11 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Examples:"
-	@echo "  make up                          Bootstrap the cluster"
-	@echo "  make down                        Destroy the cluster"
-	@echo "  make reset                       Full teardown + rebuild"
-	@echo "  make check                       Validate manifests + run tests"
-	@echo "  make load-image IMAGE=app:dev    Load image into KIND"
-	@echo "  make seal FILE=secret.yaml       Encrypt a secret with kubeseal"
+	@echo "  make up                                        Bootstrap the cluster"
+	@echo "  make down                                      Destroy the cluster"
+	@echo "  make reset                                     Full teardown + rebuild"
+	@echo "  make check                                     Validate manifests + run tests"
+	@echo "  make load-image IMAGE=app:dev                  Load image into KIND"
+	@echo "  make seal FILE=secret.yaml                     Encrypt a secret with kubeseal"
+	@echo "  make openclaw-onboard                          Run OpenClaw onboarding wizard"
+	@echo "  make openclaw-cli CMD=\"channels list\"          List configured channels"
