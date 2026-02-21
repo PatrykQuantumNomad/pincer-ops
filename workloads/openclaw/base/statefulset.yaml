@@ -28,7 +28,15 @@ spec:
         - name: seed-config
           image: ghcr.io/openclaw/openclaw:2026.2.19
           imagePullPolicy: IfNotPresent
-          command: ["sh", "-c", "test -f /home/node/.openclaw/openclaw.json || cp /config/openclaw.json /home/node/.openclaw/openclaw.json"]
+          command:
+            - sh
+            - -c
+            - |
+              CFG=/home/node/.openclaw/openclaw.json
+              if [ ! -f "$CFG" ] || ! node -e "require('$CFG')" 2>/dev/null; then
+                echo "seed-config: seeding openclaw.json from ConfigMap"
+                cp /config/openclaw.json "$CFG"
+              fi
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
