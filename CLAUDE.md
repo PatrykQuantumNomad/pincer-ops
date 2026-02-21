@@ -2,11 +2,7 @@
 
 ## Project Identity
 
-**Pincer** is a GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://openclaw.ai/) — an open-source, self-hosted AI agent runtime. This repository (`pincer-ops`) contains all declarative infrastructure manifests, ArgoCD Application definitions, and bootstrap configuration. It is the **single source of truth** for cluster state.
-
-**Sister repositories:**
-- `pincer-app` — OpenClaw customization layer (agent configs, wrapper Dockerfile, integration tests)
-- `pincer-mcp` — MCP servers and Claude Code skills for AI-assisted cluster operations (may be folded into pincer-app)
+**Pincer Ops** is a GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) — an open-source, self-hosted AI agent runtime. This is a **monorepo** containing all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap scripts, tests, and developer tooling. It is the **single source of truth** for cluster state.
 
 ## Architecture Overview
 
@@ -14,10 +10,10 @@ The platform runs on **KIND (Kubernetes in Docker)** for local development with 
 
 ```
 KIND multi-node (1 CP + 2 workers)
-  → MetalLB L2 (LoadBalancer support)
-    → Nginx Ingress Controller
-      → ArgoCD (App of Apps pattern)
-        → OpenClaw Gateway (StatefulSet, single replica)
+  → MetalLB L2 (LoadBalancer IP allocation)
+    → Envoy Gateway (Gateway API via DaemonSet + hostPort)
+      → ArgoCD (App of Apps pattern, self-managing)
+        → OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
 ```
 
 **Critical architectural constraint:** OpenClaw is a **single-instance, file-backed Node.js monolith** — not a microservices platform. It runs as a StatefulSet with `replicas: 1` and a PersistentVolumeClaim. It cannot scale horizontally. All deployment primitives must respect this constraint.
@@ -27,58 +23,81 @@ KIND multi-node (1 CP + 2 workers)
 ```
 pincer-ops/
 ├── CLAUDE.md                          # You are here
+├── Makefile                           # Developer workflow (make help)
+├── README.md
+├── .mcp.json                          # MCP server config (kubernetes + argocd)
+├── .github/workflows/
+│   └── validate-manifests.yml         # CI: kubeconform on PRs to main
 ├── bootstrap/
 │   ├── root-app.yaml                  # THE singular entry point — all state flows from here
-│   ├── argocd-install.yaml            # ArgoCD server-side apply manifest
-│   ├── argocd-cm.yaml                 # ConfigMap: hybrid tracking, health checks
+│   ├── argocd-cm.yaml                 # ConfigMap: hybrid tracking, Lua health check, MCP account
+│   ├── argocd-rbac-cm.yaml            # ConfigMap: MCP read-only RBAC
+│   ├── argocd-notifications-cm.yaml   # ConfigMap: webhook triggers and templates
 │   ├── argocd-self.yaml               # ArgoCD self-management Application (wave -10)
+│   ├── infra-metallb.yaml             # ArgoCD Application (wave -5)
+│   ├── infra-envoy-gateway.yaml       # ArgoCD Application (wave -4, OCI Helm chart)
+│   ├── infra-envoy-gateway-config.yaml # ArgoCD Application (wave -1)
+│   ├── infra-sealed-secrets.yaml      # ArgoCD Application (wave -3)
+│   ├── infra-cert-manager.yaml        # ArgoCD Application (wave -2)
+│   ├── workload-openclaw.yaml         # ArgoCD Application (wave +10)
 │   └── projects/
-│       ├── infrastructure.yaml        # AppProject for infra components
-│       └── workloads.yaml             # AppProject for OpenClaw
+│       ├── infrastructure.yaml        # AppProject: all namespaces, all cluster resources
+│       └── workloads.yaml             # AppProject: openclaw namespace only
 ├── infrastructure/
-│   ├── metallb/
-│   │   ├── application.yaml           # ArgoCD Application (wave -5)
-│   │   └── base/
-│   │       ├── namespace.yaml
-│   │       ├── ipaddresspool.yaml
-│   │       └── l2advertisement.yaml
-│   ├── nginx-ingress/
-│   │   ├── application.yaml           # Wave -4
-│   │   └── base/
-│   ├── sealed-secrets/
-│   │   ├── application.yaml           # Wave -3
-│   │   └── base/
-│   └── cert-manager/
-│       ├── application.yaml           # Wave -2
-│       └── base/
+│   ├── metallb/base/
+│   │   └── kustomization.yaml         # Remote: github.com/metallb/metallb v0.15.3
+│   ├── envoy-gateway/base/
+│   │   ├── kustomization.yaml
+│   │   ├── envoy-proxy-config.yaml    # DaemonSet mode, hostPort 80/443
+│   │   ├── gateway-class.yaml         # GatewayClass 'eg'
+│   │   └── gateway.yaml               # Gateway with HTTP listener
+│   ├── sealed-secrets/base/
+│   │   ├── kustomization.yaml         # Remote: bitnami-labs/sealed-secrets v0.35.0
+│   │   ├── backup-rbac.yaml           # RBAC for sealing key backup job
+│   │   └── backup-cronjob.yaml        # Daily sealing key export (03:00)
+│   └── cert-manager/base/
+│       ├── kustomization.yaml         # Remote: cert-manager v1.19.2
+│       └── selfsigned-clusterissuer.yaml
 ├── workloads/
 │   └── openclaw/
-│       ├── application.yaml           # Wave 10
 │       ├── base/
-│       │   ├── namespace.yaml
-│       │   ├── statefulset.yaml
-│       │   ├── service.yaml
-│       │   ├── ingress.yaml
-│       │   ├── configmap.yaml
-│       │   ├── sealed-secret.yaml
-│       │   ├── pvc.yaml
-│       │   └── networkpolicy.yaml
-│       └── overlays/
-│           └── dev/
-│               └── kustomization.yaml
+│       │   ├── kustomization.yaml
+│       │   ├── statefulset.yaml       # replicas: 1, ghcr.io/openclaw/openclaw
+│       │   ├── service.yaml           # ClusterIP, port 18789
+│       │   ├── configmap.yaml         # openclaw.json gateway config
+│       │   ├── sealed-secret.yaml     # ANTHROPIC_API_KEY, OPENCLAW_GATEWAY_TOKEN
+│       │   ├── httproute.yaml         # Gateway API HTTPRoute (PathPrefix /)
+│       │   ├── networkpolicy.yaml     # default-deny-all + openclaw-allow
+│       │   ├── backup-rbac.yaml       # ServiceAccount for backup CronJob
+│       │   └── backup-cronjob.yaml    # Daily PVC backup (02:00)
+│       └── overlays/dev/
+│           └── kustomization.yaml     # Image tag pinning only
 ├── cluster/
-│   └── kind-config.yaml               # KIND cluster definition (3 nodes)
-└── scripts/
-    ├── bootstrap.sh                   # Full cluster creation + ArgoCD bootstrap
-    ├── teardown.sh                    # Destroy KIND cluster
-    └── load-image.sh                  # kind load docker-image wrapper
+│   └── kind-config.yaml               # 3-node KIND cluster (1 CP + 2 workers)
+├── scripts/
+│   ├── bootstrap.sh                   # Full cluster creation + ArgoCD bootstrap (16 steps)
+│   ├── teardown.sh                    # Destroy KIND cluster
+│   ├── setup-mcp.sh                   # Generate ArgoCD API token for MCP
+│   ├── validate-manifests.sh          # kubeconform validation (CI + local)
+│   ├── verify-networkpolicy.sh        # Runtime NetworkPolicy enforcement tests
+│   ├── run-tests.sh                   # BATS test runner
+│   ├── lib/
+│   │   ├── common.sh                  # Shared helpers (logging, run_cmd, parse_args, preflight)
+│   │   └── sealed-secrets.sh          # Sealing key backup/restore
+│   └── hooks/
+│       ├── install-hooks.sh           # Git hook installer
+│       └── pre-commit                 # Rejects plaintext kind: Secret
+└── tests/
+    ├── test_helper.bash               # BATS infrastructure (mocks, temp dirs)
+    ├── unit/                          # 68 unit tests across 8 files
+    └── integration/                   # 5 integration tests across 2 files
 ```
 
 ## Core Invariant
 
 **`kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state.**
 
-Every resource in this repository is either the root Application or discoverable by it. If you create a manifest that the root app can't reach via its directory scan, the cluster state is no longer fully reproducible from Git.
+Every resource in this repository is either the root Application or discoverable by it through recursive directory scanning. If you create a manifest that the root app can't reach, the cluster state is no longer fully reproducible from Git.
 
 ## Sync Wave Ordering
 
@@ -86,12 +105,13 @@ Infrastructure deploys before workloads via ArgoCD sync waves:
 
 | Wave | Component | Why this order |
 |------|-----------|----------------|
-| -10 | ArgoCD self-management | Must exist before managing anything else |
-| -5 | MetalLB | LoadBalancer IPs needed by Ingress |
-| -4 | Nginx Ingress | Routes traffic to all services |
+| -10 | ArgoCD self-management + AppProjects | Must exist before managing anything else |
+| -5 | MetalLB | LoadBalancer IPs needed by Gateway |
+| -4 | Envoy Gateway controller | Gateway API CRDs and controller (OCI Helm) |
 | -3 | Sealed Secrets | Controller must exist before SealedSecrets can decrypt |
-| -2 | Cert-Manager | TLS certs for Ingress (optional in dev) |
-| 10 | OpenClaw Gateway | Depends on all infrastructure |
+| -2 | cert-manager | TLS certificate infrastructure |
+| -1 | Envoy Gateway config | Gateway + HTTPRoute resources (needs CRDs from -4) |
+| +10 | OpenClaw Gateway | Depends on all infrastructure |
 
 Leave gaps between wave numbers for future insertions. Never reuse a wave number for unrelated components.
 
@@ -107,83 +127,90 @@ Leave gaps between wave numbers for future insertions. Never reuse a wave number
 
 ### ArgoCD Applications
 - Every Application YAML must include a `argocd.argoproj.io/sync-wave` annotation
-- Use `ServerSideApply=true` sync option for CRD-heavy components (ArgoCD, cert-manager)
+- Use `ServerSideApply=true` sync option for CRD-heavy **infrastructure** apps (MetalLB, Envoy Gateway, Sealed Secrets, cert-manager) — do **NOT** use SSA on root-app or argocd-self (they manage simple resources and SSA causes field manager conflicts with ConfigMaps created during bootstrap)
 - Set `argocd.argoproj.io/manifest-generate-paths` annotation to limit re-renders to relevant paths
 - Resource tracking method is `annotation+label` (configured in argocd-cm)
+- Lua health check in argocd-cm restores Application health assessment (removed in ArgoCD 1.8) — without it, sync waves across child Applications do not work
 
 ### Secrets
 - **NEVER commit plaintext Secrets to this repository**
 - All secrets are Bitnami SealedSecrets — encrypted against the cluster's public cert
 - SealedSecret manifests go in the same directory as the workload they serve
-- The sealing key backup process is documented in `scripts/backup-sealing-key.sh`
+- Sealing key backup/restore is in `scripts/lib/sealed-secrets.sh`; persistent backups at `~/.pincer/`
 
 ### Naming
-- Namespaces: `argocd`, `metallb-system`, `ingress-nginx`, `sealed-secrets`, `openclaw`
+- Namespaces: `argocd`, `metallb-system`, `envoy-gateway-system`, `kube-system` (sealed-secrets), `cert-manager`, `openclaw`
 - ArgoCD Applications: `infra-{component}` for infrastructure, `workload-{component}` for workloads
 - K8s resources: lowercase kebab-case, prefixed with component name (e.g., `openclaw-gateway`)
 
 ### Git Hygiene
-- This repo contains **only configuration manifests** — no application source code, no Dockerfiles, no CI pipelines that trigger image builds
-- Commits from CI bots must include `[skip ci]` in the message
+- This repo contains **only configuration manifests and operational scripts** — no application source code, no Dockerfiles, no CI pipelines that trigger image builds
 - Branch protection: `main` requires PR review; ArgoCD watches `main` only
+- Pre-commit hook rejects plaintext `kind: Secret` (install with `make hooks`)
 
 ## OpenClaw Specifics
 
-- **Image:** `openclaw/openclaw:{version}` — consumed as upstream dependency, not forked
+- **Image:** `ghcr.io/openclaw/openclaw:{version}` — pinned in `workloads/openclaw/overlays/dev/kustomization.yaml`
+- **Command:** `node dist/index.js gateway --bind lan --port 18789` (`--bind lan` is CRITICAL — without it, gateway binds to loopback only)
 - **Port 18789:** Gateway HTTP (Control UI, WebChat, API)
-- **Port 18790:** Bridge service (mobile device pairing)
-- **Port 9222:** Chromium sidecar for browser automation (optional)
-- **Data directory:** `/home/node/.openclaw/` — must be on a PVC
-- **Config file:** `/home/node/.openclaw/openclaw.json` (JSON5 supported) — mounted from ConfigMap
-- **Required env vars:** `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY` (or other LLM provider key), `NODE_ENV=production`
-- **PVC sizing:** Start at 10Gi minimum — session transcripts grow unbounded
-- **Health endpoint:** `GET /health` on port 18789
+- **Data directory:** `/home/node/.openclaw/` — mounted from PVC (20Gi, ReadWriteOnce)
+- **Config file:** `/home/node/.openclaw/openclaw.json` — mounted from ConfigMap via subPath (changes require pod restart)
+- **Required env vars:** `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY` — sourced from SealedSecret `openclaw-credentials`; `NODE_ENV=production`
+- **Health check:** `node dist/index.js health --timeout 5000` (exec probe, not HTTP)
 - **Cannot scale horizontally** — always `replicas: 1`, always StatefulSet
+- **NetworkPolicy:** default-deny-all + explicit allow for Envoy ingress on 18789/TCP, DNS on 53, HTTPS egress on 443 (LLM APIs)
 
 ## KIND Cluster Details
 
 - **Name:** `openclaw-dev`
 - **Topology:** 1 control-plane (with `ingress-ready=true` label) + 2 workers
-- **Port mappings:** Host 80→CP 80, Host 443→CP 443
-- **Docker network:** `kind` bridge — MetalLB IPs allocated from upper range of this CIDR
+- **Port mappings:** Host 80→CP 80, Host 443→CP 443 (extraPortMappings)
+- **Docker network:** `kind` bridge — MetalLB IPs allocated from upper range of CIDR (dynamically computed by bootstrap.sh)
 - **macOS/Windows caveat:** MetalLB VIPs are unreachable from host; use `localhost:80/443` via extraPortMappings only
-- **Image loading:** `kind load docker-image <image>:<tag> --name openclaw-dev` — bypasses registry
+- **Image loading:** `make load-image IMAGE=name:tag` — bypasses registry via `kind load docker-image`
+- **Envoy routing:** DaemonSet with hostPort on CP node (nodeSelector `ingress-ready: "true"`) — the only viable path for localhost access on macOS/KIND
 
 ## Common Operations
 
+All operations are wrapped in the Makefile (`make help` to list):
+
 ```bash
-# Bootstrap entire cluster from scratch
-./scripts/bootstrap.sh
+make up                    # Bootstrap cluster from scratch (idempotent)
+make down                  # Destroy cluster (sealing keys preserved at ~/.pincer/)
+make reset                 # Full teardown + rebuild
 
-# Destroy cluster
-./scripts/teardown.sh
+make status                # ArgoCD sync status (auto-login)
+make sync                  # Sync all apps (APP=name for single app)
+make password              # Print ArgoCD admin password
+make port-forward          # ArgoCD UI at localhost:8080
 
-# Load a locally built image into KIND
-./scripts/load-image.sh openclaw/openclaw:dev
+make validate              # Validate manifests (kubeconform)
+make test                  # Run all 73 BATS tests
+make check                 # validate + test
 
-# Seal a secret
-kubeseal --format yaml < secret.yaml > sealed-secret.yaml
-
-# Check ArgoCD sync status
-argocd app list
-argocd app get workload-openclaw
-
-# Force sync a specific app
-argocd app sync workload-openclaw
-
-# Validate manifests against the API server
-kubectl apply --dry-run=server -f workloads/openclaw/base/
-
-# Get ArgoCD admin password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+make logs                  # Tail OpenClaw gateway logs
+make pods                  # List all pods across namespaces
+make load-image IMAGE=x    # Load local image into KIND
+make seal FILE=secret.yaml # Encrypt a secret with kubeseal
+make verify-netpol         # Runtime NetworkPolicy tests
+make setup-mcp             # Generate MCP API token
 ```
+
+## MCP Integration
+
+Two MCP servers configured in `.mcp.json` (both read-only by default):
+- **kubernetes:** `mcp-server-kubernetes` — kubectl get, describe, logs
+- **argocd:** `argocd-mcp` — app list, get, sync status
+
+Setup: `make setup-mcp` (requires `make port-forward` running in another terminal).
 
 ## What NOT to Do
 
-- Do not add Dockerfiles or application source code to this repo — that goes in `pincer-app`
-- Do not create CI pipelines that build images from this repo — this causes infinite GitOps loops
+- Do not add application source code or Dockerfiles to this repo
+- Do not create CI pipelines that build images — causes infinite GitOps loops
 - Do not use `kubectl apply` for day-to-day changes — commit to Git and let ArgoCD sync
 - Do not use `:latest` image tags — KIND will fail to pull them
 - Do not create Secrets directly with `kubectl create secret` — use SealedSecrets through Git
-- Do not modify ArgoCD resources via the UI in ways that aren't reflected in Git — drift will be auto-corrected
+- Do not modify ArgoCD resources via the UI — drift will be auto-corrected by selfHeal
 - Do not hardcode the MetalLB IP range — it must be derived from `docker network inspect kind`
+- Do not add `ServerSideApply=true` to root-app.yaml or argocd-self.yaml — causes field manager conflicts

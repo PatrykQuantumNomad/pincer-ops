@@ -31,5 +31,4 @@ spec:
       selfHeal: true
       prune: false  # GOPS-03: Never auto-delete child Applications
     syncOptions:
-      - ServerSideApply=true
       - CreateNamespace=false
