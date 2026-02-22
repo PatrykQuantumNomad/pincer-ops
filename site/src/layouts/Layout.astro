@@ -2,11 +2,16 @@
 interface Props {
   title: string;
   description?: string;
+  image?: string;
+  imageAlt?: string;
+  jsonLd?: Record<string, unknown>;
 }
 
 const siteUrl = 'https://pincer.patrykgolabek.dev';
-const { title, description = 'GitOps-driven Kubernetes platform for deploying OpenClaw — an open-source AI agent runtime. Three commands to a production-grade Kubernetes stack.' } = Astro.props;
+const { title, description = 'GitOps-driven Kubernetes platform for deploying OpenClaw — an open-source AI agent runtime. Three commands to a production-grade Kubernetes stack.', image, imageAlt, jsonLd } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const ogImage = image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : `${siteUrl}/pincer-social.png`;
+const ogImageAlt = imageAlt || 'Pincer — GitOps-driven Kubernetes platform for OpenClaw';
 ---
 
 <!doctype html>
@@ -34,19 +39,19 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content="Pincer Ops" />
-    <meta property="og:image" content={`${siteUrl}/pincer-social.png`} />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1280" />
     <meta property="og:image:height" content="640" />
-    <meta property="og:image:alt" content="Pincer — GitOps-driven Kubernetes platform for OpenClaw" />
+    <meta property="og:image:alt" content={ogImageAlt} />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={`${siteUrl}/pincer-social.png`} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify({
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd || {
       "@context": "https://schema.org",
       "@graph": [
         {
@@ -69,6 +74,12 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
           "codeRepository": "https://github.com/PatrykQuantumNomad/pincer-ops",
           "license": "https://opensource.org/licenses/MIT",
           "programmingLanguage": ["Bash", "YAML"],
+          "author": {
+            "@type": "Person",
+            "name": "Patryk Golabek",
+            "url": "https://patrykgolabek.dev",
+            "jobTitle": "Cloud-Native Architect & AI/ML Engineer"
+          },
           "offers": {
             "@type": "Offer",
             "price": "0",

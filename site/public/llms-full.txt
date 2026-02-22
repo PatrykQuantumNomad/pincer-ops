@@ -158,9 +158,23 @@ TLS certificate infrastructure with self-signed ClusterIssuer for dev environmen
 - KIND cluster name: openclaw-dev
 - Topology: 1 control-plane + 2 workers
 
+## OpenClaw Internal Architecture
+
+An interactive architecture explorer is available at https://pincer.patrykgolabek.dev/openclaw-architecture covering:
+
+- **Architecture layers**: Gateway API, Agent Runtime, Memory & Storage, Skill Engine, Tool Execution, LLM Providers
+- **Data flow**: Inbound request pipeline (HTTP/WebSocket intake, auth, session hydration, intent classification) through the Tool Execution Loop (LLM planning, skill dispatch, sandboxed execution, result aggregation) to outbound response (streaming assembly, format negotiation, delivery)
+- **Core modules**: Gateway, AgentManager, SkillEngine, ToolRunner, MemoryStore, LLMRouter, ConfigManager, PluginLoader
+- **Extension system**: Custom skills, LLM provider adapters, storage backends, middleware hooks, UI themes
+- **Tech stack**: Node.js/TypeScript runtime, SQLite + vector DB storage, REST/WebSocket/SSE transport, Docker packaging
+- **Contributor guide**: Setup, conventions, testing, and PR workflow
+
+Source: OpenClaw repository at https://github.com/OpenClaw/OpenClaw (13,900+ commits, MIT licensed)
+
 ## Links
 
 - Website: https://pincer.patrykgolabek.dev
 - Repository: https://github.com/PatrykQuantumNomad/pincer-ops
 - OpenClaw: https://github.com/OpenClaw/OpenClaw
+- Architecture Explorer: https://pincer.patrykgolabek.dev/openclaw-architecture
 - Concise version: https://pincer.patrykgolabek.dev/llms.txt

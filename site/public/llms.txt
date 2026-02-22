@@ -27,4 +27,5 @@ make status   # All apps should show Synced / Healthy
 - Website: https://pincer.patrykgolabek.dev
 - Repository: https://github.com/PatrykQuantumNomad/pincer-ops
 - OpenClaw: https://github.com/OpenClaw/OpenClaw
+- Architecture Explorer: https://pincer.patrykgolabek.dev/openclaw-architecture
 - Full documentation for LLMs: https://pincer.patrykgolabek.dev/llms-full.txt

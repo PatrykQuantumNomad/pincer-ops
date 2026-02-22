@@ -1,0 +1,1130 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const branch = 'main';
+const commitHash = '9ae08ce20';
+const commitFull = '9ae08ce20500e074ff1530f52c4d1a3838c5c12a';
+const commitMsg = 'Memory: add Arabic query expansion stop words (#23717)';
+const commitDate = '2026-02-22';
+const totalCommits = '13,911';
+const repoUrl = 'https://github.com/openclaw/openclaw';
+
+const siteUrl = 'https://pincer.patrykgolabek.dev';
+const pageUrl = `${siteUrl}/openclaw-architecture`;
+const pageTitle = 'OpenClaw Architecture Explorer — Pincer Ops';
+const pageDescription = "Interactive deep-dive into OpenClaw's internal architecture, modules, data flow, extensions, and tech stack.";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      "url": siteUrl,
+      "name": "Pincer Ops",
+      "inLanguage": "en-US"
+    },
+    {
+      "@type": "TechArticle",
+      "@id": pageUrl,
+      "url": pageUrl,
+      "headline": pageTitle,
+      "description": pageDescription,
+      "isPartOf": { "@id": `${siteUrl}/#website` },
+      "inLanguage": "en-US",
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "OpenClaw",
+        "url": "https://github.com/OpenClaw/OpenClaw",
+        "applicationCategory": "DeveloperApplication",
+        "description": "Open-source, self-hosted AI agent runtime supporting 14+ LLM platforms, AI skills/tools, and privacy-first operation."
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Patryk Golabek",
+        "url": "https://patrykgolabek.dev",
+        "jobTitle": "Cloud-Native Architect & AI/ML Engineer"
+      },
+      "proficiencyLevel": "Expert",
+      "dependencies": "Node.js, TypeScript, SQLite, Docker",
+      "keywords": "openclaw architecture, ai agent runtime internals, gateway api, skill engine, tool execution, llm router, agent manager, memory store, plugin system"
+    }
+  ]
+};
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDescription}
+  image="/openclaw-architecture-social.png"
+  imageAlt="Pincer Ops x OpenClaw — Architecture Explorer"
+  jsonLd={jsonLd}
+>
+  <!-- Back to home nav -->
+  <header>
+    <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-void/60 border-b border-neon-cyan/5" aria-label="Architecture explorer navigation">
+      <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2.5 font-mono font-bold text-light hover:text-neon-cyan transition-colors" title="Back to Pincer Ops">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="120 30 280 460" class="w-5 h-7 shrink-0" aria-hidden="true">
+            <rect x="238" y="46" width="36" height="58" fill="currentColor"/>
+            <rect x="228" y="104" width="56" height="14" fill="currentColor"/>
+            <rect x="222" y="118" width="68" height="36" rx="2" fill="currentColor"/>
+            <rect x="211" y="154" width="90" height="55" rx="3" fill="currentColor"/>
+            <circle cx="256" cy="182" r="14" fill="#0A0E1A"/>
+            <circle cx="256" cy="182" r="5" fill="currentColor"/>
+            <path d="M 211 196 C 195 240, 155 310, 135 370 C 125 400, 128 435, 150 458 C 162 470, 178 472, 196 466 L 210 454 C 194 458, 180 454, 172 444 C 158 428, 155 400, 164 372 C 180 318, 215 252, 238 209 Z" fill="currentColor"/>
+            <path d="M 196 466 L 210 454 L 226 460 L 234 470 L 222 476 L 204 472 Z" fill="currentColor"/>
+            <path d="M 301 196 C 317 240, 357 310, 377 370 C 387 400, 384 435, 362 458 C 350 470, 334 472, 316 466 L 302 454 C 318 458, 332 454, 340 444 C 354 428, 357 400, 348 372 C 332 318, 297 252, 274 209 Z" fill="currentColor"/>
+            <path d="M 316 466 L 302 454 L 286 460 L 278 470 L 290 476 L 308 472 Z" fill="currentColor"/>
+          </svg>
+          <span>&larr; pincer-ops</span>
+        </a>
+        <a
+          href="https://patrykgolabek.dev"
+          target="_blank"
+          rel="noopener"
+          class="hidden sm:inline font-mono text-xs text-muted hover:text-neon-cyan transition-colors"
+        >
+          patrykgolabek.dev &nearr;
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Architecture Explorer (self-contained styles + content + script) -->
+  <style is:global>
+    /* Architecture Explorer styles — scoped via .arch-explorer */
+    .arch-explorer {
+      --arch-bg: #0A0E1A;
+      --arch-surface: #131B2E;
+      --arch-border: color-mix(in srgb, #00E5FF 12%, transparent);
+      --arch-text: #F0F4F8;
+      --arch-text-muted: #8892A4;
+      --arch-accent: #00E5FF;
+      --arch-green: #39FF14;
+      --arch-orange: #FF6B35;
+      --arch-red: #f85149;
+      --arch-purple: #bc8cff;
+      --arch-pink: #f778ba;
+      --arch-cyan: #39d2c0;
+
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      background: var(--arch-bg);
+      color: var(--arch-text);
+      line-height: 1.5;
+      padding-top: 56px; /* offset for fixed nav */
+    }
+
+    .arch-explorer .header {
+      text-align: center;
+      padding: 40px 20px 20px;
+      border-bottom: 1px solid var(--arch-border);
+    }
+    .arch-explorer .header h1 {
+      font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+      font-size: 2.2em;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .arch-explorer .header h1 .accent {
+      color: var(--arch-accent);
+      text-shadow: 0 0 10px color-mix(in srgb, #00E5FF 50%, transparent),
+                   0 0 40px color-mix(in srgb, #00E5FF 20%, transparent);
+    }
+    .arch-explorer .header p { color: var(--arch-text-muted); font-size: 1.1em; max-width: 700px; margin: 0 auto; }
+    .arch-explorer .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 20px;
+      background: var(--arch-surface);
+      border-bottom: 1px solid var(--arch-border);
+      flex-wrap: wrap;
+    }
+    .arch-explorer .source-banner {
+      background: linear-gradient(90deg, color-mix(in srgb, #00E5FF 4%, transparent), color-mix(in srgb, #39FF14 3%, transparent));
+      border-bottom: 1px solid var(--arch-border);
+      padding: 10px 20px;
+      overflow-x: auto;
+    }
+    .arch-explorer .source-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.82em;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    .arch-explorer .source-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .arch-explorer .source-label {
+      color: var(--arch-text-muted);
+      font-weight: 500;
+    }
+    .arch-explorer .source-value {
+      color: var(--arch-text);
+    }
+    .arch-explorer .source-link {
+      color: var(--arch-accent);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+    .arch-explorer .source-link:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    .arch-explorer .source-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+    .arch-explorer .source-sep {
+      color: var(--arch-border);
+    }
+    @media (max-width: 768px) {
+      .arch-explorer .source-sep { display: none; }
+      .arch-explorer .source-inner { gap: 8px 16px; justify-content: flex-start; }
+    }
+
+    .arch-explorer .stat { text-align: center; }
+    .arch-explorer .stat .num {
+      font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+      font-size: 1.8em;
+      font-weight: 700;
+      color: var(--arch-accent);
+    }
+    .arch-explorer .stat .label { font-size: 0.85em; color: var(--arch-text-muted); }
+
+    .arch-explorer .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 16px 20px;
+      background: var(--arch-surface);
+      border-bottom: 1px solid var(--arch-border);
+      flex-wrap: wrap;
+    }
+    .arch-explorer .tab {
+      padding: 8px 20px;
+      border: 1px solid var(--arch-border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--arch-text-muted);
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.85em;
+      transition: all 0.2s;
+    }
+    .arch-explorer .tab:hover { color: var(--arch-text); border-color: var(--arch-accent); }
+    .arch-explorer .tab.active { background: var(--arch-accent); color: #0A0E1A; border-color: var(--arch-accent); font-weight: 600; }
+    .arch-explorer .tab:focus-visible { outline: 2px solid var(--arch-accent); outline-offset: 2px; }
+
+    .arch-explorer .view { display: none; padding: 30px 20px; max-width: 1400px; margin: 0 auto; }
+    .arch-explorer .view.active { display: block; }
+
+    .arch-explorer .arch-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+    .arch-explorer .arch-layer {
+      width: 100%;
+      max-width: 1100px;
+      border: 1px solid var(--arch-border);
+      border-radius: 12px;
+      padding: 16px;
+      background: var(--arch-surface);
+      position: relative;
+    }
+    .arch-explorer .arch-layer .layer-label {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--arch-surface);
+      padding: 0 10px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.8em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #fff;
+    }
+    .arch-explorer .arch-boxes {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding-top: 8px;
+    }
+    .arch-explorer .arch-box {
+      padding: 12px 18px;
+      border-radius: 8px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      min-width: 120px;
+      position: relative;
+    }
+    .arch-explorer .arch-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .arch-explorer .arch-box:focus-visible { outline: 2px solid var(--arch-accent); outline-offset: 2px; }
+    .arch-explorer .arch-box .box-title { font-weight: 600; font-size: 0.95em; color: #fff; }
+    .arch-explorer .arch-box .box-sub { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72em; color: var(--arch-text-muted); margin-top: 2px; }
+
+    .arch-explorer .blue { border-color: var(--arch-accent); background: color-mix(in srgb, var(--arch-accent) 6%, var(--arch-surface)); }
+    .arch-explorer .green { border-color: var(--arch-green); background: color-mix(in srgb, var(--arch-green) 5%, var(--arch-surface)); }
+    .arch-explorer .orange { border-color: var(--arch-orange); background: color-mix(in srgb, var(--arch-orange) 6%, var(--arch-surface)); }
+    .arch-explorer .purple { border-color: var(--arch-purple); background: color-mix(in srgb, var(--arch-purple) 6%, var(--arch-surface)); }
+    .arch-explorer .pink { border-color: var(--arch-pink); background: color-mix(in srgb, var(--arch-pink) 6%, var(--arch-surface)); }
+    .arch-explorer .cyan { border-color: var(--arch-cyan); background: color-mix(in srgb, var(--arch-cyan) 6%, var(--arch-surface)); }
+    .arch-explorer .red-box { border-color: var(--arch-red); background: color-mix(in srgb, var(--arch-red) 6%, var(--arch-surface)); }
+
+    .arch-explorer .arrow-down {
+      text-align: center;
+      font-size: 1.5em;
+      color: var(--arch-text-muted);
+      margin: -8px 0;
+    }
+
+    .arch-explorer .detail-panel {
+      position: fixed;
+      right: -500px;
+      top: 0;
+      width: 460px;
+      height: 100vh;
+      background: var(--arch-surface);
+      border-left: 1px solid var(--arch-border);
+      padding: 24px;
+      overflow-y: auto;
+      transition: right 0.3s;
+      z-index: 100;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    }
+    .arch-explorer .detail-panel.open { right: 0; }
+    .arch-explorer .detail-panel .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--arch-text-muted);
+      font-size: 1.5em;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 4px 8px;
+      transition: color 0.2s;
+    }
+    .arch-explorer .detail-panel .close-btn:hover { color: var(--arch-text); }
+    .arch-explorer .detail-panel .close-btn:focus-visible { outline: 2px solid var(--arch-accent); outline-offset: 2px; }
+    .arch-explorer .detail-panel h2 { font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif; margin-bottom: 12px; color: #fff; }
+    .arch-explorer .detail-panel h3 { margin: 16px 0 8px; color: var(--arch-accent); font-size: 0.95em; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .arch-explorer .detail-panel p { color: var(--arch-text-muted); margin-bottom: 8px; font-size: 0.9em; }
+    .arch-explorer .detail-panel code {
+      background: rgba(88,166,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--arch-accent);
+    }
+    .arch-explorer .detail-panel ul { padding-left: 18px; margin-bottom: 8px; }
+    .arch-explorer .detail-panel li { color: var(--arch-text-muted); font-size: 0.88em; margin-bottom: 4px; }
+    .arch-explorer .file-list { list-style: none; padding: 0; }
+    .arch-explorer .file-list li {
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+      margin-bottom: 3px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.82em;
+      color: var(--arch-text);
+    }
+
+    .arch-explorer .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      padding: 20px;
+    }
+    .arch-explorer .flow-node {
+      padding: 16px 22px;
+      border-radius: 10px;
+      border: 1px solid;
+      text-align: center;
+      min-width: 140px;
+    }
+    .arch-explorer .flow-node.blue { border-color: var(--arch-accent); background: color-mix(in srgb, var(--arch-accent) 6%, var(--arch-surface)); }
+    .arch-explorer .flow-node.green { border-color: var(--arch-green); background: color-mix(in srgb, var(--arch-green) 5%, var(--arch-surface)); }
+    .arch-explorer .flow-node.purple { border-color: var(--arch-purple); background: color-mix(in srgb, var(--arch-purple) 6%, var(--arch-surface)); }
+    .arch-explorer .flow-node .flow-title { font-weight: 700; font-size: 1em; color: #fff; }
+    .arch-explorer .flow-node .flow-desc { font-size: 0.78em; color: var(--arch-text-muted); margin-top: 4px; }
+    .arch-explorer .flow-arrow {
+      font-size: 1.4em;
+      color: color-mix(in srgb, var(--arch-accent) 40%, var(--arch-text-muted));
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .arch-explorer .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .arch-explorer .module-card {
+      background: var(--arch-surface);
+      border: 1px solid var(--arch-border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .arch-explorer .module-card:hover {
+      border-color: var(--arch-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .arch-explorer .module-card:focus-visible { outline: 2px solid var(--arch-accent); outline-offset: 2px; }
+    .arch-explorer .module-card h3 { color: #fff; margin-bottom: 6px; font-size: 1.05em; }
+    .arch-explorer .module-card .path { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8em; color: var(--arch-accent); margin-bottom: 8px; }
+    .arch-explorer .module-card .desc { color: var(--arch-text-muted); font-size: 0.88em; }
+    .arch-explorer .module-card .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.68em;
+      margin-top: 8px;
+      margin-right: 4px;
+      font-weight: 500;
+      background: color-mix(in srgb, var(--arch-accent) 8%, transparent);
+      border: 1px solid var(--arch-border);
+      color: var(--arch-text-muted);
+    }
+
+    .arch-explorer .guide-steps {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .arch-explorer .guide-step {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--arch-surface);
+      border: 1px solid var(--arch-border);
+      border-radius: 10px;
+    }
+    .arch-explorer .step-num {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+      font-weight: 700;
+      font-size: 1.2em;
+      background: var(--arch-surface);
+      border: 1px solid var(--arch-border);
+      color: var(--arch-accent);
+    }
+    .arch-explorer .guide-step h3 { color: #fff; margin-bottom: 6px; }
+    .arch-explorer .guide-step p { color: var(--arch-text-muted); font-size: 0.9em; }
+    .arch-explorer .guide-step code { background: rgba(88,166,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--arch-accent); }
+
+    .arch-explorer .ext-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .arch-explorer .ext-card {
+      background: var(--arch-surface);
+      border: 1px solid var(--arch-border);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+      font-size: 0.88em;
+      transition: all 0.2s;
+    }
+    .arch-explorer .ext-card:hover { border-color: var(--arch-accent); }
+    .arch-explorer .ext-card:focus-visible { outline: 2px solid var(--arch-accent); outline-offset: 2px; }
+    .arch-explorer .ext-card .ext-name { font-weight: 600; color: #fff; }
+    .arch-explorer .ext-card .ext-type { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72em; color: var(--arch-text-muted); margin-top: 4px; }
+
+    .arch-explorer .section-title {
+      font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+      font-size: 1.4em;
+      color: #fff;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--arch-border);
+    }
+    .arch-explorer .section-sub { color: var(--arch-text-muted); font-size: 0.95em; margin-bottom: 20px; }
+
+    .arch-explorer .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+    }
+    .arch-explorer .tech-card {
+      background: var(--arch-surface);
+      border: 1px solid var(--arch-border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .arch-explorer .tech-card h4 { color: #fff; margin-bottom: 4px; }
+    .arch-explorer .tech-card p { color: var(--arch-text-muted); font-size: 0.85em; }
+    .arch-explorer .tech-cat { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--arch-text-muted); font-size: 0.72em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+
+    @media (max-width: 768px) {
+      .arch-explorer .flow-container { flex-direction: column; }
+      .arch-explorer .flow-arrow { transform: rotate(90deg); }
+      .arch-explorer .detail-panel { width: 100%; right: -100%; }
+      .arch-explorer .stats-bar { gap: 20px; }
+    }
+
+    /* Reduced motion — disable transitions and animations */
+    @media (prefers-reduced-motion: reduce) {
+      .arch-explorer .arch-box,
+      .arch-explorer .module-card,
+      .arch-explorer .ext-card,
+      .arch-explorer .tab,
+      .arch-explorer .detail-panel,
+      .arch-explorer .detail-panel .close-btn,
+      .arch-explorer .source-link {
+        transition: none !important;
+      }
+      .arch-explorer .arch-box:hover,
+      .arch-explorer .module-card:hover {
+        transform: none;
+      }
+    }
+  </style>
+
+  <main class="arch-explorer" id="main-content">
+
+    <div class="header">
+      <h1>OpenClaw Architecture <span class="accent">Explorer</span></h1>
+      <p>Multi-channel AI gateway with extensible messaging integrations. An AI assistant that runs on your devices, in your channels, with your rules.</p>
+    </div>
+
+    <!-- Source info banner -->
+    <div class="source-banner">
+      <div class="source-inner">
+        <div class="source-item">
+          <span class="source-label">Branch</span>
+          <a href={`${repoUrl}/tree/${branch}`} target="_blank" rel="noopener" class="source-value source-link">
+            <svg class="source-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5zM3.5 3.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0z"></path></svg>
+            {branch}
+          </a>
+        </div>
+        <span class="source-sep">|</span>
+        <div class="source-item">
+          <span class="source-label">Commit</span>
+          <a href={`${repoUrl}/commit/${commitFull}`} target="_blank" rel="noopener" class="source-value source-link" title={commitMsg}>
+            <svg class="source-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M11.93 8.5a4.002 4.002 0 01-7.86 0H.75a.75.75 0 010-1.5h3.32a4.002 4.002 0 017.86 0h3.32a.75.75 0 010 1.5h-3.32zm-1.43-.75a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z"></path></svg>
+            {commitHash}
+          </a>
+        </div>
+        <span class="source-sep">|</span>
+        <div class="source-item">
+          <span class="source-label">Date</span>
+          <span class="source-value">{commitDate}</span>
+        </div>
+        <span class="source-sep">|</span>
+        <div class="source-item">
+          <span class="source-label">Total Commits</span>
+          <span class="source-value">{totalCommits}</span>
+        </div>
+        <span class="source-sep">|</span>
+        <div class="source-item">
+          <a href={repoUrl} target="_blank" rel="noopener" class="source-value source-link">
+            <svg class="source-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 01-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 010 8c0-4.42 3.58-8 8-8z"></path></svg>
+            View Repository
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="num">378K</div><div class="label">Lines of Source</div></div>
+      <div class="stat"><div class="num">2,188</div><div class="label">Source Files</div></div>
+      <div class="stat"><div class="num">38</div><div class="label">Extensions</div></div>
+      <div class="stat"><div class="num">10+</div><div class="label">Messaging Channels</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">Native Apps</div></div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Architecture views">
+      <button class="tab active" role="tab" aria-selected="true" aria-controls="overview" data-view="overview">Architecture</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="dataflow" data-view="dataflow">Data Flow</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="modules" data-view="modules">Core Modules</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="extensions" data-view="extensions">Extensions</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="tech" data-view="tech">Tech Stack</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="guide" data-view="guide">Contributor Guide</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="overview" role="tabpanel" aria-labelledby="tab-overview">
+      <h2 class="section-title">System Architecture</h2>
+      <p class="section-sub">Click any component to see details. The system follows a layered architecture: user-facing surfaces connect through messaging channels to a central gateway that orchestrates AI agents.</p>
+
+      <div class="arch-diagram">
+        <div class="arch-layer">
+          <span class="layer-label">User-Facing Surfaces</span>
+          <div class="arch-boxes">
+            <div class="arch-box blue" data-detail="cli"><div class="box-title">CLI</div><div class="box-sub">src/cli + src/commands</div></div>
+            <div class="arch-box blue" data-detail="web-ui"><div class="box-title">Web UI</div><div class="box-sub">ui/ (Lit + Vite)</div></div>
+            <div class="arch-box blue" data-detail="tui"><div class="box-title">TUI</div><div class="box-sub">Terminal UI</div></div>
+            <div class="arch-box blue" data-detail="mac-app"><div class="box-title">macOS App</div><div class="box-sub">apps/macos (SwiftUI)</div></div>
+            <div class="arch-box blue" data-detail="ios-app"><div class="box-title">iOS App</div><div class="box-sub">apps/ios (Swift)</div></div>
+            <div class="arch-box blue" data-detail="android-app"><div class="box-title">Android App</div><div class="box-sub">apps/android (Kotlin)</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-down">&#x25BC;</div>
+
+        <div class="arch-layer">
+          <span class="layer-label">Messaging Channels</span>
+          <div class="arch-boxes">
+            <div class="arch-box green" data-detail="whatsapp"><div class="box-title">WhatsApp</div><div class="box-sub">src/web (Baileys)</div></div>
+            <div class="arch-box green" data-detail="telegram"><div class="box-title">Telegram</div><div class="box-sub">src/telegram (grammY)</div></div>
+            <div class="arch-box green" data-detail="discord"><div class="box-title">Discord</div><div class="box-sub">src/discord (Carbon)</div></div>
+            <div class="arch-box green" data-detail="slack"><div class="box-title">Slack</div><div class="box-sub">src/slack (Bolt)</div></div>
+            <div class="arch-box green" data-detail="signal"><div class="box-title">Signal</div><div class="box-sub">src/signal</div></div>
+            <div class="arch-box green" data-detail="imessage"><div class="box-title">iMessage</div><div class="box-sub">src/imessage</div></div>
+            <div class="arch-box green" data-detail="line-ch"><div class="box-title">LINE</div><div class="box-sub">src/line</div></div>
+            <div class="arch-box green" data-detail="more-channels"><div class="box-title">+20 more</div><div class="box-sub">via extensions/</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-down">&#x25BC;</div>
+
+        <div class="arch-layer">
+          <span class="layer-label">Gateway (Core Engine)</span>
+          <div class="arch-boxes">
+            <div class="arch-box orange" data-detail="gateway"><div class="box-title">Gateway Server</div><div class="box-sub">src/gateway/server.ts</div></div>
+            <div class="arch-box orange" data-detail="routing"><div class="box-title">Routing</div><div class="box-sub">src/routing</div></div>
+            <div class="arch-box orange" data-detail="sessions"><div class="box-title">Sessions</div><div class="box-sub">src/sessions</div></div>
+            <div class="arch-box orange" data-detail="auth"><div class="box-title">Auth</div><div class="box-sub">src/gateway/auth.ts</div></div>
+            <div class="arch-box orange" data-detail="hooks"><div class="box-title">Hooks</div><div class="box-sub">src/hooks</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-down">&#x25BC;</div>
+
+        <div class="arch-layer">
+          <span class="layer-label">AI Agent Layer</span>
+          <div class="arch-boxes">
+            <div class="arch-box purple" data-detail="agents"><div class="box-title">Agent System</div><div class="box-sub">src/agents (Pi-embedded)</div></div>
+            <div class="arch-box purple" data-detail="tools"><div class="box-title">Tool System</div><div class="box-sub">Bash, Browser, Canvas</div></div>
+            <div class="arch-box purple" data-detail="skills-detail"><div class="box-title">Skills</div><div class="box-sub">skills/ + agents/skills</div></div>
+            <div class="arch-box purple" data-detail="sandbox"><div class="box-title">Sandbox</div><div class="box-sub">Docker isolation</div></div>
+            <div class="arch-box purple" data-detail="subagents"><div class="box-title">Sub-Agents</div><div class="box-sub">Spawning & lifecycle</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-down">&#x25BC;</div>
+
+        <div class="arch-layer">
+          <span class="layer-label">Infrastructure & Storage</span>
+          <div class="arch-boxes">
+            <div class="arch-box cyan" data-detail="memory"><div class="box-title">Memory</div><div class="box-sub">src/memory (SQLite+Vec)</div></div>
+            <div class="arch-box cyan" data-detail="config"><div class="box-title">Config</div><div class="box-sub">src/config</div></div>
+            <div class="arch-box cyan" data-detail="plugins"><div class="box-title">Plugin System</div><div class="box-sub">src/plugins</div></div>
+            <div class="arch-box cyan" data-detail="media"><div class="box-title">Media Pipeline</div><div class="box-sub">src/media</div></div>
+            <div class="arch-box cyan" data-detail="security"><div class="box-title">Security</div><div class="box-sub">src/security</div></div>
+            <div class="arch-box cyan" data-detail="infra"><div class="box-title">Infra</div><div class="box-sub">src/infra (utilities)</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-down">&#x25BC;</div>
+
+        <div class="arch-layer">
+          <span class="layer-label">AI Model Providers</span>
+          <div class="arch-boxes">
+            <div class="arch-box red-box" data-detail="providers"><div class="box-title">Anthropic</div><div class="box-sub">Claude models</div></div>
+            <div class="arch-box red-box" data-detail="providers"><div class="box-title">OpenAI</div><div class="box-sub">GPT / o-series</div></div>
+            <div class="arch-box red-box" data-detail="providers"><div class="box-title">Google</div><div class="box-sub">Gemini models</div></div>
+            <div class="arch-box red-box" data-detail="providers"><div class="box-title">Ollama</div><div class="box-sub">Local models</div></div>
+            <div class="arch-box red-box" data-detail="providers"><div class="box-title">+15 more</div><div class="box-sub">Bedrock, vLLM, etc.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA FLOW -->
+    <div class="view" id="dataflow" role="tabpanel" aria-labelledby="tab-dataflow">
+      <h2 class="section-title">Message Data Flow</h2>
+      <p class="section-sub">How a user message travels through the system and returns as an AI response.</p>
+
+      <div style="margin-bottom: 40px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">Inbound: User Message to AI</h3>
+        <div class="flow-container">
+          <div class="flow-node blue"><div class="flow-title">User</div><div class="flow-desc">Sends message via<br>any channel</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node blue"><div class="flow-title">Channel</div><div class="flow-desc">WhatsApp, Telegram,<br>Discord, CLI, etc.</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node blue"><div class="flow-title">Routing</div><div class="flow-desc">Allow-list check,<br>session key resolve</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node blue"><div class="flow-title">Gateway</div><div class="flow-desc">WebSocket server,<br>auth, rate-limit</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node blue"><div class="flow-title">Agent</div><div class="flow-desc">Pi-embedded runner,<br>system prompt, tools</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node blue"><div class="flow-title">LLM Provider</div><div class="flow-desc">Anthropic, OpenAI,<br>Gemini, local, etc.</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 40px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">Tool Execution Loop</h3>
+        <div class="flow-container">
+          <div class="flow-node purple"><div class="flow-title">Agent</div><div class="flow-desc">Decides to use tool</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node purple"><div class="flow-title">Tool Policy</div><div class="flow-desc">Permission check,<br>sandbox gating</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node purple"><div class="flow-title">Sandbox</div><div class="flow-desc">Docker/native<br>execution</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node purple"><div class="flow-title">Tool Result</div><div class="flow-desc">Output back to<br>agent context</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node purple"><div class="flow-title">Agent</div><div class="flow-desc">Continues or<br>responds</div></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="color: #fff; margin-bottom: 16px;">Outbound: AI Response to User</h3>
+        <div class="flow-container">
+          <div class="flow-node green"><div class="flow-title">LLM Response</div><div class="flow-desc">Streamed tokens</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node green"><div class="flow-title">Subscribe</div><div class="flow-desc">Stream processing,<br>block chunking</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node green"><div class="flow-title">Gateway</div><div class="flow-desc">Broadcast to<br>connected clients</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node green"><div class="flow-title">Channel</div><div class="flow-desc">Format for platform<br>(Markdown, etc.)</div></div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-node green"><div class="flow-title">User</div><div class="flow-desc">Receives reply</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULES -->
+    <div class="view" id="modules" role="tabpanel" aria-labelledby="tab-modules">
+      <h2 class="section-title">Core Module Reference</h2>
+      <p class="section-sub">The main source directories under <code>src/</code> and their responsibilities.</p>
+      <div class="module-grid">
+        <div class="module-card"><h3>CLI</h3><div class="path">src/cli/</div><div class="desc">Command-line interface wiring. Entry point parsing, Commander program setup, all CLI subcommands (gateway, config, channels, browser, etc). Uses <code>src/cli/program.ts</code> as the root.</div><span class="tag blue">~100 files</span><span class="tag orange">Entry Point</span></div>
+        <div class="module-card"><h3>Commands</h3><div class="path">src/commands/</div><div class="desc">Business logic for all CLI commands: onboarding, doctor, status, configure, sessions, agents management, model picking, sandbox, auth-choice, health checks.</div><span class="tag blue">~200 files</span><span class="tag green">Core</span></div>
+        <div class="module-card"><h3>Gateway</h3><div class="path">src/gateway/</div><div class="desc">The core server. WebSocket + HTTP server, channel management, agent chat orchestration, OpenAI-compatible API, session management, auth, hooks, node events, model catalog.</div><span class="tag orange">~120 files</span><span class="tag orange">Core Engine</span></div>
+        <div class="module-card"><h3>Agents</h3><div class="path">src/agents/</div><div class="desc">AI agent system: Pi-embedded runner, system prompts, tool definitions, tool policy, sandbox config, skills, subagent spawning/registry, model catalog, bash/browser tools, compaction, workspace management.</div><span class="tag purple">~250 files</span><span class="tag purple">AI Core</span></div>
+        <div class="module-card"><h3>Channels</h3><div class="path">src/channels/</div><div class="desc">Shared channel infrastructure: allow-lists, command gating, mention gating, session management, status reactions, typing indicators, draft stream controls, dock management.</div><span class="tag green">~30 files</span><span class="tag green">Shared</span></div>
+        <div class="module-card"><h3>Memory</h3><div class="path">src/memory/</div><div class="desc">Vector memory system with SQLite-vec. Embedding management (OpenAI, Gemini, Voyage, local llama), hybrid search (semantic + keyword), batch operations, query expansion, temporal decay, MMR reranking.</div><span class="tag cyan">~60 files</span><span class="tag purple">AI Core</span></div>
+        <div class="module-card"><h3>Plugins</h3><div class="path">src/plugins/</div><div class="desc">Plugin runtime: discovery, loading (via jiti), installation (npm), manifest registry, hook system, tool/service registration, slot management (memory slot is exclusive).</div><span class="tag cyan">~40 files</span><span class="tag green">Extensibility</span></div>
+        <div class="module-card"><h3>Infra</h3><div class="path">src/infra/</div><div class="desc">Infrastructure utilities: env management, port handling, file locks, device identity, Bonjour/mDNS, Tailscale, SSH tunnels, update checking, heartbeat system, exec approvals, provider usage tracking.</div><span class="tag cyan">~130 files</span><span class="tag cyan">Infra</span></div>
+        <div class="module-card"><h3>Routing</h3><div class="path">src/routing/</div><div class="desc">Message routing: session key derivation, route resolution (which agent handles which message), account ID mapping.</div><span class="tag orange">~6 files</span><span class="tag orange">Core</span></div>
+        <div class="module-card"><h3>Security</h3><div class="path">src/security/</div><div class="desc">Security auditing: channel metadata, dangerous config/tool flags, DM policy, external content scanning, skill scanning, secret comparison, Windows ACL.</div><span class="tag red-box">~20 files</span><span class="tag red-box">Security</span></div>
+        <div class="module-card"><h3>Media</h3><div class="path">src/media/</div><div class="desc">Media processing pipeline for images, audio, video, and documents. Handles transcoding, format detection, and media understanding via AI models.</div><span class="tag pink">media</span><span class="tag green">Core</span></div>
+        <div class="module-card"><h3>Config</h3><div class="path">src/config/</div><div class="desc">Configuration management: config file loading/saving, session store, profile management. Data stored at <code>~/.openclaw/</code>.</div><span class="tag cyan">config</span><span class="tag cyan">Infra</span></div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 40px;">Channel Implementations</h2>
+      <p class="section-sub">Each channel lives in its own directory with platform-specific integration code.</p>
+      <div class="module-grid">
+        <div class="module-card"><h3>WhatsApp</h3><div class="path">src/web/</div><div class="desc">WhatsApp Web integration via Baileys library. QR code pairing, message handling, media upload/download.</div><span class="tag green">Channel</span></div>
+        <div class="module-card"><h3>Telegram</h3><div class="path">src/telegram/</div><div class="desc">Telegram bot via grammY framework. Supports groups, DMs, inline queries, throttling.</div><span class="tag green">Channel</span></div>
+        <div class="module-card"><h3>Discord</h3><div class="path">src/discord/</div><div class="desc">Discord bot via Carbon library. Guild management, slash commands, voice support.</div><span class="tag green">Channel</span></div>
+        <div class="module-card"><h3>Slack</h3><div class="path">src/slack/</div><div class="desc">Slack app via Bolt framework. Workspace events, slash commands, interactive messages.</div><span class="tag green">Channel</span></div>
+        <div class="module-card"><h3>Signal</h3><div class="path">src/signal/</div><div class="desc">Signal messenger integration. Private messaging with E2E encryption.</div><span class="tag green">Channel</span></div>
+        <div class="module-card"><h3>iMessage</h3><div class="path">src/imessage/</div><div class="desc">Apple iMessage integration (macOS only). BlueBubbles extension available.</div><span class="tag green">Channel</span></div>
+      </div>
+    </div>
+
+    <!-- EXTENSIONS -->
+    <div class="view" id="extensions" role="tabpanel" aria-labelledby="tab-extensions">
+      <h2 class="section-title">Extensions (38 plugins)</h2>
+      <p class="section-sub">Extensions are workspace packages under <code>extensions/</code>. They extend OpenClaw with additional channels, memory backends, AI tools, and integrations.</p>
+
+      <h3 style="color: #fff; margin: 20px 0 12px;">Messaging Channels</h3>
+      <div class="ext-grid">
+        <div class="ext-card"><div class="ext-name">MS Teams</div><div class="ext-type">extensions/msteams</div></div>
+        <div class="ext-card"><div class="ext-name">Matrix</div><div class="ext-type">extensions/matrix</div></div>
+        <div class="ext-card"><div class="ext-name">IRC</div><div class="ext-type">extensions/irc</div></div>
+        <div class="ext-card"><div class="ext-name">Nostr</div><div class="ext-type">extensions/nostr</div></div>
+        <div class="ext-card"><div class="ext-name">Twitch</div><div class="ext-type">extensions/twitch</div></div>
+        <div class="ext-card"><div class="ext-name">Feishu</div><div class="ext-type">extensions/feishu</div></div>
+        <div class="ext-card"><div class="ext-name">Google Chat</div><div class="ext-type">extensions/googlechat</div></div>
+        <div class="ext-card"><div class="ext-name">Mattermost</div><div class="ext-type">extensions/mattermost</div></div>
+        <div class="ext-card"><div class="ext-name">Nextcloud Talk</div><div class="ext-type">extensions/nextcloud-talk</div></div>
+        <div class="ext-card"><div class="ext-name">Synology Chat</div><div class="ext-type">extensions/synology-chat</div></div>
+        <div class="ext-card"><div class="ext-name">Zalo</div><div class="ext-type">extensions/zalo</div></div>
+        <div class="ext-card"><div class="ext-name">Zalo User</div><div class="ext-type">extensions/zalouser</div></div>
+        <div class="ext-card"><div class="ext-name">Tlon</div><div class="ext-type">extensions/tlon</div></div>
+        <div class="ext-card"><div class="ext-name">Telegram (ext)</div><div class="ext-type">extensions/telegram</div></div>
+        <div class="ext-card"><div class="ext-name">Discord (ext)</div><div class="ext-type">extensions/discord</div></div>
+        <div class="ext-card"><div class="ext-name">Slack (ext)</div><div class="ext-type">extensions/slack</div></div>
+        <div class="ext-card"><div class="ext-name">Signal (ext)</div><div class="ext-type">extensions/signal</div></div>
+        <div class="ext-card"><div class="ext-name">WhatsApp (ext)</div><div class="ext-type">extensions/whatsapp</div></div>
+        <div class="ext-card"><div class="ext-name">iMessage (ext)</div><div class="ext-type">extensions/imessage</div></div>
+        <div class="ext-card"><div class="ext-name">LINE (ext)</div><div class="ext-type">extensions/line</div></div>
+        <div class="ext-card"><div class="ext-name">BlueBubbles</div><div class="ext-type">extensions/bluebubbles</div></div>
+      </div>
+
+      <h3 style="color: #fff; margin: 20px 0 12px;">AI & Agent Tools</h3>
+      <div class="ext-grid">
+        <div class="ext-card"><div class="ext-name">LLM Task</div><div class="ext-type">extensions/llm-task</div></div>
+        <div class="ext-card"><div class="ext-name">Lobster</div><div class="ext-type">extensions/lobster</div></div>
+        <div class="ext-card"><div class="ext-name">Open Prose</div><div class="ext-type">extensions/open-prose</div></div>
+        <div class="ext-card"><div class="ext-name">Voice Call</div><div class="ext-type">extensions/voice-call</div></div>
+        <div class="ext-card"><div class="ext-name">Talk Voice</div><div class="ext-type">extensions/talk-voice</div></div>
+        <div class="ext-card"><div class="ext-name">Phone Control</div><div class="ext-type">extensions/phone-control</div></div>
+        <div class="ext-card"><div class="ext-name">Thread Ownership</div><div class="ext-type">extensions/thread-ownership</div></div>
+        <div class="ext-card"><div class="ext-name">Diagnostics (OTel)</div><div class="ext-type">extensions/diagnostics-otel</div></div>
+      </div>
+
+      <h3 style="color: #fff; margin: 20px 0 12px;">Memory & Auth</h3>
+      <div class="ext-grid">
+        <div class="ext-card"><div class="ext-name">Memory Core</div><div class="ext-type">extensions/memory-core</div></div>
+        <div class="ext-card"><div class="ext-name">Memory LanceDB</div><div class="ext-type">extensions/memory-lancedb</div></div>
+        <div class="ext-card"><div class="ext-name">Copilot Proxy</div><div class="ext-type">extensions/copilot-proxy</div></div>
+        <div class="ext-card"><div class="ext-name">Google Antigravity Auth</div><div class="ext-type">extensions/google-antigravity-auth</div></div>
+        <div class="ext-card"><div class="ext-name">Google Gemini CLI Auth</div><div class="ext-type">extensions/google-gemini-cli-auth</div></div>
+        <div class="ext-card"><div class="ext-name">Minimax Portal Auth</div><div class="ext-type">extensions/minimax-portal-auth</div></div>
+        <div class="ext-card"><div class="ext-name">Qwen Portal Auth</div><div class="ext-type">extensions/qwen-portal-auth</div></div>
+        <div class="ext-card"><div class="ext-name">Device Pair</div><div class="ext-type">extensions/device-pair</div></div>
+        <div class="ext-card"><div class="ext-name">Shared</div><div class="ext-type">extensions/shared</div></div>
+      </div>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="view" id="tech" role="tabpanel" aria-labelledby="tab-tech">
+      <h2 class="section-title">Technology Stack</h2>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-cat">Language</div><h4>TypeScript (ESM)</h4><p>Primary language. Strict typing, no <code>any</code>. Node 22+ runtime. Bun supported for dev.</p></div>
+        <div class="tech-card"><div class="tech-cat">Language</div><h4>Swift / SwiftUI</h4><p>macOS and iOS native apps. Uses Observation framework for state management.</p></div>
+        <div class="tech-card"><div class="tech-cat">Language</div><h4>Kotlin</h4><p>Android app under <code>apps/android/</code>. Gradle build system.</p></div>
+        <div class="tech-card"><div class="tech-cat">Build</div><h4>tsdown</h4><p>TypeScript bundler for building <code>dist/</code>. Fast, ESM-native.</p></div>
+        <div class="tech-card"><div class="tech-cat">Build</div><h4>pnpm (workspaces)</h4><p>Package manager with workspace support. Monorepo with root + ui + packages + extensions.</p></div>
+        <div class="tech-card"><div class="tech-cat">Test</div><h4>Vitest</h4><p>Testing framework. Multiple configs: unit, e2e, live, extensions, gateway. V8 coverage at 70% threshold.</p></div>
+        <div class="tech-card"><div class="tech-cat">Lint/Format</div><h4>Oxlint + Oxfmt</h4><p>Rust-based linter and formatter. Fast, type-aware linting. SwiftLint/SwiftFormat for Swift.</p></div>
+        <div class="tech-card"><div class="tech-cat">CLI</div><h4>Commander</h4><p>CLI framework. Program built in <code>src/cli/program.ts</code> with extensive subcommand tree.</p></div>
+        <div class="tech-card"><div class="tech-cat">Web Server</div><h4>Express 5 + WebSockets</h4><p>Gateway HTTP server with WebSocket support via <code>ws</code>. OpenAI-compatible API layer.</p></div>
+        <div class="tech-card"><div class="tech-cat">Web UI</div><h4>Lit + Vite</h4><p>Web component framework. Lightweight, standards-based UI under <code>ui/</code>.</p></div>
+        <div class="tech-card"><div class="tech-cat">Messaging</div><h4>Baileys (WhatsApp)</h4><p>WhatsApp Web protocol library for direct WhatsApp integration.</p></div>
+        <div class="tech-card"><div class="tech-cat">Messaging</div><h4>grammY (Telegram)</h4><p>Telegram Bot API framework with runner and throttler plugins.</p></div>
+        <div class="tech-card"><div class="tech-cat">Messaging</div><h4>Carbon (Discord)</h4><p>Discord bot framework. Voice support via <code>@discordjs/voice</code>.</p></div>
+        <div class="tech-card"><div class="tech-cat">Messaging</div><h4>Bolt (Slack)</h4><p>Official Slack app framework for events, commands, and interactive messages.</p></div>
+        <div class="tech-card"><div class="tech-cat">AI</div><h4>Pi Agent (embedded)</h4><p>AI agent runtime from <code>@mariozechner/pi-*</code>. Powers the core agent loop, coding tools, TUI.</p></div>
+        <div class="tech-card"><div class="tech-cat">AI</div><h4>Multi-Provider</h4><p>Anthropic, OpenAI, Google, Bedrock, Ollama, vLLM, HuggingFace, Together, xAI, and more.</p></div>
+        <div class="tech-card"><div class="tech-cat">Storage</div><h4>SQLite + sqlite-vec</h4><p>Vector database for memory. Embeddings stored locally. Hybrid semantic + keyword search.</p></div>
+        <div class="tech-card"><div class="tech-cat">Schema</div><h4>TypeBox + Zod</h4><p>Runtime schema validation. TypeBox for tool schemas (JSON Schema), Zod for general validation.</p></div>
+        <div class="tech-card"><div class="tech-cat">Browser</div><h4>Playwright</h4><p>Browser automation for agent tools. Headless browsing, screenshots, interaction.</p></div>
+        <div class="tech-card"><div class="tech-cat">Deploy</div><h4>Docker + Fly.io</h4><p>Containerized deployment. Multiple Dockerfiles: main, sandbox, sandbox-browser.</p></div>
+        <div class="tech-card"><div class="tech-cat">Protocol</div><h4>ACP (Agent Client Protocol)</h4><p>Standardized protocol for agent communication. SDK at <code>@agentclientprotocol/sdk</code>.</p></div>
+      </div>
+    </div>
+
+    <!-- CONTRIBUTOR GUIDE -->
+    <div class="view" id="guide" role="tabpanel" aria-labelledby="tab-guide">
+      <h2 class="section-title">New Contributor Quick Start</h2>
+      <p class="section-sub">Follow these steps to get oriented and productive in the OpenClaw codebase.</p>
+
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num blue">1</div><div><h3>Setup & Install</h3><p>Node 22+ required. Install dependencies with <code>pnpm install</code>. The project uses pnpm workspaces with root + ui + packages + extensions. Bun is also supported for dev.</p></div></div>
+        <div class="guide-step"><div class="step-num blue">2</div><div><h3>Read the Key Docs</h3><p>Start with <code>AGENTS.md</code> (repo guidelines), <code>VISION.md</code> (project direction), <code>CONTRIBUTING.md</code> (PR rules), and <code>SECURITY.md</code>. These define coding style, naming, commit conventions, and what will/won't be merged.</p></div></div>
+        <div class="guide-step"><div class="step-num green">3</div><div><h3>Understand the Entry Points</h3><p><code>src/entry.ts</code> is the CLI bootstrap. It calls <code>src/cli/run-main.ts</code> which loads <code>src/cli/program.ts</code> (Commander). The gateway server lives at <code>src/gateway/server.ts</code>. <code>src/index.ts</code> is the library export.</p></div></div>
+        <div class="guide-step"><div class="step-num green">4</div><div><h3>Learn the Core Loop</h3><p>A message arrives at a <strong>channel</strong> (src/telegram, src/discord, etc.) &rarr; gets routed (<code>src/routing</code>) &rarr; hits the <strong>gateway</strong> (<code>src/gateway/server.ts</code>) &rarr; runs through the <strong>agent</strong> (<code>src/agents/pi-embedded-runner.ts</code>) &rarr; calls an <strong>LLM provider</strong> &rarr; streams response back.</p></div></div>
+        <div class="guide-step"><div class="step-num orange">5</div><div><h3>Build & Test</h3><p>Build: <code>pnpm build</code>. Type-check: <code>pnpm tsgo</code>. Lint: <code>pnpm check</code>. Test: <code>pnpm test</code> (parallel vitest). Tests are colocated as <code>*.test.ts</code> files. Coverage target: 70%.</p></div></div>
+        <div class="guide-step"><div class="step-num orange">6</div><div><h3>Run in Dev Mode</h3><p>Run the CLI: <code>pnpm openclaw ...</code> or <code>pnpm dev</code>. Gateway dev mode: <code>pnpm gateway:dev</code> (skips channel startup for faster iteration). Web UI dev: <code>pnpm ui:dev</code>.</p></div></div>
+        <div class="guide-step"><div class="step-num purple">7</div><div><h3>Explore a Feature Area</h3><p><strong>Adding a channel?</strong> Look at <code>src/telegram/</code> or an extension like <code>extensions/matrix/</code> as templates. <strong>Adding a tool?</strong> See <code>src/agents/tools/</code>. <strong>Adding a plugin?</strong> See <code>docs/tools/plugin.md</code> and <code>src/plugins/</code>.</p></div></div>
+        <div class="guide-step"><div class="step-num purple">8</div><div><h3>Commit & PR Rules</h3><p>Use <code>scripts/committer "msg" file...</code> for commits. One PR = one issue. Max ~5,000 changed lines. Format: <code>pnpm format:fix</code> before committing. Pre-commit hooks enforced.</p></div></div>
+        <div class="guide-step"><div class="step-num cyan">9</div><div><h3>Key Patterns to Know</h3><p><strong>DI:</strong> <code>createDefaultDeps()</code> pattern for dependency injection. <strong>Plugins:</strong> loaded via jiti, manifest-based. <strong>Config:</strong> stored at <code>~/.openclaw/</code>. <strong>Sessions:</strong> JSONL files per agent. <strong>TypeBox:</strong> for tool schemas (no Union types). <strong>Oxlint:</strong> type-aware linting.</p></div></div>
+        <div class="guide-step"><div class="step-num red-box">10</div><div><h3>What NOT To Do</h3><p>No <code>@ts-nocheck</code>. No <code>any</code>. No prototype mutation. No editing <code>node_modules</code>. No Carbon dependency updates. Keep files under ~500 LOC. Don't bundle unrelated changes. Don't add skills to core (use ClawHub). Don't add MCP to core (use mcporter).</p></div></div>
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <aside class="detail-panel" id="detailPanel" aria-label="Component details" aria-hidden="true">
+      <button class="close-btn" id="closeDetailBtn" aria-label="Close detail panel">&times;</button>
+      <div id="detailContent"></div>
+    </aside>
+  </main>
+
+  <script is:inline>
+    // Tab switching with ARIA
+    const tabs = document.querySelectorAll('.arch-explorer .tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+        document.querySelectorAll('.arch-explorer .view').forEach(v => v.classList.remove('active'));
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        document.getElementById(tab.dataset.view).classList.add('active');
+      });
+      // Arrow key navigation between tabs
+      tab.addEventListener('keydown', (e) => {
+        const tabArr = Array.from(tabs);
+        const idx = tabArr.indexOf(tab);
+        let target;
+        if (e.key === 'ArrowRight') target = tabArr[(idx + 1) % tabArr.length];
+        if (e.key === 'ArrowLeft') target = tabArr[(idx - 1 + tabArr.length) % tabArr.length];
+        if (target) { e.preventDefault(); target.focus(); target.click(); }
+      });
+    });
+
+    // Detail panel data
+    const details = {
+      cli: {
+        title: 'CLI (Command-Line Interface)',
+        desc: 'The primary user interface. Built with Commander.js, it provides a rich subcommand tree for managing the gateway, channels, agents, config, and more.',
+        files: ['src/cli/program.ts \u2014 Commander program root', 'src/cli/run-main.ts \u2014 CLI bootstrap', 'src/entry.ts \u2014 Process entry point', 'src/cli/gateway-cli.ts \u2014 Gateway subcommands', 'src/cli/browser-cli.ts \u2014 Browser automation CLI', 'src/cli/channels-cli.ts \u2014 Channel management'],
+        concepts: ['Commander.js subcommand tree', 'Profile system (dev/prod)', 'Respawn policy for Node flags', 'Completion scripts (fish, bash, zsh)']
+      },
+      'web-ui': {
+        title: 'Web UI',
+        desc: 'Browser-based control interface built with Lit web components and Vite. Provides a visual dashboard for the gateway.',
+        files: ['ui/src/ \u2014 Lit components', 'ui/vite.config.ts \u2014 Vite build config', 'ui/index.html \u2014 SPA entry'],
+        concepts: ['Lit web components', 'Vite bundler', 'WebSocket connection to gateway']
+      },
+      tui: {
+        title: 'Terminal UI (TUI)',
+        desc: 'Terminal-based interactive UI powered by @mariozechner/pi-tui. Provides a rich terminal experience for interacting with the AI agent.',
+        files: ['src/tui/ \u2014 TUI module', 'src/cli/tui-cli.ts \u2014 TUI CLI entry'],
+        concepts: ['Pi TUI framework', 'Terminal rendering', 'Keyboard navigation']
+      },
+      'mac-app': {
+        title: 'macOS App',
+        desc: 'Native macOS app built with SwiftUI. Runs as a menubar app managing the gateway process. Uses Sparkle for auto-updates.',
+        files: ['apps/macos/Sources/ \u2014 Swift source', 'apps/macos/Sources/OpenClaw/Resources/Info.plist', 'scripts/package-mac-app.sh \u2014 Build script'],
+        concepts: ['SwiftUI + Observation framework', 'Menubar app pattern', 'Sparkle auto-update', 'Gateway process management']
+      },
+      'ios-app': {
+        title: 'iOS App',
+        desc: 'Native iOS app built with Swift. Uses XcodeGen for project generation. Connects to the gateway for remote agent control.',
+        files: ['apps/ios/Sources/ \u2014 Swift source', 'apps/ios/project.yml \u2014 XcodeGen spec'],
+        concepts: ['Swift/SwiftUI', 'XcodeGen project generation', 'Remote gateway connection']
+      },
+      'android-app': {
+        title: 'Android App',
+        desc: 'Native Android app built with Kotlin. Uses Gradle build system.',
+        files: ['apps/android/app/ \u2014 Kotlin source', 'apps/android/app/build.gradle.kts'],
+        concepts: ['Kotlin + Gradle', 'Android SDK integration', 'Gateway client']
+      },
+      whatsapp: {
+        title: 'WhatsApp Channel',
+        desc: 'WhatsApp Web integration using the Baileys library. Supports QR code pairing, message send/receive, media handling, and group management.',
+        files: ['src/web/ \u2014 WhatsApp implementation', 'src/channel-web.ts \u2014 Channel monitor entry'],
+        concepts: ['Baileys protocol library', 'QR code pairing flow', 'Message send/receive', 'Media upload/download']
+      },
+      telegram: {
+        title: 'Telegram Channel',
+        desc: 'Telegram bot integration using the gramm\u0059 framework. Supports bot commands, groups, throttling.',
+        files: ['src/telegram/ \u2014 Telegram implementation'],
+        concepts: ['gramm\u0059 bot framework', 'Runner + throttler plugins', 'Bot API polling/webhooks']
+      },
+      discord: {
+        title: 'Discord Channel',
+        desc: 'Discord bot integration using the Carbon library. Supports guilds, DMs, slash commands, and voice.',
+        files: ['src/discord/ \u2014 Discord implementation'],
+        concepts: ['Carbon bot framework', '@discordjs/voice for audio', 'Slash commands', 'Guild management']
+      },
+      slack: {
+        title: 'Slack Channel',
+        desc: 'Slack app integration using the Bolt framework. Events API, slash commands, interactive messages.',
+        files: ['src/slack/ \u2014 Slack implementation'],
+        concepts: ['Bolt app framework', 'Events API', 'Web API client', 'Slash commands']
+      },
+      signal: {
+        title: 'Signal Channel',
+        desc: 'Signal messenger integration for private, E2E encrypted messaging.',
+        files: ['src/signal/ \u2014 Signal implementation'],
+        concepts: ['Signal protocol', 'E2E encryption', 'Private messaging']
+      },
+      imessage: {
+        title: 'iMessage Channel',
+        desc: 'Apple iMessage integration. macOS-only. BlueBubbles extension provides alternative access.',
+        files: ['src/imessage/ \u2014 iMessage implementation', 'extensions/bluebubbles/ \u2014 Alternative'],
+        concepts: ['macOS Messages integration', 'AppleScript/JXA', 'BlueBubbles bridge']
+      },
+      'line-ch': {
+        title: 'LINE Channel',
+        desc: 'LINE messaging platform integration using the official LINE Bot SDK.',
+        files: ['src/line/ \u2014 LINE implementation'],
+        concepts: ['@line/bot-sdk', 'Webhook handling', 'Rich messages']
+      },
+      'more-channels': {
+        title: 'Extension Channels',
+        desc: '20+ additional messaging channels available as extensions: MS Teams, Matrix, IRC, Nostr, Twitch, Feishu, Google Chat, Mattermost, and more.',
+        files: ['extensions/msteams/', 'extensions/matrix/', 'extensions/irc/', 'extensions/nostr/', 'extensions/twitch/', 'extensions/feishu/', 'extensions/googlechat/'],
+        concepts: ['Plugin architecture', 'Each extension is a workspace package', 'Shared extension utilities']
+      },
+      gateway: {
+        title: 'Gateway Server',
+        desc: 'The heart of OpenClaw. An Express 5 + WebSocket server that manages channels, routes messages to agents, handles auth, and exposes OpenAI-compatible APIs.',
+        files: ['src/gateway/server.ts \u2014 Main server', 'src/gateway/server-http.ts \u2014 HTTP endpoints', 'src/gateway/server-chat.ts \u2014 Chat orchestration', 'src/gateway/server-channels.ts \u2014 Channel lifecycle', 'src/gateway/openai-http.ts \u2014 OpenAI compat API', 'src/gateway/boot.ts \u2014 Server bootstrap'],
+        concepts: ['Express 5 HTTP server', 'WebSocket (ws) connections', 'OpenAI-compatible REST API', 'Server-Sent Events streaming', 'Channel lifecycle management', 'Session/agent multiplexing']
+      },
+      routing: {
+        title: 'Message Routing',
+        desc: 'Routes incoming messages to the correct agent session. Resolves session keys from channel, sender, and conversation context.',
+        files: ['src/routing/resolve-route.ts \u2014 Route resolution', 'src/routing/session-key.ts \u2014 Session key derivation', 'src/routing/account-id.ts \u2014 Account mapping', 'src/routing/bindings.ts \u2014 Route bindings'],
+        concepts: ['Session key derivation', 'Route resolution algorithm', 'Account ID mapping', 'Multi-channel session continuity']
+      },
+      sessions: {
+        title: 'Session Management',
+        desc: 'Manages conversation sessions, history, and state. Sessions are stored as JSONL files per agent.',
+        files: ['src/sessions/ \u2014 Session module', 'src/gateway/session-utils.ts', 'src/gateway/sessions-patch.ts'],
+        concepts: ['JSONL session storage', 'Session locks (write-lock)', 'Session preview/resolve', 'Session cost/usage tracking']
+      },
+      auth: {
+        title: 'Authentication',
+        desc: 'Multi-layer auth system: gateway auth (API keys, device auth), provider auth (API keys, OAuth for various providers), and channel auth.',
+        files: ['src/gateway/auth.ts \u2014 Gateway auth', 'src/gateway/http-auth-helpers.ts', 'src/gateway/startup-auth.ts'],
+        concepts: ['API key authentication', 'Device authentication', 'OAuth flows for providers', 'Rate limiting', 'Role-based access (role-policy)']
+      },
+      hooks: {
+        title: 'Hooks System',
+        desc: 'Event-driven hook system that allows plugins and config to intercept and modify behavior at various points in the message/tool lifecycle.',
+        files: ['src/hooks/ \u2014 Hook definitions', 'src/gateway/hooks.ts \u2014 Gateway hooks', 'src/gateway/hooks-mapping.ts'],
+        concepts: ['Before/after tool call hooks', 'Message hooks', 'Session hooks', 'LLM hooks', 'Plugin hook registration']
+      },
+      agents: {
+        title: 'Agent System',
+        desc: 'The AI brain. Uses Pi-embedded runner to manage agent sessions, system prompts, tool invocation, compaction, and multi-model support. Supports sub-agent spawning.',
+        files: ['src/agents/pi-embedded-runner.ts \u2014 Main runner', 'src/agents/pi-embedded-subscribe.ts \u2014 Stream handler', 'src/agents/system-prompt.ts \u2014 Prompt builder', 'src/agents/pi-tools.ts \u2014 Tool definitions', 'src/agents/tool-policy.ts \u2014 Permission system', 'src/agents/model-catalog.ts \u2014 Model registry'],
+        concepts: ['Pi Agent embedded runtime', 'System prompt construction', 'Tool definition + policy', 'Sub-agent spawning', 'Session compaction', 'Model failover', 'Auth profile rotation']
+      },
+      tools: {
+        title: 'Tool System',
+        desc: 'Tools that agents can invoke: bash execution (with PTY), browser automation (Playwright), file operations, canvas, camera, and custom plugin tools.',
+        files: ['src/agents/bash-tools.ts \u2014 Bash/shell tools', 'src/agents/tools/ \u2014 Tool implementations', 'src/agents/pi-tools.ts \u2014 Tool registry'],
+        concepts: ['Bash tool (PTY-based)', 'Browser tool (Playwright)', 'Canvas host', 'Camera/screen tools', 'Tool call ID management', 'Exec approval system']
+      },
+      'skills-detail': {
+        title: 'Skills System',
+        desc: 'Skills are packaged prompts/capabilities that enhance the agent. Bundled skills ship with core; new skills should go to ClawHub.',
+        files: ['skills/ \u2014 Bundled skills directory', 'src/agents/skills.ts \u2014 Skills loader', 'src/agents/skills-install.ts \u2014 Install from ClawHub'],
+        concepts: ['Skill discovery & loading', 'Workspace vs managed skills', 'ClawHub marketplace', 'Skill description summarization']
+      },
+      sandbox: {
+        title: 'Sandbox Execution',
+        desc: 'Docker-based sandboxing for tool execution. Isolates agent code execution for security.',
+        files: ['src/agents/sandbox.ts \u2014 Sandbox config', 'src/agents/sandbox-paths.ts \u2014 Path mounting', 'Dockerfile.sandbox \u2014 Sandbox image', 'Dockerfile.sandbox-browser \u2014 Browser sandbox'],
+        concepts: ['Docker container isolation', 'Path mounting policy', 'Browser sandbox variant', 'Per-agent sandbox config']
+      },
+      subagents: {
+        title: 'Sub-Agent System',
+        desc: 'Agents can spawn child agents for parallel task execution. Registry manages lifecycle, announcements, and depth limits.',
+        files: ['src/agents/subagent-spawn.ts \u2014 Spawning', 'src/agents/subagent-registry.ts \u2014 Registry', 'src/agents/subagent-depth.ts \u2014 Depth limits', 'src/agents/subagent-announce.ts \u2014 Announcements'],
+        concepts: ['Agent spawning', 'Depth limits', 'Registry state management', 'Completion tracking', 'Announce queue']
+      },
+      memory: {
+        title: 'Memory System',
+        desc: 'Vector-based memory using SQLite-vec. Supports multiple embedding providers, hybrid search (semantic + keyword), query expansion, temporal decay, and MMR reranking.',
+        files: ['src/memory/index.ts \u2014 Memory entry', 'src/memory/manager.ts \u2014 Memory manager', 'src/memory/embeddings.ts \u2014 Embedding providers', 'src/memory/hybrid.ts \u2014 Hybrid search', 'src/memory/sqlite-vec.ts \u2014 Vector storage', 'src/memory/query-expansion.ts \u2014 Query expansion'],
+        concepts: ['SQLite-vec vector database', 'Multiple embedding providers', 'Hybrid search (semantic + BM25)', 'Query expansion with stop words', 'Temporal decay scoring', 'MMR (Maximal Marginal Relevance)', 'Batch embedding operations']
+      },
+      config: {
+        title: 'Configuration',
+        desc: 'Configuration management for the entire system. Supports profiles, dotenv, and structured config files.',
+        files: ['src/config/config.ts \u2014 Config loader', 'src/config/sessions.ts \u2014 Session config', '~/.openclaw/ \u2014 User config directory'],
+        concepts: ['YAML/JSON config files', 'Profile system', 'dotenv support', 'Session store management']
+      },
+      plugins: {
+        title: 'Plugin System',
+        desc: 'Extensible plugin architecture. Plugins are npm packages loaded via jiti. They can register tools, services, hooks, HTTP routes, and memory backends.',
+        files: ['src/plugins/loader.ts \u2014 Plugin loader', 'src/plugins/registry.ts \u2014 Plugin registry', 'src/plugins/manifest.ts \u2014 Manifest schema', 'src/plugins/hooks.ts \u2014 Hook system', 'src/plugins/slots.ts \u2014 Exclusive slots'],
+        concepts: ['jiti-based dynamic loading', 'Manifest-based discovery', 'Tool/service/hook registration', 'Exclusive slots (memory)', 'npm install workflow', 'Plugin SDK exports']
+      },
+      media: {
+        title: 'Media Pipeline',
+        desc: 'Handles media processing for messages: images, audio, video, documents. Includes transcoding, format detection, and AI-powered media understanding.',
+        files: ['src/media/ \u2014 Media module', 'src/media-understanding/ \u2014 AI analysis', 'src/link-understanding/ \u2014 URL previews'],
+        concepts: ['Sharp for image processing', 'PDF parsing (pdfjs-dist)', 'Media format detection', 'AI-powered understanding']
+      },
+      security: {
+        title: 'Security Layer',
+        desc: 'Security auditing and enforcement. Scans configs, tools, and skills for dangerous patterns. Enforces DM policies and exec approval workflows.',
+        files: ['src/security/audit.ts \u2014 Security audit', 'src/security/dangerous-tools.ts', 'src/security/skill-scanner.ts', 'src/security/dm-policy-shared.ts'],
+        concepts: ['Security audit pipeline', 'Dangerous tool flagging', 'DM policy enforcement', 'Skill content scanning', 'External content sanitization']
+      },
+      infra: {
+        title: 'Infrastructure Utilities',
+        desc: 'Shared infrastructure: environment management, ports, file locks, device identity, networking (Bonjour, Tailscale, SSH), update system, heartbeat, exec approvals.',
+        files: ['src/infra/env.ts \u2014 Environment helpers', 'src/infra/ports.ts \u2014 Port management', 'src/infra/tailscale.ts \u2014 Tailnet integration', 'src/infra/update-check.ts \u2014 Update system', 'src/infra/heartbeat-runner.ts \u2014 Heartbeat'],
+        concepts: ['Port conflict detection', 'File-based locking', 'Bonjour/mDNS discovery', 'Tailscale VPN integration', 'SSH tunnel management', 'Heartbeat system', 'Provider usage tracking']
+      },
+      providers: {
+        title: 'AI Model Providers',
+        desc: 'OpenClaw supports 15+ AI model providers. Each provider has auth, model discovery, and streaming integration. Auth profiles enable automatic failover and rotation.',
+        files: ['src/agents/model-catalog.ts \u2014 Model registry', 'src/agents/model-auth.ts \u2014 Auth routing', 'src/agents/auth-profiles/ \u2014 Provider profiles', 'src/providers/ \u2014 Provider-specific code'],
+        concepts: ['Multi-provider support', 'Auth profile rotation', 'Model failover chains', 'OpenAI-compatible API layer', 'Provider-specific adapters', 'Bedrock, vLLM, Ollama, etc.']
+      }
+    };
+
+    // Detail panel with ARIA and keyboard support
+    let lastFocusedElement = null;
+
+    function showDetail(key) {
+      const d = details[key];
+      if (!d) return;
+      const panel = document.getElementById('detailPanel');
+      const content = document.getElementById('detailContent');
+      lastFocusedElement = document.activeElement;
+      content.innerHTML =
+        '<h2>' + d.title + '</h2>' +
+        '<p>' + d.desc + '</p>' +
+        '<h3>Key Files</h3>' +
+        '<ul class="file-list">' + d.files.map(f => '<li>' + f + '</li>').join('') + '</ul>' +
+        '<h3>Key Concepts</h3>' +
+        '<ul>' + d.concepts.map(c => '<li>' + c + '</li>').join('') + '</ul>';
+      panel.classList.add('open');
+      panel.setAttribute('aria-hidden', 'false');
+      document.getElementById('closeDetailBtn').focus();
+    }
+
+    function closeDetail() {
+      const panel = document.getElementById('detailPanel');
+      panel.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+      if (lastFocusedElement) lastFocusedElement.focus();
+    }
+
+    document.getElementById('closeDetailBtn').addEventListener('click', closeDetail);
+
+    // Make arch-boxes keyboard accessible
+    document.querySelectorAll('[data-detail]').forEach(el => {
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.addEventListener('click', () => showDetail(el.dataset.detail));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          showDetail(el.dataset.detail);
+        }
+      });
+    });
+
+    // Escape key closes detail panel
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDetail();
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('detailPanel');
+      if (panel.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('[data-detail]')) {
+        closeDetail();
+      }
+    });
+  </script>
+</Layout>

@@ -19,6 +19,13 @@ const links = [
     icon: '&#x1F4AC;',
   },
   {
+    name: 'Architecture Explorer',
+    url: '/openclaw-architecture',
+    desc: 'Interactive deep-dive into OpenClaw\'s internal architecture, modules, and data flow.',
+    icon: '&#x1F3D7;',
+    internal: true,
+  },
+  {
     name: 'GitHub',
     url: 'https://github.com/OpenClaw/OpenClaw',
     desc: 'Source code, issues, and contributions. MIT licensed.',
@@ -39,7 +46,8 @@ const links = [
     <!-- Minimal row list -->
     <div class="fade-in">
       {links.map((link, i) => (
-        <a href={link.url} target="_blank" rel="noopener"
+        <a href={link.url}
+           {...(link.internal ? {} : { target: '_blank', rel: 'noopener' })}
            class={`flex items-center gap-4 py-5 group no-underline transition-colors hover:bg-neon-cyan/3 -mx-4 px-4 rounded-lg ${
              i < links.length - 1 ? 'border-b border-neon-cyan/5' : ''
            }`}>
@@ -51,7 +59,7 @@ const links = [
             <p class="text-dim text-xs leading-relaxed mt-0.5">{link.desc}</p>
           </div>
           <span class="text-muted group-hover:text-neon-cyan group-hover:translate-x-1 transition-all shrink-0">
-            &#x2197;
+            {link.internal ? '\u2192' : '\u2197'}
           </span>
         </a>
       ))}
