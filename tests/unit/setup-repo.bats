@@ -21,18 +21,19 @@ CANONICAL="https://github.com/PatrykQuantumNomad/pincer-ops.git"
 create_temp_project() {
   export TEMP_PROJECT="${TEST_TEMP_DIR}/project"
   mkdir -p "${TEMP_PROJECT}/scripts/lib"
-  mkdir -p "${TEMP_PROJECT}/bootstrap/projects"
+  mkdir -p "${TEMP_PROJECT}/bootstrap/kind/projects"
+  mkdir -p "${TEMP_PROJECT}/bootstrap/kinder/projects"
 
   # Copy real scripts
   cp "${SCRIPTS_DIR}/setup-repo.sh" "${TEMP_PROJECT}/scripts/"
   cp "${SCRIPTS_DIR}/lib/common.sh" "${TEMP_PROJECT}/scripts/lib/"
   chmod +x "${TEMP_PROJECT}/scripts/setup-repo.sh"
 
-  # Create bootstrap files with canonical URL
+  # Create KIND bootstrap files with canonical URL (full set)
   for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
            infra-metallb.yaml infra-envoy-gateway-config.yaml \
            infra-sealed-secrets.yaml infra-cert-manager.yaml; do
-    cat > "${TEMP_PROJECT}/bootstrap/${f}" <<EOF
+    cat > "${TEMP_PROJECT}/bootstrap/kind/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 spec:
@@ -42,7 +43,29 @@ spec:
 EOF
   done
   for f in infrastructure.yaml workloads.yaml; do
-    cat > "${TEMP_PROJECT}/bootstrap/projects/${f}" <<EOF
+    cat > "${TEMP_PROJECT}/bootstrap/kind/projects/${f}" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+spec:
+  sourceRepos:
+    - ${CANONICAL}
+EOF
+  done
+
+  # Create Kinder bootstrap files with canonical URL (reduced set)
+  for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
+           infra-envoy-gateway-config.yaml infra-sealed-secrets.yaml; do
+    cat > "${TEMP_PROJECT}/bootstrap/kinder/${f}" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  source:
+    repoURL: ${CANONICAL}
+    targetRevision: main
+EOF
+  done
+  for f in infrastructure.yaml workloads.yaml; do
+    cat > "${TEMP_PROJECT}/bootstrap/kinder/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 spec:
@@ -181,16 +204,13 @@ teardown() {
   local FORK_URL="https://github.com/testuser/pincer-ops.git"
 
   create_temp_project
-  # Overwrite bootstrap files to have the fork URL
-  for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
-           infra-metallb.yaml infra-envoy-gateway-config.yaml \
-           infra-sealed-secrets.yaml infra-cert-manager.yaml; do
-    sed -i '' "s|${CANONICAL}|${FORK_URL}|g" "${TEMP_PROJECT}/bootstrap/${f}" 2>/dev/null || \
-      sed -i "s|${CANONICAL}|${FORK_URL}|g" "${TEMP_PROJECT}/bootstrap/${f}"
-  done
-  for f in infrastructure.yaml workloads.yaml; do
-    sed -i '' "s|${CANONICAL}|${FORK_URL}|g" "${TEMP_PROJECT}/bootstrap/projects/${f}" 2>/dev/null || \
-      sed -i "s|${CANONICAL}|${FORK_URL}|g" "${TEMP_PROJECT}/bootstrap/projects/${f}"
+  # Overwrite all bootstrap files in both provider dirs to have the fork URL
+  for dir in kind kinder; do
+    for f in "${TEMP_PROJECT}/bootstrap/${dir}"/*.yaml "${TEMP_PROJECT}/bootstrap/${dir}"/projects/*.yaml; do
+      [ -f "$f" ] || continue
+      sed -i '' "s|${CANONICAL}|${FORK_URL}|g" "$f" 2>/dev/null || \
+        sed -i "s|${CANONICAL}|${FORK_URL}|g" "$f"
+    done
   done
 
   create_conditional_mock "git" '
@@ -228,7 +248,7 @@ teardown() {
   assert_output --partial "dry-run"
   assert_output --partial "root-app.yaml"
   # Files should NOT be modified
-  run grep -c "${CANONICAL}" "${TEMP_PROJECT}/bootstrap/root-app.yaml"
+  run grep -c "${CANONICAL}" "${TEMP_PROJECT}/bootstrap/kind/root-app.yaml"
   assert_output "1"
 }
 
@@ -252,19 +272,20 @@ teardown() {
   assert_success
   assert_output --partial "Updated"
 
-  # Verify all 7 Application files now contain fork URL
-  for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
-           infra-metallb.yaml infra-envoy-gateway-config.yaml \
-           infra-sealed-secrets.yaml infra-cert-manager.yaml; do
-    run grep -c "${FORK_URL}" "${TEMP_PROJECT}/bootstrap/${f}"
-    assert_output "1"
-    run grep -c "${CANONICAL}" "${TEMP_PROJECT}/bootstrap/${f}"
-    assert_output "0"
-  done
-  # Verify 2 AppProject files updated
-  for f in infrastructure.yaml workloads.yaml; do
-    run grep -c "${FORK_URL}" "${TEMP_PROJECT}/bootstrap/projects/${f}"
-    assert_output "1"
+  # Verify all Application files in both provider dirs now contain fork URL
+  for dir in kind kinder; do
+    for f in "${TEMP_PROJECT}/bootstrap/${dir}"/*.yaml; do
+      [ -f "$f" ] || continue
+      run grep -c "${FORK_URL}" "$f"
+      assert_output "1"
+      run grep -c "${CANONICAL}" "$f"
+      assert_output "0"
+    done
+    for f in "${TEMP_PROJECT}/bootstrap/${dir}"/projects/*.yaml; do
+      [ -f "$f" ] || continue
+      run grep -c "${FORK_URL}" "$f"
+      assert_output "1"
+    done
   done
 }
 
@@ -338,13 +359,16 @@ teardown() {
   local FORK_URL="https://github.com/testuser/pincer-ops.git"
 
   create_temp_project
-  # Remove some files to test partial updates
-  rm -f "${TEMP_PROJECT}/bootstrap/workload-openclaw.yaml"
-  rm -f "${TEMP_PROJECT}/bootstrap/infra-metallb.yaml"
-  rm -f "${TEMP_PROJECT}/bootstrap/infra-envoy-gateway-config.yaml"
-  rm -f "${TEMP_PROJECT}/bootstrap/infra-sealed-secrets.yaml"
-  rm -f "${TEMP_PROJECT}/bootstrap/infra-cert-manager.yaml"
-  rm -f "${TEMP_PROJECT}/bootstrap/projects/infrastructure.yaml"
+  # Remove most files to test partial updates — keep only root-app, argocd-self,
+  # and projects/workloads in each provider dir (3 per dir = 6 total remaining)
+  for dir in kind kinder; do
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/workload-openclaw.yaml"
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/infra-metallb.yaml"
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/infra-envoy-gateway-config.yaml"
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/infra-sealed-secrets.yaml"
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/infra-cert-manager.yaml"
+    rm -f "${TEMP_PROJECT}/bootstrap/${dir}/projects/infrastructure.yaml"
+  done
 
   create_conditional_mock "git" '
     if [[ "$*" == *"remote get-url origin"* ]]; then
@@ -354,10 +378,10 @@ teardown() {
     exit 0
   '
 
-  # Only 3 files remain: root-app.yaml, argocd-self.yaml, projects/workloads.yaml
+  # 3 files per provider dir = 6 total remaining
   run bash "${TEMP_PROJECT}/scripts/setup-repo.sh" --force
   assert_success
-  assert_output --partial "Updated 3 file(s)"
+  assert_output --partial "Updated 6 file(s)"
 }
 
 # ===========================================================================
@@ -381,6 +405,6 @@ teardown() {
   assert_success
   assert_output --partial "Aborted"
   # Files should remain unchanged
-  run grep -c "${CANONICAL}" "${TEMP_PROJECT}/bootstrap/root-app.yaml"
+  run grep -c "${CANONICAL}" "${TEMP_PROJECT}/bootstrap/kind/root-app.yaml"
   assert_output "1"
 }

@@ -22,7 +22,8 @@ setup() {
 
   # Create a temporary git repo that mimics the project structure
   export INTEGRATION_REPO="${TEST_TEMP_DIR}/pincer-ops"
-  mkdir -p "${INTEGRATION_REPO}/bootstrap/projects"
+  mkdir -p "${INTEGRATION_REPO}/bootstrap/kind/projects"
+  mkdir -p "${INTEGRATION_REPO}/bootstrap/kinder/projects"
   mkdir -p "${INTEGRATION_REPO}/scripts/lib"
 
   # Copy the actual scripts
@@ -30,11 +31,11 @@ setup() {
   cp "${SCRIPTS_DIR}/lib/common.sh" "${INTEGRATION_REPO}/scripts/lib/"
   chmod +x "${INTEGRATION_REPO}/scripts/setup-repo.sh"
 
-  # Create realistic bootstrap files with canonical URL
+  # Create KIND bootstrap files with canonical URL (full set)
   for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
            infra-metallb.yaml infra-envoy-gateway-config.yaml \
            infra-sealed-secrets.yaml infra-cert-manager.yaml; do
-    cat > "${INTEGRATION_REPO}/bootstrap/${f}" <<EOF
+    cat > "${INTEGRATION_REPO}/bootstrap/kind/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -47,8 +48,8 @@ spec:
 EOF
   done
 
-  # OCI Helm file -- should NOT be modified
-  cat > "${INTEGRATION_REPO}/bootstrap/infra-envoy-gateway.yaml" <<EOF
+  # OCI Helm file -- should NOT be modified (KIND only)
+  cat > "${INTEGRATION_REPO}/bootstrap/kind/infra-envoy-gateway.yaml" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 spec:
@@ -59,7 +60,33 @@ spec:
 EOF
 
   for f in infrastructure.yaml workloads.yaml; do
-    cat > "${INTEGRATION_REPO}/bootstrap/projects/${f}" <<EOF
+    cat > "${INTEGRATION_REPO}/bootstrap/kind/projects/${f}" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+spec:
+  sourceRepos:
+    - ${CANONICAL}
+EOF
+  done
+
+  # Create Kinder bootstrap files with canonical URL (reduced set)
+  for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
+           infra-envoy-gateway-config.yaml infra-sealed-secrets.yaml; do
+    cat > "${INTEGRATION_REPO}/bootstrap/kinder/${f}" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${f%.yaml}
+spec:
+  source:
+    repoURL: ${CANONICAL}
+    targetRevision: main
+    path: some/path
+EOF
+  done
+
+  for f in infrastructure.yaml workloads.yaml; do
+    cat > "${INTEGRATION_REPO}/bootstrap/kinder/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 spec:
@@ -98,24 +125,29 @@ teardown() {
   assert_output --partial "Fork detected"
   assert_output --partial "Updated"
 
-  # Verify all 9 Application/AppProject files were updated
-  for f in root-app.yaml argocd-self.yaml workload-openclaw.yaml \
-           infra-metallb.yaml infra-envoy-gateway-config.yaml \
-           infra-sealed-secrets.yaml infra-cert-manager.yaml; do
-    run grep -c "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/${f}"
-    assert_output "1"
-    run grep -c "${CANONICAL}" "${INTEGRATION_REPO}/bootstrap/${f}"
-    assert_output "0"
-  done
-  for f in infrastructure.yaml workloads.yaml; do
-    run grep -c "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/projects/${f}"
-    assert_output "1"
+  # Verify all Application/AppProject files in both dirs were updated
+  for dir in kind kinder; do
+    for f in "${INTEGRATION_REPO}/bootstrap/${dir}"/*.yaml; do
+      [ -f "$f" ] || continue
+      local basename_f=$(basename "$f")
+      # Skip OCI Helm file (not in REPO_FILES)
+      [ "$basename_f" = "infra-envoy-gateway.yaml" ] && continue
+      run grep -c "${FORK_URL}" "$f"
+      assert_output "1"
+      run grep -c "${CANONICAL}" "$f"
+      assert_output "0"
+    done
+    for f in "${INTEGRATION_REPO}/bootstrap/${dir}"/projects/*.yaml; do
+      [ -f "$f" ] || continue
+      run grep -c "${FORK_URL}" "$f"
+      assert_output "1"
+    done
   done
 
-  # OCI Helm file must be untouched
-  run grep "docker.io/envoyproxy" "${INTEGRATION_REPO}/bootstrap/infra-envoy-gateway.yaml"
+  # OCI Helm file must be untouched (KIND only)
+  run grep "docker.io/envoyproxy" "${INTEGRATION_REPO}/bootstrap/kind/infra-envoy-gateway.yaml"
   assert_success
-  run grep "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/infra-envoy-gateway.yaml"
+  run grep "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/kind/infra-envoy-gateway.yaml"
   assert_failure
 }
 
@@ -163,7 +195,7 @@ teardown() {
   assert_output --partial "Fork the repo"
 
   # Files should remain unchanged
-  run grep -c "${CANONICAL}" "${INTEGRATION_REPO}/bootstrap/root-app.yaml"
+  run grep -c "${CANONICAL}" "${INTEGRATION_REPO}/bootstrap/kind/root-app.yaml"
   assert_output "1"
 }
 
@@ -186,7 +218,7 @@ teardown() {
   assert_output --partial "Fork detected"
 
   # Verify the normalized HTTPS URL was written
-  run grep -c "${EXPECTED}" "${INTEGRATION_REPO}/bootstrap/root-app.yaml"
+  run grep -c "${EXPECTED}" "${INTEGRATION_REPO}/bootstrap/kind/root-app.yaml"
   assert_output "1"
 }
 
@@ -208,8 +240,8 @@ teardown() {
   assert_output --partial "dry-run"
 
   # Files must still have canonical URL
-  run grep -c "${CANONICAL}" "${INTEGRATION_REPO}/bootstrap/root-app.yaml"
+  run grep -c "${CANONICAL}" "${INTEGRATION_REPO}/bootstrap/kind/root-app.yaml"
   assert_output "1"
-  run grep -c "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/root-app.yaml"
+  run grep -c "${FORK_URL}" "${INTEGRATION_REPO}/bootstrap/kind/root-app.yaml"
   assert_output "0"
 }

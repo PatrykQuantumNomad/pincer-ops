@@ -172,8 +172,9 @@ teardown() {
 @test "preflight_checks returns 1 when default provider (kinder) is missing in non-TTY" {
   create_mock "docker" 0
   create_mock "kubectl" 0
-  # No kinder mock -- provider binary missing; stdin is not a TTY in subshell
+  # No kinder mock -- provider binary missing; close stdin so [ -t 0 ] is false
   run bash -c '
+    exec </dev/null
     export NO_COLOR=1
     export PATH="'"${MOCK_BIN}"':/usr/bin:/bin:/usr/sbin:/sbin"
     hash -r 2>/dev/null
