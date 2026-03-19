@@ -40,8 +40,8 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 - [x] **DX-01**: Makefile targets accept PROVIDER variable (kinder default, kind opt-in)
 - [x] **DX-02**: Preflight checks detect and validate correct provider binary (kinder or kind)
 - [x] **DX-03**: `make doctor` validates cluster health for current provider (binary present, cluster running, components healthy)
-- [ ] **DX-04**: README.md updated with dual-provider usage instructions
-- [ ] **DX-05**: CLAUDE.md updated with Kinder architecture and provider selection details
+- [x] **DX-04**: README.md updated with dual-provider usage instructions
+- [x] **DX-05**: CLAUDE.md updated with Kinder architecture and provider selection details
 - [x] **DX-06**: CI manifest validation works for both provider configurations
 
 ## Future Requirements
@@ -87,8 +87,8 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 | DX-01 | Phase 12 | Complete |
 | DX-02 | Phase 12 | Complete |
 | DX-03 | Phase 15 | Complete |
-| DX-04 | Phase 15 | Pending |
-| DX-05 | Phase 15 | Pending |
+| DX-04 | Phase 15 | Complete |
+| DX-05 | Phase 15 | Complete |
 | DX-06 | Phase 15 | Complete |
 
 **Coverage:**

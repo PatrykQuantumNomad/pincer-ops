@@ -113,11 +113,11 @@ setup-repo: ## Configure ArgoCD to sync from your fork
 
 .PHONY: setup-mcp
 setup-mcp: ## Generate ArgoCD API token for MCP integration
-	@./scripts/setup-mcp.sh
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/setup-mcp.sh
 
 .PHONY: verify-netpol
 verify-netpol: ## Run runtime NetworkPolicy enforcement tests
-	@./scripts/verify-networkpolicy.sh
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/verify-networkpolicy.sh
 
 .PHONY: doctor
 doctor: ## Check cluster health for current provider
