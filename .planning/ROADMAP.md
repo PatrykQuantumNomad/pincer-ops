@@ -48,8 +48,8 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Kinder config file + Makefile CLUSTER_PROVIDER variable plumbing
-- [ ] 12-02-PLAN.md — Provider-aware preflight checks with interactive fallback
+- [x] 12-01-PLAN.md — Kinder config file + Makefile CLUSTER_PROVIDER variable plumbing
+- [x] 12-02-PLAN.md — Provider-aware preflight checks with interactive fallback
 
 ### Phase 13: Conditional ArgoCD Architecture
 **Goal**: ArgoCD manages only the components appropriate for the active provider, skipping infrastructure that Kinder provides natively
@@ -119,7 +119,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 12. Provider Abstraction Layer | 2/2 | Complete   | 2026-03-19 | - |
+| 12. Provider Abstraction Layer | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 13. Conditional ArgoCD Architecture | v1.1 | 0/2 | Not started | - |
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 0/3 | Not started | - |
 | 15. Developer Experience and Documentation | v1.1 | 0/2 | Not started | - |
