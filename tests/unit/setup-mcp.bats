@@ -23,7 +23,8 @@ teardown() {
   assert_output --partial "Usage: setup-mcp.sh"
 }
 
-@test "setup-mcp: exits 1 when KIND cluster not found" {
+@test "setup-mcp: exits 1 when KIND cluster not found (KIND)" {
+  export CLUSTER_PROVIDER=kind
   create_mock "kind" 0
   create_mock "kubectl" 0
   create_mock "argocd" 0
@@ -32,7 +33,18 @@ teardown() {
   assert_output --partial "not running"
 }
 
+@test "setup-mcp: exits 1 when kinder cluster not found (kinder)" {
+  export CLUSTER_PROVIDER=kinder
+  create_mock "kinder" 0
+  create_mock "kubectl" 0
+  create_mock "argocd" 0
+  run bash "${SCRIPTS_DIR}/setup-mcp.sh"
+  assert_failure
+  assert_output --partial "not running"
+}
+
 @test "setup-mcp: exits 1 when argocd CLI is not installed" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "kubectl" '
     if [[ "$*" == *"current-context"* ]]; then echo "kind-openclaw-dev"; exit 0; fi
@@ -40,6 +52,7 @@ teardown() {
   '
   run bash -c '
     export NO_COLOR=1
+    export CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':/usr/bin:/bin"
     bash "'"${SCRIPTS_DIR}/setup-mcp.sh"'"
   '
@@ -52,6 +65,7 @@ teardown() {
 # ===========================================================================
 
 @test "setup-mcp: switches context when current context does not match" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "kubectl" '
     if [[ "$*" == *"current-context"* ]]; then echo "wrong-context"; exit 0; fi
@@ -73,6 +87,7 @@ teardown() {
 # ===========================================================================
 
 @test "setup-mcp: exits 1 when port-forward times out" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "kubectl" '
     if [[ "$*" == *"current-context"* ]]; then echo "kind-openclaw-dev"; exit 0; fi
@@ -88,6 +103,7 @@ teardown() {
 }
 
 @test "setup-mcp: exits 1 when admin password retrieval fails" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "kubectl" '
     if [[ "$*" == *"current-context"* ]]; then echo "kind-openclaw-dev"; exit 0; fi
@@ -105,6 +121,7 @@ teardown() {
 }
 
 @test "setup-mcp: exits 1 when token generation fails" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "base64" 'echo "decoded-admin-password"; exit 0'
   create_conditional_mock "kubectl" '
@@ -129,8 +146,32 @@ teardown() {
 # Success path
 # ===========================================================================
 
-@test "setup-mcp: full success path outputs token instructions" {
+@test "setup-mcp: full success path outputs token instructions (KIND)" {
+  export CLUSTER_PROVIDER=kind
   create_conditional_mock "kind" 'echo "openclaw-dev"; exit 0'
+  create_conditional_mock "base64" 'echo "decoded-admin-password"; exit 0'
+  create_conditional_mock "kubectl" '
+    if [[ "$*" == *"current-context"* ]]; then echo "kind-openclaw-dev"; exit 0; fi
+    if [[ "$*" == *"port-forward"* ]]; then exit 0; fi
+    if [[ "$*" == *"get secret"* ]]; then echo "ZmFrZS1wYXNzd29yZA=="; exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "argocd" '
+    if [[ "$*" == *"login"* ]]; then exit 0; fi
+    if [[ "$*" == *"generate-token"* ]]; then echo "fake-mcp-token"; exit 0; fi
+    exit 0
+  '
+  create_mock "curl" 0
+
+  run bash "${SCRIPTS_DIR}/setup-mcp.sh"
+  assert_success
+  assert_output --partial "ARGOCD_API_TOKEN"
+  assert_output --partial "fake-mcp-token"
+}
+
+@test "setup-mcp: full success path works with kinder provider" {
+  export CLUSTER_PROVIDER=kinder
+  create_conditional_mock "kinder" 'echo "openclaw-dev"; exit 0'
   create_conditional_mock "base64" 'echo "decoded-admin-password"; exit 0'
   create_conditional_mock "kubectl" '
     if [[ "$*" == *"current-context"* ]]; then echo "kind-openclaw-dev"; exit 0; fi

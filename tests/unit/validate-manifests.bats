@@ -75,7 +75,8 @@ _mock_kubectl_kustomize() {
   _mock_kubectl_kustomize 0
   run bash "${SCRIPTS_DIR}/validate-manifests.sh"
   assert_success
-  assert_output --partial "PASS: bootstrap"
+  assert_output --partial "PASS: bootstrap/kind"
+  assert_output --partial "PASS: bootstrap/kinder"
 }
 
 @test "validate_kustomize: FAIL when pipeline fails" {
@@ -83,7 +84,8 @@ _mock_kubectl_kustomize() {
   _mock_kubectl_kustomize 0 "apiVersion: v1"
   run bash "${SCRIPTS_DIR}/validate-manifests.sh"
   assert_failure
-  assert_output --partial "PASS: bootstrap"
+  assert_output --partial "PASS: bootstrap/kind"
+  assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "FAIL: openclaw/dev"
 }
 
@@ -92,11 +94,12 @@ _mock_kubectl_kustomize() {
 # ===========================================================================
 
 @test "EXIT_CODE: first passes, second fails -> exit 1" {
-  _mock_kubeconform_fail_on_call 2
+  _mock_kubeconform_fail_on_call 3
   _mock_kubectl_kustomize 0 "apiVersion: v1"
   run bash "${SCRIPTS_DIR}/validate-manifests.sh"
   assert_failure
-  assert_output --partial "PASS: bootstrap"
+  assert_output --partial "PASS: bootstrap/kind"
+  assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "FAIL: openclaw/dev"
   assert_output --partial "Some validations FAILED"
 }
@@ -110,7 +113,8 @@ _mock_kubectl_kustomize() {
   _mock_kubectl_kustomize 1
   run bash "${SCRIPTS_DIR}/validate-manifests.sh"
   assert_failure
-  assert_output --partial "PASS: bootstrap"
+  assert_output --partial "PASS: bootstrap/kind"
+  assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "FAIL: openclaw/dev"
 }
 
@@ -123,7 +127,8 @@ _mock_kubectl_kustomize() {
   _mock_kubectl_kustomize 0
   run bash "${SCRIPTS_DIR}/validate-manifests.sh"
   assert_success
-  assert_output --partial "PASS: bootstrap"
+  assert_output --partial "PASS: bootstrap/kind"
+  assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "PASS: openclaw/dev"
   assert_output --partial "PASS: envoy-gateway"
   assert_output --partial "All validations passed"

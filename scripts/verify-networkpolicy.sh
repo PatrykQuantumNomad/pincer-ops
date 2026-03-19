@@ -11,7 +11,7 @@
 #   ./scripts/verify-networkpolicy.sh
 #
 # Dependencies:
-#   kubectl, kind, curl, running KIND cluster with OpenClaw deployed
+#   kubectl, kinder or kind, curl, running cluster with OpenClaw deployed
 #
 # See also:
 #   workloads/openclaw/base/networkpolicy.yaml - NetworkPolicy definitions
@@ -21,6 +21,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+
+CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-kinder}"
+CLUSTER_NAME="${CLUSTER_NAME:-openclaw-dev}"
 
 trap 'echo ""; log_warn "Verification interrupted"; exit 130' INT TERM
 
@@ -56,8 +59,8 @@ run_test() {
 log_step "Running pre-flight checks..."
 
 # Cluster exists
-if ! kind get clusters 2>/dev/null | grep -q "^openclaw-dev$"; then
-  log_error "KIND cluster 'openclaw-dev' not found"
+if ! ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+  log_error "Cluster '${CLUSTER_NAME}' not found (provider: ${CLUSTER_PROVIDER})"
   exit 1
 fi
 

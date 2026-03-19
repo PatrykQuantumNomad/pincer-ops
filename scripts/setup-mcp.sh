@@ -3,7 +3,7 @@
 # scripts/setup-mcp.sh - Generate ArgoCD API token for MCP integration
 # =============================================================================
 #
-# Connects to the local ArgoCD instance running inside the KIND cluster,
+# Connects to the local ArgoCD instance running inside the cluster,
 # authenticates as admin, and generates a scoped API token for the
 # mcp-readonly service account. Prints export instructions so Claude Code
 # can use the ArgoCD MCP server.
@@ -27,6 +27,8 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+
+CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-kinder}"
 
 PORT_FORWARD_PID=""
 
@@ -65,10 +67,10 @@ USAGE
 
 parse_args "$@"
 
-# Step 1: Verify KIND cluster is running
-log_step "Verifying KIND cluster '${CLUSTER_NAME}' is running..."
-if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-  log_error "KIND cluster '${CLUSTER_NAME}' is not running."
+# Step 1: Verify cluster is running
+log_step "Verifying cluster '${CLUSTER_NAME}' is running (provider: ${CLUSTER_PROVIDER})..."
+if ! ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+  log_error "Cluster '${CLUSTER_NAME}' is not running (provider: ${CLUSTER_PROVIDER})."
   log_error "Run ./scripts/bootstrap.sh first."
   exit 1
 fi
