@@ -143,6 +143,16 @@ teardown() {
 
 @test "preflight_checks returns 0 when all tools present and ports free" {
   create_mock "docker" 0
+  create_mock "kinder" 0
+  create_mock "kubectl" 0
+  create_mock "lsof" 1
+  run preflight_checks
+  assert_success
+}
+
+@test "preflight_checks returns 0 with CLUSTER_PROVIDER=kind when kind present" {
+  export CLUSTER_PROVIDER=kind
+  create_mock "docker" 0
   create_mock "kind" 0
   create_mock "kubectl" 0
   create_mock "lsof" 1
@@ -152,26 +162,37 @@ teardown() {
 
 @test "preflight_checks returns 1 when docker is not running" {
   create_mock "docker" 1
-  create_mock "kind" 0
+  create_mock "kinder" 0
   create_mock "kubectl" 0
   run preflight_checks
   assert_failure
   assert_output --partial "Docker is not running"
 }
 
-@test "preflight_checks returns 1 when kind is missing" {
+@test "preflight_checks returns 1 when default provider (kinder) is missing in non-TTY" {
   create_mock "docker" 0
   create_mock "kubectl" 0
+  # No kinder mock -- provider binary missing; stdin is not a TTY in subshell
   run bash -c '
     export NO_COLOR=1
-    CLEAN_PATH=""
-    IFS=: read -ra dirs <<< "'"${MOCK_BIN}"':/usr/bin:/bin:/usr/sbin:/sbin"
-    for d in "${dirs[@]}"; do
-      if [ ! -x "${d}/kind" ]; then
-        CLEAN_PATH="${CLEAN_PATH:+${CLEAN_PATH}:}${d}"
-      fi
-    done
-    export PATH="${CLEAN_PATH}"
+    export PATH="'"${MOCK_BIN}"':/usr/bin:/bin:/usr/sbin:/sbin"
+    hash -r 2>/dev/null
+    usage() { echo "Usage: stub"; }
+    source "'"${SCRIPTS_DIR}/lib/common.sh"'"
+    preflight_checks
+  '
+  assert_failure
+  assert_output --partial "kinder is not installed"
+}
+
+@test "preflight_checks returns 1 when explicit CLUSTER_PROVIDER=kind is missing" {
+  create_mock "docker" 0
+  create_mock "kubectl" 0
+  # No kind mock -- explicitly requested provider missing
+  run bash -c '
+    export NO_COLOR=1
+    export CLUSTER_PROVIDER=kind
+    export PATH="'"${MOCK_BIN}"':/usr/bin:/bin:/usr/sbin:/sbin"
     hash -r 2>/dev/null
     usage() { echo "Usage: stub"; }
     source "'"${SCRIPTS_DIR}/lib/common.sh"'"
@@ -183,7 +204,7 @@ teardown() {
 
 @test "preflight_checks skips port check when SKIP_PORT_CHECK=true" {
   create_mock "docker" 0
-  create_mock "kind" 0
+  create_mock "kinder" 0
   create_mock "kubectl" 0
   create_mock "lsof" 0 "99999"
   create_mock "ps" 0 "blocker"
@@ -194,7 +215,7 @@ teardown() {
 
 @test "preflight_checks skips port check when docker fails" {
   create_mock "docker" 1
-  create_mock "kind" 0
+  create_mock "kinder" 0
   create_mock "kubectl" 0
   create_mock "lsof" 0 "11111"
   create_mock "ps" 0 "ghost"

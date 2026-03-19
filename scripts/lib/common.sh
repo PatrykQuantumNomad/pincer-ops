@@ -13,10 +13,11 @@
 #   Variables - PINCER_VERSION, CLUSTER_NAME, VERBOSE, CLEAN,
 #               RED, GREEN, YELLOW, BLUE, BOLD, NC
 #   Functions - log_info, log_warn, log_error, log_step,
-#               run_cmd, parse_args, check_port_free, preflight_checks
+#               run_cmd, parse_args, check_port_free,
+#               check_provider, preflight_checks
 #
 # Dependencies:
-#   coreutils, docker, kind, kubectl, lsof (for port checks)
+#   coreutils, docker, kinder or kind, kubectl, lsof (for port checks)
 #
 # See also:
 #   scripts/lib/sealed-secrets.sh - Sealed Secrets helper library
@@ -156,7 +157,90 @@ check_port_free() {
   return 0
 }
 
-# Verify that Docker, kind, and kubectl are available.
+# ---------------------------------------------------------------------------
+# Provider detection
+# ---------------------------------------------------------------------------
+
+# Check that the selected cluster provider binary is available.
+# Reads CLUSTER_PROVIDER (default: kinder). When the default provider is
+# missing and the selection was not explicit, offers an interactive fallback
+# to kind (TTY only). Explicitly requested providers hard-fail when absent.
+#
+# Environment variables:
+#   CLUSTER_PROVIDER          - Provider name: "kinder" (default) or "kind"
+#   CLUSTER_PROVIDER_EXPLICIT - Set to "true" to force explicit mode even
+#                                when CLUSTER_PROVIDER equals the default
+#
+# Returns 0 if a usable provider is resolved, 1 otherwise.
+check_provider() {
+  local provider="${CLUSTER_PROVIDER:-kinder}"
+
+  # Determine whether the provider was explicitly requested.
+  # Explicit means: non-default value OR the override flag is set.
+  local is_explicit=false
+  if [ -n "${CLUSTER_PROVIDER:-}" ] && [ "${CLUSTER_PROVIDER}" != "kinder" ]; then
+    is_explicit=true
+  fi
+  if [ "${CLUSTER_PROVIDER_EXPLICIT:-false}" = "true" ]; then
+    is_explicit=true
+  fi
+
+  # Happy path: provider binary exists
+  if command -v "${provider}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # Provider is missing. Behaviour depends on explicit vs default.
+  if [ "${is_explicit}" = "true" ]; then
+    # Explicitly requested provider is missing -- hard fail
+    case "${provider}" in
+      kinder)
+        log_error "kinder is not installed. Install from https://github.com/kubernetes-sigs/kinder"
+        ;;
+      kind)
+        log_error "kind is not installed. Install from https://kind.sigs.k8s.io/"
+        ;;
+      *)
+        log_error "${provider} is not installed."
+        ;;
+    esac
+    return 1
+  fi
+
+  # Default provider (kinder) is missing and selection is not explicit.
+  # Offer interactive fallback to kind if stdin is a TTY.
+  if ! [ -t 0 ]; then
+    log_error "kinder is not installed (default provider) and stdin is not a TTY -- cannot prompt for fallback."
+    return 1
+  fi
+
+  log_warn "kinder is not installed (default provider)."
+  printf "  Fall back to kind? (y/n) "
+  local answer
+  read -r answer
+  case "${answer}" in
+    [yY])
+      if command -v kind >/dev/null 2>&1; then
+        export CLUSTER_PROVIDER=kind
+        log_info "Using kind as fallback provider"
+        return 0
+      else
+        log_error "kind is also not installed. Install from https://kind.sigs.k8s.io/"
+        return 1
+      fi
+      ;;
+    *)
+      log_error "No cluster provider available. Install kinder or set CLUSTER_PROVIDER=kind."
+      return 1
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# Pre-flight checks
+# ---------------------------------------------------------------------------
+
+# Verify that Docker, the cluster provider, and kubectl are available.
 # Optionally checks ports 80/443 (skipped when SKIP_PORT_CHECK is set).
 # Returns 0 if all checks pass, 1 if any fail.
 preflight_checks() {
@@ -168,9 +252,8 @@ preflight_checks() {
     failed=1
   fi
 
-  # Check KIND
-  if ! command -v kind >/dev/null 2>&1; then
-    log_error "kind is not installed. Install from https://kind.sigs.k8s.io/"
+  # Check cluster provider
+  if ! check_provider; then
     failed=1
   fi
 
