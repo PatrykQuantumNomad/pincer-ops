@@ -78,7 +78,7 @@ fc00:f853:ccd:e793::/64
   create_mock "lsof" 1
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/bootstrap.sh"'" 2>&1 || true
   '
@@ -112,7 +112,7 @@ fc00:f853:ccd:e793::/64
   create_mock "ps" 0 "blocker"
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/bootstrap.sh"'" 2>&1 || true
   '
@@ -221,4 +221,106 @@ fc00:f853:ccd:e793::/64
 
   run grep 'path: bootstrap/kinder' "${PROJECT_ROOT}/bootstrap/kinder/argocd-self.yaml"
   assert_success
+}
+
+# ===========================================================================
+# Kinder bootstrap: provider guards (Phase 14)
+# ===========================================================================
+
+@test "bootstrap.sh with kinder skips MetalLB and Envoy GW controller steps" {
+  create_conditional_mock "kinder" '
+    if [[ "$1" == "get" && "$2" == "clusters" ]]; then echo "openclaw-dev"; exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "docker" '
+    if [[ "$1" == "info" ]]; then exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "kubectl" '
+    if [[ "$1" == "wait" ]]; then exit 0
+    elif [[ "$1" == "create" ]]; then echo "---"; exit 0
+    elif [[ "$1" == "apply" ]]; then exit 0
+    elif [[ "$1" == "get" ]]; then exit 0
+    elif [[ "$1" == "rollout" ]]; then exit 0; fi
+    exit 0
+  '
+  create_mock "lsof" 1
+
+  run bash -c '
+    export NO_COLOR=1 CLUSTER_PROVIDER=kinder
+    export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
+    bash "'"${SCRIPTS_DIR}/bootstrap.sh"'" 2>&1 || true
+  '
+  # Kinder skips MetalLB/Envoy GW controller/cert-manager
+  assert_output --partial "Skipping network detection and MetalLB IP range"
+  assert_output --partial "Skipping MetalLB and Envoy Gateway controller deployment"
+  assert_output --partial "Skipping cert-manager deployment"
+  # Kinder still runs shared steps
+  assert_output --partial "Applying ArgoCD configuration"
+  assert_output --partial "Applying Gateway API configuration"
+  assert_output --partial "Deploying Sealed Secrets"
+  assert_output --partial "Deploying OpenClaw"
+}
+
+@test "bootstrap.sh with kinder shows provider-aware summary" {
+  create_conditional_mock "kinder" '
+    if [[ "$1" == "get" && "$2" == "clusters" ]]; then echo "openclaw-dev"; exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "docker" '
+    if [[ "$1" == "info" ]]; then exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "kubectl" '
+    if [[ "$1" == "wait" ]]; then exit 0
+    elif [[ "$1" == "create" ]]; then echo "---"; exit 0
+    elif [[ "$1" == "apply" ]]; then exit 0
+    elif [[ "$1" == "get" ]]; then exit 0
+    elif [[ "$1" == "rollout" ]]; then exit 0; fi
+    exit 0
+  '
+  create_mock "lsof" 1
+
+  run bash -c '
+    export NO_COLOR=1 CLUSTER_PROVIDER=kinder
+    export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
+    bash "'"${SCRIPTS_DIR}/bootstrap.sh"'" 2>&1 || true
+  '
+  assert_output --partial "Provider: kinder"
+  assert_output --partial "kinder addon (auto-configured)"
+  refute_output --partial "L2 pool"
+}
+
+@test "bootstrap.sh with KIND runs all 16 steps (no skip messages)" {
+  create_conditional_mock "kind" '
+    if [[ "$1" == "get" && "$2" == "clusters" ]]; then echo "openclaw-dev"; exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "docker" '
+    if [[ "$1" == "info" ]]; then exit 0
+    elif [[ "$1" == "network" && "$2" == "inspect" ]]; then echo "172.18.0.0/16 "; exit 0; fi
+    exit 0
+  '
+  create_conditional_mock "kubectl" '
+    if [[ "$1" == "wait" ]]; then exit 0
+    elif [[ "$1" == "create" ]]; then echo "---"; exit 0
+    elif [[ "$1" == "apply" ]]; then exit 0
+    elif [[ "$1" == "get" ]]; then exit 0
+    elif [[ "$1" == "rollout" ]]; then exit 0; fi
+    exit 0
+  '
+  create_mock "lsof" 1
+
+  run bash -c '
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
+    export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
+    bash "'"${SCRIPTS_DIR}/bootstrap.sh"'" 2>&1 || true
+  '
+  # KIND runs ALL steps -- no skip messages
+  refute_output --partial "Skipping network detection"
+  refute_output --partial "Skipping MetalLB"
+  refute_output --partial "Skipping cert-manager"
+  # KIND shows MetalLB range in summary
+  assert_output --partial "L2 pool"
+  assert_output --partial "Provider: kind"
 }
