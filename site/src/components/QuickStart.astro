@@ -32,6 +32,15 @@ const steps = [
     ],
     note: 'Onboard configures your LLM provider, dashboard opens the authenticated UI',
   },
+  {
+    step: '05',
+    label: 'Pair the dashboard',
+    commands: [
+      'make openclaw-cli CMD="pairing list"',
+      'make openclaw-cli CMD="pairing approve <code>"',
+    ],
+    note: 'Approve the dashboard pairing request, then click Connect in the UI',
+  },
 ];
 
 const prereqs = [

@@ -84,11 +84,14 @@ Once the cluster is running, configure OpenClaw through its CLI:
 # 1. Run the onboarding wizard (configures LLM provider keys, gateway settings)
 make openclaw-onboard
 
-# 2. Verify the gateway is healthy
-make openclaw-health
+# 2. Open the authenticated dashboard (extracts token and opens browser)
+make openclaw-dashboard
 
-# 3. Open the OpenClaw UI in your browser
-open http://localhost
+# 3. Approve the dashboard's pairing request
+make openclaw-cli CMD="pairing list"
+make openclaw-cli CMD="pairing approve <code>"
+
+# 4. Click "Connect" in the dashboard — status should go Online
 ```
 
 LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding or through the OpenClaw UI at `http://localhost` — they are **not** set in the deployment manifests.
