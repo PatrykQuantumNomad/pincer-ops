@@ -95,7 +95,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — make doctor enhancement, validate-manifests.sh dual-dir, setup-mcp.sh + verify-networkpolicy.sh provider fixes, BATS updates
+- [x] 15-01-PLAN.md — make doctor enhancement, validate-manifests.sh dual-dir, setup-mcp.sh + verify-networkpolicy.sh provider fixes, BATS updates
 - [ ] 15-02-PLAN.md — README.md and CLAUDE.md dual-provider documentation updates
 
 ### Phase 16: Reproducibility Verification
@@ -121,5 +121,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 12. Provider Abstraction Layer | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 15. Developer Experience and Documentation | v1.1 | 0/2 | Not started | - |
+| 15. Developer Experience and Documentation | v1.1 | 1/2 | In progress | - |
 | 16. Reproducibility Verification | v1.1 | 0/1 | Not started | - |
