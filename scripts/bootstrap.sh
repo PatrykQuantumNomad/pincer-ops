@@ -185,6 +185,14 @@ log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
 log_info "Root Application created -- ArgoCD will now manage all child Applications"
 
+# Step 9b: Apply AppProjects and argocd-self (idempotent)
+# When ArgoCD can sync from Git, root-app discovers these automatically.
+# When the repo is unreachable (local dev), they must be applied directly.
+# Applying unconditionally is safe (kubectl apply is idempotent) and avoids
+# race conditions where child apps reference missing projects.
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/argocd-self.yaml"
+
 if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
   # Step 10: Deploy MetalLB
   # Strategy: Try ArgoCD-managed deployment first (root-app discovers infra-metallb).
@@ -427,7 +435,12 @@ until kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; do
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
       log_warn "ArgoCD cannot sync from repo -- applying OpenClaw directly"
-      run_cmd kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f -
+      # NOTE: Cannot use run_cmd here -- the pipe needs stdout from the first command.
+      if [ "${VERBOSE}" = true ]; then
+        kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f -
+      else
+        kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+      fi
       run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${OC_OVERLAY_DIR}")
       break
     fi
