@@ -142,4 +142,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 17
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 16. Reproducibility Verification | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 17. Tech Debt Cleanup | v1.1 | 0/2 | Planned | - |
+| 17. Tech Debt Cleanup | 1/2 | In Progress|  | - |

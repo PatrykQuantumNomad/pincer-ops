@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Kinder Support
 status: active
-stopped_at: null
-last_updated: "2026-03-19T17:45:00.000Z"
-last_activity: 2026-03-19 -- Added Phase 17 (Tech Debt Cleanup) from audit gaps
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-19T17:28:49.662Z"
+last_activity: 2026-03-19 -- Completed 17-01 (Tech Debt: Makefile env propagation, REQUIREMENTS checkboxes, stale comments)
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
-  percent: 83
+  total_plans: 12
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 17 - Tech Debt Cleanup (0 plans, pending /gsd:plan-phase 17)
-Next: Plan Phase 17
-Status: Phase added from audit gap closure
-Last activity: 2026-03-19 -- Added Phase 17 from v1.1 milestone audit
+Phase: 17 - Tech Debt Cleanup (Plan 1 of 2)
+Next: Execute 17-02-PLAN.md
+Status: Plan 01 complete
+Last activity: 2026-03-19 -- Completed 17-01 (Tech Debt: Makefile env propagation, REQUIREMENTS checkboxes, stale comments)
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -54,12 +54,13 @@ Progress: [████████░░] 83%
 | Phase 15 P02 | 4min | 2 tasks | 2 files |
 | Phase 16 P01 | 26min | 2 tasks | 1 files |
 | Phase 16 P02 | 88min | 2 tasks | 0 files |
+| Phase 17 P01 | 2min | 2 tasks | 4 files |
 
 **Recent Trend:**
 
 - Last 5 plans (v1.0): 2 min, 2 min, 2 min, 3 min, 3 min
-- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min, 26 min, 88 min
-- Trend: Phase 16 plans longest due to live cluster operations (bootstrap + verification + stabilization cycles)
+- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min, 26 min, 88 min, 2 min
+- Trend: Phase 17 back to fast cosmetic fixes (2 min)
 
 *Updated after each plan completion*
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase 16]: Fixed run_cmd pipe pattern in OpenClaw fallback to use direct pipe (matching Steps 4/6)
 - [Phase 16]: No code changes needed for KIND path -- existing scripts work correctly for both providers
 - [Phase 16]: Cross-provider sealing key portability confirmed (Kinder backup restores into KIND)
+- [Phase 17]: CLAUDE.md test count already correct (116 total) -- audit claim of 115 was wrong, no change needed
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19T16:21:34.629Z
-Stopped at: Completed 16-02-PLAN.md -- Phase 16 complete -- v1.1 milestone complete
+Last session: 2026-03-19T17:28:01Z
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None
