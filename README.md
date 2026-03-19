@@ -5,9 +5,10 @@ GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https:/
 ## Architecture
 
 ```markdown
-KIND multi-node (1 control-plane + 2 workers)
-  → MetalLB L2 (LoadBalancer IP allocation)
-    → Envoy Gateway (Gateway API routing via DaemonSet + hostPort)
+Kinder or KIND multi-node (1 control-plane + 2 workers)
+  → [Kinder: built-in MetalLB, Envoy GW controller, cert-manager]
+  → [KIND: ArgoCD-managed MetalLB, Envoy GW controller, cert-manager]
+    → Envoy Gateway DaemonSet + hostPort (ArgoCD-managed, both providers)
       → ArgoCD (App of Apps pattern, self-managing)
         → OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
 ```
@@ -24,12 +25,14 @@ Everything deploys from a single root Application through ArgoCD sync waves:
 |-1|Envoy Gateway config|Gateway + HTTPRoute resources (needs CRDs from -4)|
 |+10|OpenClaw|Depends on all infrastructure|
 
+When using Kinder (default), waves -5 (MetalLB), -4 (Envoy Gateway controller), and -2 (cert-manager) are skipped -- these components are provided by Kinder as built-in addons.
+
 ## Quick Start
 
 ### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [KIND](https://kind.sigs.k8s.io/) v0.20+
+- [Kinder](https://kinder.patrykgolabek.dev/) (default) OR [KIND](https://kind.sigs.k8s.io/) v0.20+
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [kubeseal](https://github.com/bitnami-labs/sealed-secrets#kubeseal) (for secret management)
 - [ArgoCD CLI](https://argo-cd.readthedocs.io/en/stable/cli_installation/) (for sync operations and status checks)
@@ -51,12 +54,27 @@ test -x .git/hooks/pre-commit && echo "installed" || echo "not installed"
 ### Bootstrap
 
 ```bash
-make up       # Create cluster and deploy everything
+make up                    # Bootstrap with Kinder (default)
+make up PROVIDER=kind      # Bootstrap with KIND instead
 ```
 
-This creates a 3-node KIND cluster, installs ArgoCD with the root Application, configures MetalLB, deploys Envoy Gateway, Sealed Secrets, cert-manager, and OpenClaw. Idempotent -- safe to run multiple times.
+This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD with the root Application, and deploys all infrastructure and OpenClaw. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.
 
 After bootstrap completes (~5 minutes), OpenClaw is accessible at `http://localhost`.
+
+### Provider Differences
+
+| | Kinder (default) | KIND (opt-in) |
+|---|---|---|
+| MetalLB | Built-in addon | ArgoCD-managed |
+| Envoy Gateway controller | Built-in addon | ArgoCD-managed |
+| cert-manager | Built-in addon | ArgoCD-managed |
+| Envoy DaemonSet + hostPort | ArgoCD-managed | ArgoCD-managed |
+| Sealed Secrets | ArgoCD-managed | ArgoCD-managed |
+| OpenClaw | ArgoCD-managed | ArgoCD-managed |
+| Bootstrap steps | Fewer (skips addon infrastructure) | Full v1.0 flow |
+
+Both providers produce identical cluster topology (1 control-plane + 2 workers) and OpenClaw is accessible at `http://localhost` after bootstrap.
 
 ### Post-Deployment Setup
 
@@ -106,7 +124,7 @@ Run `make` or `make help` to see all targets:
 | **Lifecycle** | |
 | `make up` | Create cluster and deploy everything (idempotent) |
 | `make up-verbose` | Bootstrap with verbose output |
-| `make down` | Destroy the KIND cluster (preserves sealing keys) |
+| `make down` | Destroy the cluster (preserves sealing keys) |
 | `make clean` | Destroy cluster + remove Docker network and backups |
 | `make reset` | Full reset: teardown --clean then bootstrap |
 | **Development** | |
@@ -117,6 +135,7 @@ Run `make` or `make help` to see all targets:
 | `make test-integration` | Run integration tests only |
 | `make check` | Run validation + all tests |
 | **Operations** | |
+| `make doctor` | Check cluster health for current provider |
 | `make status` | Show ArgoCD application sync status |
 | `make sync` | Sync all ArgoCD applications |
 | `make password` | Print the ArgoCD admin password |
@@ -143,12 +162,14 @@ Run `make` or `make help` to see all targets:
 pincer-ops/
 ├── Makefile                          # Developer workflow (make help)
 ├── bootstrap/
-│   ├── root-app.yaml                 # Single entry point — all state flows from here
-│   ├── argocd-cm.yaml                # ArgoCD ConfigMap (tracking, health checks, notifications)
-│   ├── argocd-self.yaml              # ArgoCD self-management Application
-│   ├── projects/                     # AppProjects (infrastructure + workloads RBAC)
-│   ├── infra-*.yaml                  # ArgoCD Applications for infrastructure components
-│   └── workload-openclaw.yaml        # ArgoCD Application for OpenClaw
+│   ├── kind/                         # KIND-specific ArgoCD Applications
+│   │   ├── root-app.yaml             # Root Application (includes all infra)
+│   │   ├── infra-*.yaml              # Infrastructure Applications (all components)
+│   │   └── ...
+│   ├── kinder/                       # Kinder-specific ArgoCD Applications
+│   │   ├── root-app.yaml             # Root Application (excludes Kinder-provided infra)
+│   │   ├── infra-*.yaml              # Kinder-compatible infrastructure Applications
+│   │   └── ...
 ├── infrastructure/
 │   ├── metallb/                      # MetalLB L2 LoadBalancer
 │   ├── envoy-gateway/                # Gateway API implementation
@@ -159,7 +180,8 @@ pincer-ops/
 │       ├── base/                     # StatefulSet, Service, ConfigMap, NetworkPolicy, etc.
 │       └── overlays/dev/             # Kustomize dev overlay
 ├── cluster/
-│   └── kind-config.yaml              # KIND cluster definition (3 nodes)
+│   ├── kind-config.yaml              # KIND cluster definition (3 nodes)
+│   └── kinder-config.yaml            # Kinder cluster definition (3 nodes + addons)
 ├── scripts/
 │   ├── bootstrap.sh                  # Full cluster creation + deployment
 │   ├── teardown.sh                   # Cluster destruction
@@ -172,8 +194,8 @@ pincer-ops/
 │   └── hooks/                        # Pre-commit hook for plaintext Secret detection
 └── tests/
     ├── test_helper.bash              # Common BATS test infrastructure
-    ├── unit/                         # Unit tests (68 tests)
-    └── integration/                  # Integration tests (5 tests)
+    ├── unit/                         # Unit tests (106 tests)
+    └── integration/                  # Integration tests (10 tests)
 ```
 
 ## Core Invariant
@@ -206,7 +228,7 @@ This enables AI-assisted operations: checking pod status, viewing ArgoCD sync st
 
 - **Manifest validation** — `make validate` runs kubeconform against all local bases (also runs in CI on PRs)
 - **Pre-commit hook** — Rejects any commit containing a plaintext `kind: Secret` resource (`make hooks` to install)
-- **BATS test suite** — 73 tests covering all scripts (`make test`)
+- **BATS test suite** — 116 tests covering all scripts (`make test`)
 - **ArgoCD notifications** — Webhook triggers on sync failures and health degradation
 - **Automated backups** — CronJobs for OpenClaw PVC data (2AM) and sealing key export (3AM)
 
@@ -241,7 +263,7 @@ make check                             # Validate + run all tests
 - **Application source code or Dockerfiles** — this is a pure GitOps state repo
 - **CI pipelines that build images** — causes infinite GitOps loops
 - **Horizontal scaling config** — OpenClaw is a single-instance monolith
-- **Production cloud manifests** — this is local-first on KIND
+- **Production cloud manifests** — this is local-first on Kinder/KIND
 
 ## License
 
