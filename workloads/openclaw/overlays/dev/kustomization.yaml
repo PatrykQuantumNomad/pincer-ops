@@ -4,4 +4,4 @@ resources:
   - ../../base
 images:
   - name: ghcr.io/openclaw/openclaw
-    newTag: "2026.2.19"
+    newTag: "2026.3.13"
