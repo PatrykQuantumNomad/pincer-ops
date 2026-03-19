@@ -6,14 +6,33 @@
 
 ## Architecture Overview
 
-The platform runs on **KIND (Kubernetes in Docker)** for local development with production-fidelity networking:
+The platform runs on **Kinder** (default) or **KIND** (opt-in) for local development with production-fidelity networking:
 
 ```
-KIND multi-node (1 CP + 2 workers)
-  → MetalLB L2 (LoadBalancer IP allocation)
-    → Envoy Gateway (Gateway API via DaemonSet + hostPort)
+Kinder or KIND multi-node (1 CP + 2 workers)
+  → [Kinder: built-in MetalLB, Envoy GW controller, cert-manager]
+  → [KIND: ArgoCD-managed MetalLB, Envoy GW controller, cert-manager]
+    → Envoy Gateway (Gateway API via DaemonSet + hostPort, ArgoCD-managed)
       → ArgoCD (App of Apps pattern, self-managing)
         → OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
+```
+
+### Provider Selection
+
+Kinder is the default provider. KIND is opt-in via `CLUSTER_PROVIDER=kind` or `make up PROVIDER=kind`.
+
+**Kinder** provides MetalLB, Envoy Gateway controller, and cert-manager as built-in addons. These are NOT managed by ArgoCD -- they run as Kinder cluster extensions. ArgoCD still manages: Envoy Gateway DaemonSet + hostPort config, Sealed Secrets, and OpenClaw.
+
+**KIND** uses the full v1.0 ArgoCD-managed infrastructure stack. All components (MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, OpenClaw) are ArgoCD Applications deployed via sync waves.
+
+Both providers use the same cluster topology (1 control-plane + 2 workers), same Docker network (`kind`), and same kubectl context prefix (`kind-`).
+
+### Makefile Provider Variables
+
+```
+CLUSTER_PROVIDER ?= kinder   # Provider selection (kinder default, kind opt-in)
+PROVIDER_BIN     := $(CLUSTER_PROVIDER)
+PROVIDER_CONFIG  := cluster/$(CLUSTER_PROVIDER)-config.yaml
 ```
 
 **Critical architectural constraint:** OpenClaw is a **single-instance, file-backed Node.js monolith** — not a microservices platform. It runs as a StatefulSet with `replicas: 1` and a PersistentVolumeClaim. It cannot scale horizontally. All deployment primitives must respect this constraint.
@@ -29,20 +48,25 @@ pincer-ops/
 ├── .github/workflows/
 │   └── validate-manifests.yml         # CI: kubeconform on PRs to main
 ├── bootstrap/
-│   ├── root-app.yaml                  # THE singular entry point — all state flows from here
-│   ├── argocd-cm.yaml                 # ConfigMap: hybrid tracking, Lua health check, MCP account
-│   ├── argocd-rbac-cm.yaml            # ConfigMap: MCP read-only RBAC
-│   ├── argocd-notifications-cm.yaml   # ConfigMap: webhook triggers and templates
-│   ├── argocd-self.yaml               # ArgoCD self-management Application (wave -10)
-│   ├── infra-metallb.yaml             # ArgoCD Application (wave -5)
-│   ├── infra-envoy-gateway.yaml       # ArgoCD Application (wave -4, OCI Helm chart)
-│   ├── infra-envoy-gateway-config.yaml # ArgoCD Application (wave -1)
-│   ├── infra-sealed-secrets.yaml      # ArgoCD Application (wave -3)
-│   ├── infra-cert-manager.yaml        # ArgoCD Application (wave -2)
-│   ├── workload-openclaw.yaml         # ArgoCD Application (wave +10)
-│   └── projects/
-│       ├── infrastructure.yaml        # AppProject: all namespaces, all cluster resources
-│       └── workloads.yaml             # AppProject: openclaw namespace only
+│   ├── kind/                          # KIND provider: all ArgoCD Applications
+│   │   ├── root-app.yaml             # Root Application scanning bootstrap/kind/
+│   │   ├── argocd-cm.yaml            # ConfigMap (same as kinder, byte-identical)
+│   │   ├── argocd-self.yaml          # ArgoCD self-management (same)
+│   │   ├── projects/                 # AppProjects (same)
+│   │   ├── infra-metallb.yaml        # MetalLB (KIND-only)
+│   │   ├── infra-envoy-gateway.yaml  # Envoy GW controller (KIND-only)
+│   │   ├── infra-cert-manager.yaml   # cert-manager (KIND-only)
+│   │   ├── infra-envoy-gateway-config.yaml  # DaemonSet + hostPort config
+│   │   ├── infra-sealed-secrets.yaml # Sealed Secrets
+│   │   └── workload-openclaw.yaml    # OpenClaw
+│   └── kinder/                        # Kinder provider: reduced ArgoCD Applications
+│       ├── root-app.yaml             # Root Application scanning bootstrap/kinder/
+│       ├── argocd-cm.yaml            # ConfigMap (byte-identical to kind/)
+│       ├── argocd-self.yaml          # ArgoCD self-management (same)
+│       ├── projects/                 # AppProjects (same)
+│       ├── infra-envoy-gateway-config.yaml  # DaemonSet + hostPort config
+│       ├── infra-sealed-secrets.yaml # Sealed Secrets
+│       └── workload-openclaw.yaml    # OpenClaw
 ├── infrastructure/
 │   ├── metallb/base/
 │   │   └── kustomization.yaml         # Remote: github.com/metallb/metallb v0.15.3
@@ -72,7 +96,8 @@ pincer-ops/
 │       └── overlays/dev/
 │           └── kustomization.yaml     # Image tag pinning only
 ├── cluster/
-│   └── kind-config.yaml               # 3-node KIND cluster (1 CP + 2 workers)
+│   ├── kind-config.yaml               # KIND cluster definition (1 CP + 2 workers)
+│   └── kinder-config.yaml             # Kinder cluster definition (1 CP + 2 workers + addons)
 ├── scripts/
 │   ├── bootstrap.sh                   # Full cluster creation + ArgoCD bootstrap (16 steps)
 │   ├── teardown.sh                    # Destroy KIND cluster
@@ -88,15 +113,15 @@ pincer-ops/
 │       └── pre-commit                 # Rejects plaintext kind: Secret
 └── tests/
     ├── test_helper.bash               # BATS infrastructure (mocks, temp dirs)
-    ├── unit/                          # 68 unit tests across 8 files
-    └── integration/                   # 5 integration tests across 2 files
+    ├── unit/                          # 106 unit tests across 9 files
+    └── integration/                   # 10 integration tests across 3 files
 ```
 
 ## Core Invariant
 
-**`kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state.**
+**`kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state.**
 
-Every resource in this repository is either the root Application or discoverable by it through recursive directory scanning. If you create a manifest that the root app can't reach, the cluster state is no longer fully reproducible from Git.
+Every resource in this repository is either the root Application or discoverable by it through recursive directory scanning of the provider-specific bootstrap directory (`bootstrap/kind/` or `bootstrap/kinder/`). If you create a manifest that the root app can't reach, the cluster state is no longer fully reproducible from Git.
 
 ## Sync Wave Ordering
 
@@ -112,6 +137,8 @@ Infrastructure deploys before workloads via ArgoCD sync waves:
 | -1 | Envoy Gateway config | Gateway + HTTPRoute resources (needs CRDs from -4) |
 | +10 | OpenClaw Gateway | Depends on all infrastructure |
 
+**Kinder path:** Waves -5 (MetalLB), -4 (Envoy Gateway controller), and -2 (cert-manager) are skipped. Kinder provides these as built-in addons. The effective wave order is: -10, -3, -1, +10.
+
 Leave gaps between wave numbers for future insertions. Never reuse a wave number for unrelated components.
 
 ## Conventions and Rules
@@ -123,6 +150,7 @@ Leave gaps between wave numbers for future insertions. Never reuse a wave number
 - Use `kustomize` for environment-specific overlays, not Helm value files
 - Image tags must be **explicit versions**, never `:latest` (KIND `imagePullPolicy` issue)
 - Set `imagePullPolicy: IfNotPresent` on all workloads targeting KIND
+- Bootstrap manifests are provider-specific: `bootstrap/kind/` for KIND, `bootstrap/kinder/` for Kinder. Shared files are byte-identical copies (not symlinks)
 
 ### ArgoCD Applications
 - Every Application YAML must include a `argocd.argoproj.io/sync-wave` annotation
@@ -160,22 +188,30 @@ Leave gaps between wave numbers for future insertions. Never reuse a wave number
 - **Cannot scale horizontally** — always `replicas: 1`, always StatefulSet
 - **NetworkPolicy:** default-deny-all + explicit allow for Envoy ingress on 18789/TCP, DNS on 53, HTTPS egress on 443 (LLM APIs)
 
-## KIND Cluster Details
+## Cluster Details
+
+Both providers use the same cluster identity and topology:
 
 - **Name:** `openclaw-dev`
 - **Topology:** 1 control-plane (with `ingress-ready=true` label) + 2 workers
+- **Docker network:** `kind` bridge — kubectl context `kind-openclaw-dev`
 - **Port mappings:** Host 80→CP 80, Host 443→CP 443 (extraPortMappings)
-- **Docker network:** `kind` bridge — MetalLB IPs allocated from upper range of CIDR (dynamically computed by bootstrap.sh)
+- **MetalLB IPs:** Allocated from upper range of Docker network CIDR (dynamically computed by bootstrap.sh)
 - **macOS/Windows caveat:** MetalLB VIPs are unreachable from host; use `localhost:80/443` via extraPortMappings only
 - **Image loading:** `make load-image IMAGE=name:tag` — bypasses registry via `kind load docker-image`
-- **Envoy routing:** DaemonSet with hostPort on CP node (nodeSelector `ingress-ready: "true"`) — the only viable path for localhost access on macOS/KIND
+- **Envoy routing:** DaemonSet with hostPort on CP node (nodeSelector `ingress-ready: "true"`) — the only viable path for localhost access on macOS
+
+**Kinder-specific:** Provides MetalLB, Envoy Gateway controller, cert-manager, and Metrics Server as built-in addons. These are NOT ArgoCD Applications.
+
+**KIND-specific:** Requires ArgoCD to deploy all infrastructure components. Full v1.0 sync wave ordering applies.
 
 ## Common Operations
 
 All operations are wrapped in the Makefile (`make help` to list):
 
 ```bash
-make up                    # Bootstrap cluster from scratch (idempotent)
+make up                    # Bootstrap cluster (Kinder default)
+make up PROVIDER=kind      # Bootstrap cluster with KIND
 make down                  # Destroy cluster (sealing keys preserved at ~/.pincer/)
 make reset                 # Full teardown + rebuild
 
@@ -183,9 +219,10 @@ make status                # ArgoCD sync status (auto-login)
 make sync                  # Sync all apps (APP=name for single app)
 make password              # Print ArgoCD admin password
 make port-forward          # ArgoCD UI at localhost:8080
+make doctor                # Check cluster health for current provider
 
 make validate              # Validate manifests (kubeconform)
-make test                  # Run all 73 BATS tests
+make test                  # Run all 116 BATS tests
 make check                 # validate + test
 
 make logs                  # Tail OpenClaw gateway logs
@@ -214,3 +251,4 @@ Setup: `make setup-mcp` (requires `make port-forward` running in another termina
 - Do not modify ArgoCD resources via the UI — drift will be auto-corrected by selfHeal
 - Do not hardcode the MetalLB IP range — it must be derived from `docker network inspect kind`
 - Do not add `ServerSideApply=true` to root-app.yaml or argocd-self.yaml — causes field manager conflicts
+- Do not assume Kinder clusters have ArgoCD Applications for MetalLB, Envoy Gateway controller, or cert-manager — these are Kinder addons, not ArgoCD-managed
