@@ -30,7 +30,7 @@
 
 - [x] **Phase 12: Provider Abstraction Layer** - Cluster configs, Makefile PROVIDER variable, and provider detection for dual-provider support (completed 2026-03-19)
 - [x] **Phase 13: Conditional ArgoCD Architecture** - Dual root-app strategy that skips Kinder-provided infrastructure from ArgoCD management (completed 2026-03-19)
-- [ ] **Phase 14: Bootstrap and Teardown Dual-Mode** - Conditional bootstrap/teardown scripts that handle both providers correctly
+- [x] **Phase 14: Bootstrap and Teardown Dual-Mode** - Conditional bootstrap/teardown scripts that handle both providers correctly (completed 2026-03-19)
 - [ ] **Phase 15: Developer Experience and Documentation** - Health checks, README, CLAUDE.md, and CI updates for dual-provider world
 - [ ] **Phase 16: Reproducibility Verification** - End-to-end proof that both providers produce fully operational clusters from Git
 
@@ -80,8 +80,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — Provider-aware bootstrap.sh and teardown.sh with conditional step guards
-- [ ] 14-02-PLAN.md — BATS tests for dual-provider bootstrap and teardown paths
+- [x] 14-01-PLAN.md — Provider-aware bootstrap.sh and teardown.sh with conditional step guards
+- [x] 14-02-PLAN.md — BATS tests for dual-provider bootstrap and teardown paths
 
 ### Phase 15: Developer Experience and Documentation
 **Goal**: Developers have tooling and documentation to work confidently in a dual-provider environment
@@ -120,6 +120,6 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 |-------|-----------|----------------|--------|-----------|
 | 12. Provider Abstraction Layer | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 14. Bootstrap and Teardown Dual-Mode | 1/2 | In Progress|  | - |
+| 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 0/2 | Not started | - |
 | 16. Reproducibility Verification | v1.1 | 0/1 | Not started | - |
