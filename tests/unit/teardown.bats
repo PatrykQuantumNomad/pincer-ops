@@ -22,7 +22,7 @@ teardown() {
   create_mock "docker" 0
   rm -f "${MOCK_BIN}/kind"
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':/usr/bin:/bin"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'"
   '
@@ -34,7 +34,7 @@ teardown() {
   create_mock "kind" 0
   create_mock "docker" 1
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'"
   '
@@ -51,7 +51,7 @@ teardown() {
   create_mock "docker" 0
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'"
   '
@@ -69,7 +69,7 @@ teardown() {
   create_mock "docker" 0
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'"
   '
@@ -90,7 +90,7 @@ teardown() {
   '
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'" --clean
   '
@@ -112,10 +112,49 @@ teardown() {
   '
 
   run bash -c '
-    export NO_COLOR=1
+    export NO_COLOR=1 CLUSTER_PROVIDER=kind
     export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
     bash "'"${SCRIPTS_DIR}/teardown.sh"'" --clean
   '
   assert_success
   refute_output --partial "Removed 'kind' Docker network"
+}
+
+# ===========================================================================
+# Kinder teardown: provider-aware deletion (Phase 14)
+# ===========================================================================
+
+@test "teardown.sh with kinder uses kinder binary for deletion" {
+  create_conditional_mock "kinder" '
+    if [[ "$1" == "get" && "$2" == "clusters" ]]; then echo "openclaw-dev"; exit 0
+    elif [[ "$1" == "delete" ]]; then echo "$@" >> "'"${MOCK_BIN}"'/kinder.args"; exit 0; fi
+    exit 0
+  '
+  create_mock "docker" 0
+
+  run bash -c '
+    export NO_COLOR=1 CLUSTER_PROVIDER=kinder
+    export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
+    bash "'"${SCRIPTS_DIR}/teardown.sh"'"
+  '
+  assert_success
+  assert_output --partial "Cluster deleted"
+  run cat "${MOCK_BIN}/kinder.args"
+  assert_output --partial "delete cluster --name openclaw-dev"
+}
+
+@test "teardown.sh with kinder is idempotent when no cluster exists" {
+  create_conditional_mock "kinder" '
+    if [[ "$1" == "get" && "$2" == "clusters" ]]; then echo ""; exit 0; fi
+    exit 0
+  '
+  create_mock "docker" 0
+
+  run bash -c '
+    export NO_COLOR=1 CLUSTER_PROVIDER=kinder
+    export PATH="'"${MOCK_BIN}"':'"${ORIGINAL_PATH}"'"
+    bash "'"${SCRIPTS_DIR}/teardown.sh"'"
+  '
+  assert_success
+  assert_output --partial "nothing to delete"
 }
