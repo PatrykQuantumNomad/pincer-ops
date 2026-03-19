@@ -201,10 +201,11 @@ pincer-ops/
 ## Core Invariant
 
 ```bash
-kubectl apply -f bootstrap/root-app.yaml
+kubectl apply -f bootstrap/kinder/root-app.yaml   # Kinder (default)
+kubectl apply -f bootstrap/kind/root-app.yaml     # KIND
 ```
 
-This single command must reconstruct the complete cluster state. Every resource in this repository is either the root Application or discoverable by ArgoCD through it.
+This single command must reconstruct the complete cluster state for the selected provider. Every resource in this repository is either the root Application or discoverable by ArgoCD through it.
 
 ## Key Design Decisions
 
