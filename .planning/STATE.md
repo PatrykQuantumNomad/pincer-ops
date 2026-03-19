@@ -70,7 +70,7 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v1.1]: Kinder is default provider, KIND is opt-in via PROVIDER=kind
+- [v1.1]: Kinder is default provider, KIND is opt-in via CLUSTER_PROVIDER=kind
 - [v1.1]: Kinder-provided infra (MetalLB, Envoy GW controller, cert-manager) skips ArgoCD management
 - [v1.1]: Envoy Gateway DaemonSet + hostPort config still ArgoCD-managed with both providers
 - [v1.1]: Same cluster topology for both providers (1 CP + 2 workers)

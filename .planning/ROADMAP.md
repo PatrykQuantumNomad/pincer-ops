@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v1.0 MVP** - Phases 1-11 (shipped 2026-02-20)
-- **v1.1 Kinder Support** - Phases 12-16 (in progress)
+- **v1.1 Kinder Support** - Phases 12-16 (shipped 2026-03-19)
 
 ## Phases
 
@@ -123,4 +123,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 16. Reproducibility Verification | 2/2 | Complete   | 2026-03-19 | 2026-03-19 |
+| 16. Reproducibility Verification | v1.1 | 2/2 | Complete | 2026-03-19 |
