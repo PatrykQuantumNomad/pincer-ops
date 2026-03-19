@@ -45,11 +45,8 @@ USAGE
 
 parse_args "$@"
 
-# Minimal pre-flight: kind and Docker must be available for deletion
-if ! command -v kind >/dev/null 2>&1; then
-  log_error "kind is not installed. Install from https://kind.sigs.k8s.io/"
-  exit 1
-fi
+# Minimal pre-flight: provider and Docker must be available for deletion
+check_provider || exit 1
 
 if ! docker info >/dev/null 2>&1; then
   log_error "Docker is not running. Start Docker Desktop and retry."
