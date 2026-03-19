@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Kinder Support
-status: completed
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-03-19T12:24:09.013Z"
-last_activity: 2026-03-19 -- Completed 13-02 (BATS tests for dual-provider directory structure)
+status: in-progress
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-19T13:04:22.000Z"
+last_activity: 2026-03-19 -- Completed 14-01 (provider-aware bootstrap.sh and teardown.sh)
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 6
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 13 of 16 complete (Conditional ArgoCD Architecture)
-Next: Phase 14 - Bootstrap and Teardown Dual-Mode
-Status: Phase 13 verified, ready for Phase 14
-Last activity: 2026-03-19 -- Phase 13 executed and verified (5/5 success criteria passed)
+Phase: 14 - Bootstrap and Teardown Dual-Mode (plan 1 of 2 complete)
+Next: 14-02 (Makefile integration)
+Status: Plan 14-01 complete, continuing phase 14
+Last activity: 2026-03-19 -- Completed 14-01 (provider-aware bootstrap.sh and teardown.sh)
 
-Progress: [██████████] 100%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -48,11 +48,12 @@ Progress: [██████████] 100%
 | Phase 12 P02 | 3min | 2 tasks | 2 files |
 | Phase 13 P01 | 2min | 2 tasks | 23 files |
 | Phase 13 P02 | 1min | 1 tasks | 1 files |
+| Phase 14 P01 | 4min | 2 tasks | 2 files |
 
 **Recent Trend:**
 
 - Last 5 plans (v1.0): 2 min, 2 min, 2 min, 3 min, 3 min
-- v1.1: 2 min, 3 min, 2 min, 1 min
+- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 13]: Provider-specific directory scanning -- ArgoCD root-app scans bootstrap/kind/ or bootstrap/kinder/ to discover correct Application set
 - [Phase 13]: Shared files duplicated (byte-identical) across provider directories rather than symlinks
 - [Phase 13]: Provider directory tests use find+wc for file counting and diff for byte-identity checks
+- [Phase 14]: CLUSTER_PROVIDER set non-readonly before preflight, locked readonly after (supports check_provider fallback)
+- [Phase 14]: Steps 3-5, 10-12, 15 guarded as KIND-only; Steps 13, 14, 16 run for both providers
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19T12:24:09.011Z
-Stopped at: Completed 13-02-PLAN.md
+Last session: 2026-03-19T13:04:22.000Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
