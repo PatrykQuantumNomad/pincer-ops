@@ -9,12 +9,12 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 ### Provider Infrastructure
 
-- [ ] **PROV-01**: User can bootstrap cluster with Kinder as default provider (`make up` or `make up PROVIDER=kinder`)
-- [ ] **PROV-02**: User can bootstrap cluster with KIND as opt-in provider (`make up PROVIDER=kind`)
+- [x] **PROV-01**: User can bootstrap cluster with Kinder as default provider (`make up` or `make up PROVIDER=kinder`)
+- [x] **PROV-02**: User can bootstrap cluster with KIND as opt-in provider (`make up PROVIDER=kind`)
 - [x] **PROV-03**: Kinder cluster uses same topology as KIND (1 control-plane + 2 workers, ports 80/443 mapped)
 - [x] **PROV-04**: Kinder cluster config file exists alongside KIND config with addons configured
-- [ ] **PROV-05**: User can teardown Kinder cluster (`make down`) preserving sealing keys
-- [ ] **PROV-06**: User can full-reset Kinder cluster (`make reset`)
+- [x] **PROV-05**: User can teardown Kinder cluster (`make down`) preserving sealing keys
+- [x] **PROV-06**: User can full-reset Kinder cluster (`make reset`)
 
 ### ArgoCD Integration
 
@@ -26,14 +26,14 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 ### Bootstrap Flow
 
-- [ ] **BOOT-01**: Kinder bootstrap skips MetalLB controller deployment step
-- [ ] **BOOT-02**: Kinder bootstrap skips Envoy Gateway controller deployment step
-- [ ] **BOOT-03**: Kinder bootstrap skips cert-manager deployment step
-- [ ] **BOOT-04**: Kinder bootstrap skips MetalLB IPAddressPool/L2Advertisement configuration (Kinder handles it)
-- [ ] **BOOT-05**: Kinder bootstrap still installs ArgoCD and applies root-app
-- [ ] **BOOT-06**: Kinder bootstrap still handles sealing key backup/restore lifecycle
-- [ ] **BOOT-07**: Kinder bootstrap still applies Envoy Gateway DaemonSet + hostPort config
-- [ ] **BOOT-08**: KIND bootstrap works exactly as v1.0 with no regressions
+- [x] **BOOT-01**: Kinder bootstrap skips MetalLB controller deployment step
+- [x] **BOOT-02**: Kinder bootstrap skips Envoy Gateway controller deployment step
+- [x] **BOOT-03**: Kinder bootstrap skips cert-manager deployment step
+- [x] **BOOT-04**: Kinder bootstrap skips MetalLB IPAddressPool/L2Advertisement configuration (Kinder handles it)
+- [x] **BOOT-05**: Kinder bootstrap still installs ArgoCD and applies root-app
+- [x] **BOOT-06**: Kinder bootstrap still handles sealing key backup/restore lifecycle
+- [x] **BOOT-07**: Kinder bootstrap still applies Envoy Gateway DaemonSet + hostPort config
+- [x] **BOOT-08**: KIND bootstrap works exactly as v1.0 with no regressions
 
 ### Developer Experience
 
@@ -65,25 +65,25 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROV-01 | Phase 14 | Pending |
-| PROV-02 | Phase 14 | Pending |
+| PROV-01 | Phase 14 | Complete |
+| PROV-02 | Phase 14 | Complete |
 | PROV-03 | Phase 12 | Complete |
 | PROV-04 | Phase 12 | Complete |
-| PROV-05 | Phase 14 | Pending |
-| PROV-06 | Phase 14 | Pending |
+| PROV-05 | Phase 14 | Complete |
+| PROV-06 | Phase 14 | Complete |
 | ARGO-01 | Phase 13 | Complete |
 | ARGO-02 | Phase 13 | Complete |
 | ARGO-03 | Phase 13 | Complete |
 | ARGO-04 | Phase 13 | Complete |
 | ARGO-05 | Phase 13 | Complete |
-| BOOT-01 | Phase 14 | Pending |
-| BOOT-02 | Phase 14 | Pending |
-| BOOT-03 | Phase 14 | Pending |
-| BOOT-04 | Phase 14 | Pending |
-| BOOT-05 | Phase 14 | Pending |
-| BOOT-06 | Phase 14 | Pending |
-| BOOT-07 | Phase 14 | Pending |
-| BOOT-08 | Phase 14 | Pending |
+| BOOT-01 | Phase 14 | Complete |
+| BOOT-02 | Phase 14 | Complete |
+| BOOT-03 | Phase 14 | Complete |
+| BOOT-04 | Phase 14 | Complete |
+| BOOT-05 | Phase 14 | Complete |
+| BOOT-06 | Phase 14 | Complete |
+| BOOT-07 | Phase 14 | Complete |
+| BOOT-08 | Phase 14 | Complete |
 | DX-01 | Phase 12 | Complete |
 | DX-02 | Phase 12 | Complete |
 | DX-03 | Phase 15 | Pending |
