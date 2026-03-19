@@ -82,8 +82,9 @@ echo "=============================="
 echo "K8s version: ${K8S_VERSION}"
 echo ""
 
-# --- Bootstrap raw manifests (Application, AppProject, ConfigMap) ---
-validate_raw "bootstrap/" "bootstrap"
+# --- Bootstrap raw manifests (both provider directories) ---
+validate_raw "bootstrap/kind/" "bootstrap/kind"
+validate_raw "bootstrap/kinder/" "bootstrap/kinder"
 
 # --- OpenClaw workload overlay ---
 validate_kustomize "workloads/openclaw/overlays/dev" "openclaw/dev"

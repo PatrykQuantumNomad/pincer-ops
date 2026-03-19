@@ -126,6 +126,62 @@ doctor: ## Check cluster health for current provider
 	@echo -n "Docker: "; docker info >/dev/null 2>&1 && echo "running" || echo "NOT RUNNING"
 	@echo -n "kubectl: "; command -v kubectl >/dev/null 2>&1 && echo "installed" || echo "NOT INSTALLED"
 	@echo -n "Cluster: "; $(PROVIDER_BIN) get clusters 2>/dev/null | grep -q $(CLUSTER_NAME) && echo "$(CLUSTER_NAME) exists" || echo "$(CLUSTER_NAME) not found"
+	@if $(PROVIDER_BIN) get clusters 2>/dev/null | grep -q $(CLUSTER_NAME); then \
+	  echo "--- Cluster Components ---"; \
+	  PASS=0; TOTAL=0; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  REPLICAS=$$(kubectl get deploy argocd-server -n argocd -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	  if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
+	    echo "  ArgoCD:          $$REPLICAS ready"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  ArgoCD:          NOT FOUND"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  DS=$$(kubectl get daemonset -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=eg -o name 2>/dev/null | head -1); \
+	  if echo "$$DS" | grep -q daemonset 2>/dev/null; then \
+	    echo "  Envoy DaemonSet: running"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  Envoy DaemonSet: NOT FOUND"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  REPLICAS=$$(kubectl get deploy sealed-secrets-controller -n kube-system -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	  if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
+	    echo "  Sealed Secrets:  $$REPLICAS ready"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  Sealed Secrets:  NOT FOUND"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  REPLICAS=$$(kubectl get statefulset openclaw-gateway -n openclaw -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	  if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
+	    echo "  OpenClaw:        $$REPLICAS ready"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  OpenClaw:        NOT FOUND"; \
+	  fi; \
+	  if [ "$(CLUSTER_PROVIDER)" = "kind" ]; then \
+	    TOTAL=$$((TOTAL + 1)); \
+	    REPLICAS=$$(kubectl get deploy controller -n metallb-system -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	    if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
+	      echo "  MetalLB:         $$REPLICAS ready"; PASS=$$((PASS + 1)); \
+	    else \
+	      echo "  MetalLB:         NOT FOUND"; \
+	    fi; \
+	    TOTAL=$$((TOTAL + 1)); \
+	    REPLICAS=$$(kubectl get deploy cert-manager -n cert-manager -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	    if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
+	      echo "  cert-manager:    $$REPLICAS ready"; PASS=$$((PASS + 1)); \
+	    else \
+	      echo "  cert-manager:    NOT FOUND"; \
+	    fi; \
+	  fi; \
+	  ISSUES=$$((TOTAL - PASS)); \
+	  if [ "$$ISSUES" -eq 0 ]; then \
+	    echo "$$PASS/$$TOTAL components healthy"; \
+	  else \
+	    echo "$$PASS/$$TOTAL components healthy ($$ISSUES issues found)"; \
+	  fi; \
+	  echo "Run 'make status' for ArgoCD sync details."; \
+	  if [ "$$ISSUES" -gt 0 ]; then exit 1; fi; \
+	fi
 
 .PHONY: load-image
 load-image: ## Load a local image into cluster (usage: make load-image IMAGE=name:tag)
