@@ -92,11 +92,11 @@ Plans:
   2. README.md documents dual-provider usage: how to select provider, what differs, quick-start for both
   3. CLAUDE.md reflects the updated architecture including Kinder as default provider
   4. CI manifest validation passes for both Kinder and KIND configurations (kubeconform + kustomize build)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01-PLAN.md — make doctor enhancement, validate-manifests.sh dual-dir, setup-mcp.sh + verify-networkpolicy.sh provider fixes, BATS updates
+- [ ] 15-02-PLAN.md — README.md and CLAUDE.md dual-provider documentation updates
 
 ### Phase 16: Reproducibility Verification
 **Goal**: Both provider paths are proven to reconstruct full cluster state from Git, validating the core invariant for v1.1
