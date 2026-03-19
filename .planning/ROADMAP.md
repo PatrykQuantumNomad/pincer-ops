@@ -33,7 +33,7 @@
 - [x] **Phase 14: Bootstrap and Teardown Dual-Mode** - Conditional bootstrap/teardown scripts that handle both providers correctly (completed 2026-03-19)
 - [x] **Phase 15: Developer Experience and Documentation** - Health checks, README, CLAUDE.md, and CI updates for dual-provider world (completed 2026-03-19)
 - [x] **Phase 16: Reproducibility Verification** - End-to-end proof that both providers produce fully operational clusters from Git (completed 2026-03-19)
-- [ ] **Phase 17: Tech Debt Cleanup** - Close audit tech debt: docs fixes, Makefile env propagation, stale comments, flaky test
+- [x] **Phase 17: Tech Debt Cleanup** - Close audit tech debt: docs fixes, Makefile env propagation, stale comments, flaky test (completed 2026-03-19)
 
 ## Phase Details
 
@@ -142,4 +142,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 17
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 16. Reproducibility Verification | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 17. Tech Debt Cleanup | 1/2 | In Progress|  | - |
+| 17. Tech Debt Cleanup | 2/2 | Complete   | 2026-03-19 | - |

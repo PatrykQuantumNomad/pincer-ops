@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Kinder Support
-status: active
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-19T17:28:49.662Z"
-last_activity: 2026-03-19 -- Completed 17-01 (Tech Debt: Makefile env propagation, REQUIREMENTS checkboxes, stale comments)
+status: completed
+stopped_at: Completed 17-02-PLAN.md -- Phase 17 complete
+last_updated: "2026-03-19T17:32:34.910Z"
+last_activity: "2026-03-19 -- Completed 17-02 (SIGPIPE fix: variable-capture pattern in 4 scripts)"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 12
-  completed_plans: 11
-  percent: 92
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 17 - Tech Debt Cleanup (Plan 1 of 2)
-Next: Execute 17-02-PLAN.md
-Status: Plan 01 complete
-Last activity: 2026-03-19 -- Completed 17-01 (Tech Debt: Makefile env propagation, REQUIREMENTS checkboxes, stale comments)
+Phase: 17 - Tech Debt Cleanup (Plan 2 of 2) -- COMPLETE
+Next: Phase 17 complete. All plans executed.
+Status: Phase complete
+Last activity: 2026-03-19 -- Completed 17-02 (SIGPIPE fix: variable-capture pattern in 4 scripts)
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -55,12 +55,13 @@ Progress: [█████████░] 92%
 | Phase 16 P01 | 26min | 2 tasks | 1 files |
 | Phase 16 P02 | 88min | 2 tasks | 0 files |
 | Phase 17 P01 | 2min | 2 tasks | 4 files |
+| Phase 17 P02 | 5min | 1 tasks | 4 files |
 
 **Recent Trend:**
 
 - Last 5 plans (v1.0): 2 min, 2 min, 2 min, 3 min, 3 min
-- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min, 26 min, 88 min, 2 min
-- Trend: Phase 17 back to fast cosmetic fixes (2 min)
+- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min, 26 min, 88 min, 2 min, 5 min
+- Trend: Phase 17 fast tech debt fixes (2 min, 5 min)
 
 *Updated after each plan completion*
 
@@ -93,6 +94,7 @@ Recent decisions affecting current work:
 - [Phase 16]: No code changes needed for KIND path -- existing scripts work correctly for both providers
 - [Phase 16]: Cross-provider sealing key portability confirmed (Kinder backup restores into KIND)
 - [Phase 17]: CLAUDE.md test count already correct (116 total) -- audit claim of 115 was wrong, no change needed
+- [Phase 17]: SIGPIPE fix uses variable-capture pattern (CLUSTER_LIST, NS_YAML, etc.) with || true to prevent set -e abort
 
 ### Pending Todos
 
@@ -104,6 +106,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:28:01Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-03-19T17:32:34.908Z
+Stopped at: Completed 17-02-PLAN.md -- Phase 17 complete
 Resume file: None
