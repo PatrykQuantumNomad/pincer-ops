@@ -472,6 +472,8 @@ else
   echo "  MetalLB:    ${CLUSTER_PROVIDER} addon (auto-configured)"
   echo "  Gateway:    Envoy Gateway (${CLUSTER_PROVIDER} addon + ArgoCD DaemonSet config, localhost:80)"
   echo "  TLS:        cert-manager (${CLUSTER_PROVIDER} addon)"
+  echo "  Headlamp:   kubectl port-forward svc/headlamp -n kube-system 4466:80  (then open localhost:4466)"
+  echo "  Headlamp Token: kubectl get secret kinder-dashboard-token -n kube-system -o jsonpath=\"{.data.token}\" | base64 -d"
 fi
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
 echo "  OpenClaw:   openclaw-gateway in openclaw namespace (port 18789)"
