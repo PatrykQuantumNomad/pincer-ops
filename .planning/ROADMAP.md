@@ -45,11 +45,11 @@
   2. Kinder cluster config exists at `cluster/kinder-config.yaml` with same topology as KIND (1 CP + 2 workers, ports 80/443)
   3. Makefile targets that interact with the cluster accept and propagate the PROVIDER variable
   4. Preflight checks detect whether the selected provider binary is installed and report a clear error if missing
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Kinder config file + Makefile CLUSTER_PROVIDER variable plumbing
+- [ ] 12-02-PLAN.md — Provider-aware preflight checks with interactive fallback
 
 ### Phase 13: Conditional ArgoCD Architecture
 **Goal**: ArgoCD manages only the components appropriate for the active provider, skipping infrastructure that Kinder provides natively
