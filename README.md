@@ -55,7 +55,7 @@ test -x .git/hooks/pre-commit && echo "installed" || echo "not installed"
 
 ```bash
 make up                    # Bootstrap with Kinder (default)
-make up PROVIDER=kind      # Bootstrap with KIND instead
+CLUSTER_PROVIDER=kind make up  # Bootstrap with KIND instead
 ```
 
 This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD with the root Application, and deploys all infrastructure and OpenClaw. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.

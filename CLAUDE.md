@@ -19,7 +19,7 @@ Kinder or KIND multi-node (1 CP + 2 workers)
 
 ### Provider Selection
 
-Kinder is the default provider. KIND is opt-in via `CLUSTER_PROVIDER=kind` or `make up PROVIDER=kind`.
+Kinder is the default provider. KIND is opt-in via `CLUSTER_PROVIDER=kind make up`.
 
 **Kinder** provides MetalLB, Envoy Gateway controller, and cert-manager as built-in addons. These are NOT managed by ArgoCD -- they run as Kinder cluster extensions. ArgoCD still manages: Envoy Gateway DaemonSet + hostPort config, Sealed Secrets, and OpenClaw.
 
@@ -211,7 +211,7 @@ All operations are wrapped in the Makefile (`make help` to list):
 
 ```bash
 make up                    # Bootstrap cluster (Kinder default)
-make up PROVIDER=kind      # Bootstrap cluster with KIND
+CLUSTER_PROVIDER=kind make up  # Bootstrap cluster with KIND
 make down                  # Destroy cluster (sealing keys preserved at ~/.pincer/)
 make reset                 # Full teardown + rebuild
 
