@@ -124,7 +124,11 @@ Plans:
   3. Makefile `setup-mcp` and `verify-netpol` targets propagate CLUSTER_PROVIDER correctly
   4. Stale wave -4 dependency comment removed from both copies of `infra-envoy-gateway-config.yaml`
   5. Flaky "kinder skips MetalLB and Envoy GW controller steps" BATS test stabilized (no pipe race condition)
-**Plans**: 0 plans (pending `/gsd:plan-phase 17`)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Makefile env propagation, REQUIREMENTS.md checkboxes, stale comment rewrite, test count fix
+- [ ] 17-02-PLAN.md — SIGPIPE-safe pipe pattern fix across 4 scripts (flaky test stabilization)
 
 ## Progress
 
@@ -138,4 +142,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 17
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 16. Reproducibility Verification | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 17. Tech Debt Cleanup | v1.1 | 0/0 | Pending | - |
+| 17. Tech Debt Cleanup | v1.1 | 0/2 | Planned | - |
