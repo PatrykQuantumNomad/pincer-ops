@@ -77,12 +77,11 @@ Plans:
   3. Kinder bootstrap still applies Envoy Gateway DaemonSet + hostPort config and handles sealing key lifecycle
   4. `make down` and `make reset` work for Kinder clusters, preserving sealing keys at `~/.pincer/`
   5. Both providers reach a state where OpenClaw is accessible via localhost after bootstrap completes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: TBD
-- [ ] 14-02: TBD
-- [ ] 14-03: TBD
+- [ ] 14-01-PLAN.md — Provider-aware bootstrap.sh and teardown.sh with conditional step guards
+- [ ] 14-02-PLAN.md — BATS tests for dual-provider bootstrap and teardown paths
 
 ### Phase 15: Developer Experience and Documentation
 **Goal**: Developers have tooling and documentation to work confidently in a dual-provider environment
@@ -121,6 +120,6 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 |-------|-----------|----------------|--------|-----------|
 | 12. Provider Abstraction Layer | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 14. Bootstrap and Teardown Dual-Mode | v1.1 | 0/3 | Not started | - |
+| 14. Bootstrap and Teardown Dual-Mode | v1.1 | 0/2 | Not started | - |
 | 15. Developer Experience and Documentation | v1.1 | 0/2 | Not started | - |
 | 16. Reproducibility Verification | v1.1 | 0/1 | Not started | - |
