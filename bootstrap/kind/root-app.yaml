@@ -1,0 +1,34 @@
+# root-app.yaml -- The singular entry point for the entire cluster state.
+# All Applications and AppProjects are discovered by scanning bootstrap/kind/ recursively.
+#
+# DELETION PROTECTION (GOPS-03):
+# 1. No finalizers -- ArgoCD's cascade-deletion finalizer is NOT set, so deleting this
+#    Application does NOT trigger ArgoCD's resource cleanup of child Applications.
+# 2. prune: false -- removing a child YAML from Git does NOT auto-delete the child.
+#
+# These two safeguards ensure that accidental deletion of root does not cascade.
+#
+# No sync-wave annotation -- root is applied manually via kubectl, not discovered by another app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  # NOTE: No finalizers -- prevents cascade deletion (GOPS-03)
+spec:
+  project: default  # Root app uses default project for bootstrapping
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: bootstrap/kind
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false  # GOPS-03: Never auto-delete child Applications
+    syncOptions:
+      - CreateNamespace=false

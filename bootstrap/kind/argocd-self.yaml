@@ -1,0 +1,33 @@
+# argocd-self.yaml -- ArgoCD self-management Application.
+# Deployed at sync wave -10 (earliest) so ArgoCD configuration is in place
+# before any infrastructure or workload Applications sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-self
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/manifest-generate-paths: .
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: bootstrap/kind
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false

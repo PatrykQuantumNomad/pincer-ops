@@ -1,0 +1,37 @@
+# argocd-cm.yaml -- ArgoCD configuration: tracking method and Lua health check.
+#
+# CRITICAL: This ConfigMap must be applied BEFORE root-app.yaml.
+# The Lua health check restores Application health assessment (removed in ArgoCD v1.8).
+# Without it, sync waves across child Applications do not work -- all children sync
+# simultaneously regardless of wave annotations.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # GOPS-05: Hybrid tracking -- annotation for ArgoCD tracking, label for external tool compat
+  application.resourceTrackingMethod: "annotation+label"
+
+  # GOPS-02: Restore Application health assessment removed in ArgoCD 1.8.
+  # Without this, sync waves across child Applications do not work.
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil then
+      if obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+    end
+    return hs
+
+  # MCP-02: Local account for MCP API access (apiKey only, no UI login)
+  accounts.mcp-readonly: apiKey
+  accounts.mcp-readonly.enabled: "true"

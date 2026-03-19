@@ -1,0 +1,21 @@
+# workloads.yaml -- AppProject for application workloads.
+# Restricted to the 'openclaw' namespace. Only cluster-scoped resource
+# allowed is Namespace (required by CreateNamespace=true sync option).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: "Application workloads -- namespace-scoped only"
+  sourceRepos:
+    - 'https://github.com/PatrykQuantumNomad/pincer-ops.git'
+  destinations:
+    - namespace: 'openclaw'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceBlacklist: []

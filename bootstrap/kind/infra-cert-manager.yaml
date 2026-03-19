@@ -1,0 +1,52 @@
+# infra-cert-manager.yaml -- ArgoCD Application for cert-manager.
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+# Manages cert-manager installation through kustomize remote resource at
+# infrastructure/cert-manager/base (CRDs, controller, webhook, cainjector,
+# RBAC) plus a self-signed ClusterIssuer for verification and dev TLS.
+#
+# cert-manager MUST stay in the cert-manager namespace -- the upstream
+# manifest hard-codes namespace references internally, and kustomize
+# namespace transformation would break webhook and cainjector configs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-cert-manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/cert-manager/base
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/cert-manager/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /spec/conversion/webhook/clientConfig/caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
