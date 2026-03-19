@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v1.0 MVP** - Phases 1-11 (shipped 2026-02-20)
-- **v1.1 Kinder Support** - Phases 12-16 (shipped 2026-03-19)
+- **v1.1 Kinder Support** - Phases 12-17 (shipped 2026-03-19)
 
 ## Phases
 
@@ -33,6 +33,7 @@
 - [x] **Phase 14: Bootstrap and Teardown Dual-Mode** - Conditional bootstrap/teardown scripts that handle both providers correctly (completed 2026-03-19)
 - [x] **Phase 15: Developer Experience and Documentation** - Health checks, README, CLAUDE.md, and CI updates for dual-provider world (completed 2026-03-19)
 - [x] **Phase 16: Reproducibility Verification** - End-to-end proof that both providers produce fully operational clusters from Git (completed 2026-03-19)
+- [ ] **Phase 17: Tech Debt Cleanup** - Close audit tech debt: docs fixes, Makefile env propagation, stale comments, flaky test
 
 ## Phase Details
 
@@ -112,10 +113,23 @@ Plans:
 - [x] 16-01-PLAN.md — Kinder teardown/rebuild verification (default provider end-to-end proof)
 - [x] 16-02-PLAN.md — KIND teardown/rebuild verification (opt-in provider v1.0 parity proof)
 
+### Phase 17: Tech Debt Cleanup
+**Goal**: Close all tech debt items identified by the v1.1 milestone audit — documentation accuracy, Makefile env propagation, stale comments, and flaky test stabilization
+**Depends on**: Phase 16
+**Requirements**: (none — tech debt closure, no new requirements)
+**Gap Closure**: Closes 5 tech debt items from v1.1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. DX-04 and DX-05 checkboxes in REQUIREMENTS.md are checked
+  2. Test count in CLAUDE.md and Makefile matches actual BATS test count
+  3. Makefile `setup-mcp` and `verify-netpol` targets propagate CLUSTER_PROVIDER correctly
+  4. Stale wave -4 dependency comment removed from both copies of `infra-envoy-gateway-config.yaml`
+  5. Flaky "kinder skips MetalLB and Envoy GW controller steps" BATS test stabilized (no pipe race condition)
+**Plans**: 0 plans (pending `/gsd:plan-phase 17`)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
+Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 17
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -124,3 +138,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 16. Reproducibility Verification | v1.1 | 2/2 | Complete | 2026-03-19 |
+| 17. Tech Debt Cleanup | v1.1 | 0/0 | Pending | - |
