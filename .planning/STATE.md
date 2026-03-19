@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-20)
+See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Planning next milestone
+**Current focus:** v1.1 Kinder Support — defining requirements
 
 ## Current Position
 
-Phase: 11 of 11 -- v1.0 COMPLETE
-Plan: N/A
-Status: v1.0 shipped. Ready for next milestone.
-Last activity: 2026-02-20 -- v1.0 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.1
+Last activity: 2026-03-19 — Milestone v1.1 started
 
-Progress: [###########] 100% (11/11 phases for v1.0)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

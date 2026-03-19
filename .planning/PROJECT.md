@@ -2,7 +2,21 @@
 
 ## What This Is
 
-A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on a KIND-based local development environment with production-fidelity networking.
+A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND for local development with production-fidelity networking.
+
+## Current Milestone: v1.1 Kinder Support
+
+**Goal:** Make Kinder the default cluster provider while maintaining KIND as an opt-in alternative.
+
+**Target features:**
+- Kinder as default provider (`make up` or `make up PROVIDER=kinder`)
+- KIND as opt-in alternative (`make up PROVIDER=kind`)
+- Same cluster topology for both (1 CP + 2 workers, ports 80/443)
+- Kinder-provided components (MetalLB, Envoy Gateway controller, cert-manager) skip ArgoCD management
+- Envoy Gateway DaemonSet + hostPort config still managed by ArgoCD with both providers
+- Conditional root-app that excludes KIND-only ArgoCD Applications when using Kinder
+- Updated bootstrap/teardown scripts for dual-provider support
+- Updated documentation and CI
 
 ## Core Value
 
@@ -33,7 +47,10 @@ Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete
 
 ### Active
 
-(None yet — define with `/gsd:new-milestone`)
+- [ ] Kinder as default cluster provider with batteries-included infrastructure
+- [ ] KIND as opt-in provider with full ArgoCD infrastructure management
+- [ ] Dual-provider bootstrap and teardown scripts
+- [ ] Conditional ArgoCD root-app per provider
 
 ### Out of Scope
 
@@ -53,6 +70,8 @@ Tech stack: KIND, ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, 
 Platform: 11 phases, 20 plans, 33 requirements — all delivered in 2 days.
 Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic).
 
+Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries included: MetalLB, Envoy Gateway, cert-manager, Metrics Server, CoreDNS tuning, Headlamp dashboard, and local registry pre-installed. Local repo at /Users/patrykattc/work/git/kinder. Kinder uses default Deployment mode for Envoy Gateway — DaemonSet + hostPort config still needed for macOS localhost access. Kinder handles MetalLB IPAddressPool and cert-manager ClusterIssuer automatically.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -70,7 +89,7 @@ Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit in
 
 ## Constraints
 
-- **Platform**: KIND (Kubernetes in Docker) — local development only
+- **Platform**: Kinder (default) or KIND — local development only
 - **GitOps**: ArgoCD watches `main` branch only; all changes flow through Git
 - **Secrets**: All secrets must be Bitnami SealedSecrets — no plaintext Secrets in Git
 - **OpenClaw scaling**: Always `replicas: 1`, always StatefulSet — cannot scale horizontally
@@ -78,4 +97,4 @@ Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit in
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-02-20 after v1.0 milestone*
+*Last updated: 2026-03-19 after v1.1 milestone start*
