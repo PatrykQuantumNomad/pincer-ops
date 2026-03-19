@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 17 -- Tech Debt Cleanup
+**Current focus:** v1.1 Kinder Support milestone complete -- all 6 phases executed and verified
 
 ## Current Position
 
