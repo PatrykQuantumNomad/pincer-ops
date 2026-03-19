@@ -64,8 +64,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Dual-provider bootstrap directory structure (kind/ and kinder/)
-- [ ] 13-02-PLAN.md — BATS tests for directory structure invariants
+- [x] 13-01-PLAN.md — Dual-provider bootstrap directory structure (kind/ and kinder/)
+- [x] 13-02-PLAN.md — BATS tests for directory structure invariants
 
 ### Phase 14: Bootstrap and Teardown Dual-Mode
 **Goal**: Users can create, destroy, and reset clusters with either provider using the same Makefile targets, with provider-appropriate steps executed automatically
@@ -120,7 +120,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 12. Provider Abstraction Layer | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 13. Conditional ArgoCD Architecture | 2/2 | Complete   | 2026-03-19 | - |
+| 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 0/3 | Not started | - |
 | 15. Developer Experience and Documentation | v1.1 | 0/2 | Not started | - |
 | 16. Reproducibility Verification | v1.1 | 0/1 | Not started | - |

@@ -4,8 +4,9 @@
 # resources at infrastructure/envoy-gateway/base. These configure the Envoy proxy
 # as a DaemonSet with hostPort binding for KIND/macOS localhost access.
 #
-# Depends on infra-envoy-gateway (wave -4) being healthy first -- the CRDs for
-# EnvoyProxy and Gateway API kinds are installed by the controller chart.
+# Requires Envoy Gateway CRDs (EnvoyProxy, Gateway API kinds) to be present.
+# KIND: CRDs installed by infra-envoy-gateway (wave -4).
+# Kinder: CRDs installed by Kinder addon during cluster creation.
 #
 # NOTE: bootstrap.sh tries ArgoCD sync first with kustomize direct-apply fallback
 # if the repo is unreachable (same pattern as MetalLB, Sealed Secrets, cert-manager).

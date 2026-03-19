@@ -22,7 +22,7 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 - [x] **ARGO-02**: Root-app for KIND mode includes all ArgoCD Applications (unchanged from v1.0)
 - [x] **ARGO-03**: Envoy Gateway DaemonSet + hostPort config managed by ArgoCD in both provider modes
 - [x] **ARGO-04**: Sealed Secrets managed by ArgoCD in both provider modes
-- [ ] **ARGO-05**: Sync wave ordering correct for Kinder path (reduced waves since fewer infra apps)
+- [x] **ARGO-05**: Sync wave ordering correct for Kinder path (reduced waves since fewer infra apps)
 
 ### Bootstrap Flow
 
@@ -75,7 +75,7 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 | ARGO-02 | Phase 13 | Complete |
 | ARGO-03 | Phase 13 | Complete |
 | ARGO-04 | Phase 13 | Complete |
-| ARGO-05 | Phase 13 | Pending |
+| ARGO-05 | Phase 13 | Complete |
 | BOOT-01 | Phase 14 | Pending |
 | BOOT-02 | Phase 14 | Pending |
 | BOOT-03 | Phase 14 | Pending |
