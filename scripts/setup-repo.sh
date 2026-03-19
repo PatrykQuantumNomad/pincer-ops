@@ -34,17 +34,27 @@ DRY_RUN=false
 readonly PROJECT_ROOT="${SCRIPT_DIR}/.."
 readonly BOOTSTRAP_DIR="${PROJECT_ROOT}/bootstrap"
 
-# Files containing the canonical repoURL (NOT infra-envoy-gateway.yaml -- OCI Helm)
+# Files containing the canonical repoURL across both provider directories
+# (NOT infra-envoy-gateway.yaml -- OCI Helm)
 readonly REPO_FILES=(
-  "${BOOTSTRAP_DIR}/root-app.yaml"
-  "${BOOTSTRAP_DIR}/argocd-self.yaml"
-  "${BOOTSTRAP_DIR}/workload-openclaw.yaml"
-  "${BOOTSTRAP_DIR}/infra-metallb.yaml"
-  "${BOOTSTRAP_DIR}/infra-envoy-gateway-config.yaml"
-  "${BOOTSTRAP_DIR}/infra-sealed-secrets.yaml"
-  "${BOOTSTRAP_DIR}/infra-cert-manager.yaml"
-  "${BOOTSTRAP_DIR}/projects/infrastructure.yaml"
-  "${BOOTSTRAP_DIR}/projects/workloads.yaml"
+  # KIND provider (full set)
+  "${BOOTSTRAP_DIR}/kind/root-app.yaml"
+  "${BOOTSTRAP_DIR}/kind/argocd-self.yaml"
+  "${BOOTSTRAP_DIR}/kind/workload-openclaw.yaml"
+  "${BOOTSTRAP_DIR}/kind/infra-metallb.yaml"
+  "${BOOTSTRAP_DIR}/kind/infra-envoy-gateway-config.yaml"
+  "${BOOTSTRAP_DIR}/kind/infra-sealed-secrets.yaml"
+  "${BOOTSTRAP_DIR}/kind/infra-cert-manager.yaml"
+  "${BOOTSTRAP_DIR}/kind/projects/infrastructure.yaml"
+  "${BOOTSTRAP_DIR}/kind/projects/workloads.yaml"
+  # Kinder provider (reduced set -- no MetalLB, Envoy GW controller, cert-manager)
+  "${BOOTSTRAP_DIR}/kinder/root-app.yaml"
+  "${BOOTSTRAP_DIR}/kinder/argocd-self.yaml"
+  "${BOOTSTRAP_DIR}/kinder/workload-openclaw.yaml"
+  "${BOOTSTRAP_DIR}/kinder/infra-envoy-gateway-config.yaml"
+  "${BOOTSTRAP_DIR}/kinder/infra-sealed-secrets.yaml"
+  "${BOOTSTRAP_DIR}/kinder/projects/infrastructure.yaml"
+  "${BOOTSTRAP_DIR}/kinder/projects/workloads.yaml"
 )
 
 # ---------------------------------------------------------------------------
@@ -150,7 +160,7 @@ echo ""
 echo "  Your remote:    ${REMOTE_URL}"
 echo "  Manifests have: ${CURRENT_URL}"
 echo ""
-echo "  This will update repoURL in ${#REPO_FILES[@]} files under bootstrap/"
+echo "  This will update repoURL in ${#REPO_FILES[@]} files under bootstrap/kind/ and bootstrap/kinder/"
 echo "  so ArgoCD syncs from your fork."
 echo ""
 
