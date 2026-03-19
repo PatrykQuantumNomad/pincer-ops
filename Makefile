@@ -16,6 +16,11 @@ CLUSTER_NAME := openclaw-dev
 ARGOCD_NS    := argocd
 ARGOCD_ADDR  := localhost:8080
 
+# Provider selection (kinder default, kind opt-in)
+CLUSTER_PROVIDER ?= kinder
+PROVIDER_BIN     := $(CLUSTER_PROVIDER)
+PROVIDER_CONFIG  := cluster/$(CLUSTER_PROVIDER)-config.yaml
+
 # ArgoCD CLI auto-login (requires port-forward running)
 define argocd_login
 	argocd login $(ARGOCD_ADDR) --insecure --username admin \
@@ -30,20 +35,20 @@ endef
 .PHONY: up bootstrap
 up: bootstrap ## Create cluster and deploy everything (idempotent)
 bootstrap:
-	@./scripts/bootstrap.sh
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/bootstrap.sh
 
 .PHONY: up-verbose
 up-verbose: ## Bootstrap with verbose output
-	@./scripts/bootstrap.sh --verbose
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/bootstrap.sh --verbose
 
 .PHONY: down teardown
 down: teardown ## Destroy the KIND cluster (preserves sealing keys)
 teardown:
-	@./scripts/teardown.sh
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/teardown.sh
 
 .PHONY: clean
 clean: ## Destroy cluster + remove Docker network and backups
-	@./scripts/teardown.sh --clean
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/teardown.sh --clean
 
 .PHONY: reset
 reset: clean bootstrap ## Full reset: teardown --clean then bootstrap
@@ -114,13 +119,21 @@ setup-mcp: ## Generate ArgoCD API token for MCP integration
 verify-netpol: ## Run runtime NetworkPolicy enforcement tests
 	@./scripts/verify-networkpolicy.sh
 
+.PHONY: doctor
+doctor: ## Check cluster health for current provider
+	@echo "Provider: $(CLUSTER_PROVIDER)"
+	@echo -n "$(PROVIDER_BIN): "; command -v $(PROVIDER_BIN) >/dev/null 2>&1 && echo "installed" || echo "NOT INSTALLED"
+	@echo -n "Docker: "; docker info >/dev/null 2>&1 && echo "running" || echo "NOT RUNNING"
+	@echo -n "kubectl: "; command -v kubectl >/dev/null 2>&1 && echo "installed" || echo "NOT INSTALLED"
+	@echo -n "Cluster: "; $(PROVIDER_BIN) get clusters 2>/dev/null | grep -q $(CLUSTER_NAME) && echo "$(CLUSTER_NAME) exists" || echo "$(CLUSTER_NAME) not found"
+
 .PHONY: load-image
-load-image: ## Load a local image into KIND (usage: make load-image IMAGE=name:tag)
+load-image: ## Load a local image into cluster (usage: make load-image IMAGE=name:tag)
 ifndef IMAGE
 	$(error IMAGE is required. Usage: make load-image IMAGE=openclaw/openclaw:dev)
 endif
-	@kind load docker-image $(IMAGE) --name $(CLUSTER_NAME)
-	@echo "Loaded $(IMAGE) into cluster $(CLUSTER_NAME)"
+	@$(PROVIDER_BIN) load docker-image $(IMAGE) --name $(CLUSTER_NAME)
+	@echo "Loaded $(IMAGE) into cluster $(CLUSTER_NAME) via $(PROVIDER_BIN)"
 
 .PHONY: seal
 seal: ## Seal a secret (usage: make seal FILE=secret.yaml)
@@ -210,6 +223,8 @@ openclaw-shell: ## Open interactive shell in the OpenClaw pod
 .PHONY: version
 version: ## Show cluster and tool versions
 	@echo "Cluster:     $(CLUSTER_NAME)"
+	@echo "Provider:    $(CLUSTER_PROVIDER)"
+	@echo -n "Kinder:      "; kinder version 2>/dev/null || echo "not installed"
 	@echo -n "KIND:        "; kind version 2>/dev/null || echo "not installed"
 	@echo -n "kubectl:     "; kubectl version --client --short 2>/dev/null || \
 		kubectl version --client 2>/dev/null | head -1 || echo "not installed"
@@ -222,6 +237,7 @@ help: ## Show this help
 	@echo "Pincer Ops — GitOps platform for OpenClaw"
 	@echo ""
 	@echo "Usage: make <target>"
+	@echo "Provider: $(CLUSTER_PROVIDER) (override with CLUSTER_PROVIDER=kind)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
