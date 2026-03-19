@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Kinder Support
 status: in_progress
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-03-19T13:56:34Z"
-last_activity: 2026-03-19 -- Completed 15-02 (README.md and CLAUDE.md dual-provider documentation)
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-19T14:47:58Z"
+last_activity: 2026-03-19 -- Completed 16-01 (Kinder reproducibility verification)
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 10
+  completed_plans: 10
+  percent: 90
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 15 - Developer Experience and Documentation (plan 2 of 2 complete)
-Next: 16-01 (Reproducibility Verification)
-Status: Phase 15 complete, ready for phase 16
-Last activity: 2026-03-19 -- Completed 15-02 (README.md and CLAUDE.md dual-provider documentation)
+Phase: 16 - Reproducibility Verification (plan 1 of 2 complete)
+Next: 16-02 (KIND teardown/rebuild verification)
+Status: Phase 16 in progress, Kinder verification complete
+Last activity: 2026-03-19 -- Completed 16-01 (Kinder reproducibility verification)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -52,12 +52,13 @@ Progress: [██████████] 100%
 | Phase 14 P02 | 3min | 2 tasks | 2 files |
 | Phase 15 P01 | 7min | 2 tasks | 7 files |
 | Phase 15 P02 | 4min | 2 tasks | 2 files |
+| Phase 16 P01 | 26min | 2 tasks | 1 files |
 
 **Recent Trend:**
 
 - Last 5 plans (v1.0): 2 min, 2 min, 2 min, 3 min, 3 min
-- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min
-- Trend: Stable
+- v1.1: 2 min, 3 min, 2 min, 1 min, 4 min, 3 min, 7 min, 4 min, 26 min
+- Trend: Phase 16 longer due to live cluster operations (bootstrap + verification cycle)
 
 *Updated after each plan completion*
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 15]: KIND-only components (MetalLB, cert-manager) conditionally checked in doctor target
 - [Phase 15]: Test counts updated to 106 unit + 10 integration (116 total)
 - [Phase 15]: Core Invariant updated to provider-aware path: bootstrap/{provider}/root-app.yaml
+- [Phase 16]: Apply AppProjects and argocd-self unconditionally after root-app (idempotent Step 9b)
+- [Phase 16]: Fixed run_cmd pipe pattern in OpenClaw fallback to use direct pipe (matching Steps 4/6)
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19T13:56:34Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-03-19T14:47:58.404Z
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None

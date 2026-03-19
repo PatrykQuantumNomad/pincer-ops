@@ -109,7 +109,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 16-01-PLAN.md — Kinder teardown/rebuild verification (default provider end-to-end proof)
+- [x] 16-01-PLAN.md — Kinder teardown/rebuild verification (default provider end-to-end proof)
 - [ ] 16-02-PLAN.md — KIND teardown/rebuild verification (opt-in provider v1.0 parity proof)
 
 ## Progress
@@ -123,4 +123,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 13. Conditional ArgoCD Architecture | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 14. Bootstrap and Teardown Dual-Mode | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 15. Developer Experience and Documentation | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 16. Reproducibility Verification | v1.1 | 0/2 | Not started | - |
+| 16. Reproducibility Verification | v1.1 | 1/2 | In Progress | - |
