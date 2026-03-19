@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 # =============================================================================
-# scripts/bootstrap.sh - Create and configure the Pincer Ops KIND cluster
+# scripts/bootstrap.sh - Create and configure the Pincer Ops cluster
 # =============================================================================
 #
 # Idempotent bootstrap for the Pincer Ops local development cluster. Creates a
-# multi-node KIND cluster, installs ArgoCD with the App of Apps pattern, deploys
-# MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, and OpenClaw. Safe to
-# run multiple times; skips creation if the cluster already exists.
+# multi-node cluster (via kinder or kind), installs ArgoCD with the App of Apps
+# pattern, deploys infrastructure components, and OpenClaw. Safe to run multiple
+# times; skips creation if the cluster already exists.
+#
+# The CLUSTER_PROVIDER env var (default: kinder) selects the provider binary and
+# determines which bootstrap steps run. KIND-only steps (MetalLB, Envoy Gateway
+# controller, cert-manager) are skipped for Kinder, which provides them as
+# built-in addons.
 #
 # Usage:
 #   ./scripts/bootstrap.sh [--verbose|-v] [-h|--help]
 #
 # Dependencies:
-#   docker, kind, kubectl, kubeseal, lsof
+#   docker, kinder/kind, kubectl, kubeseal, lsof
 #
 # See also:
 #   scripts/teardown.sh  - Destroy the cluster
@@ -30,17 +35,21 @@ trap 'echo ""; log_warn "Bootstrap interrupted by signal"; exit 130' INT TERM
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-readonly KIND_CONFIG="${SCRIPT_DIR}/../cluster/kind-config.yaml"
+# CLUSTER_PROVIDER is NOT readonly here -- check_provider() may modify it
+# via interactive fallback (kinder -> kind) during preflight_checks.
+# Derived constants (PROVIDER_CONFIG, BOOTSTRAP_DIR) are set readonly after
+# preflight_checks resolves the final provider.
+CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-kinder}"
 readonly ARGOCD_VERSION="v3.3.1"
 readonly ARGOCD_INSTALL_URL="https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
-readonly BOOTSTRAP_DIR="${SCRIPT_DIR}/../bootstrap"
 
 usage() {
   cat <<USAGE
 Usage: bootstrap.sh [--verbose|-v] [-h|--help]
 
-Create the '${CLUSTER_NAME}' KIND cluster, store network metadata,
-install ArgoCD, and apply the root Application for GitOps management.
+Create the '${CLUSTER_NAME}' cluster (provider: ${CLUSTER_PROVIDER}), install
+ArgoCD, and apply the root Application for GitOps management. KIND-only steps
+(MetalLB, Envoy GW controller, cert-manager) are skipped for Kinder.
 If the cluster already exists, skip creation and re-apply configuration.
 
 Options:
@@ -57,7 +66,7 @@ parse_args "$@"
 
 # Check cluster existence BEFORE pre-flight (existing cluster holds ports 80/443)
 CLUSTER_EXISTS=false
-if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+if ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
   CLUSTER_EXISTS=true
 fi
 
@@ -67,6 +76,12 @@ if [ "${CLUSTER_EXISTS}" = true ]; then
 fi
 
 preflight_checks || exit 1
+
+# Derive provider-specific paths AFTER preflight_checks (which may have changed
+# CLUSTER_PROVIDER via interactive fallback). These are now safe to lock.
+readonly CLUSTER_PROVIDER
+readonly PROVIDER_CONFIG="${SCRIPT_DIR}/../cluster/${CLUSTER_PROVIDER}-config.yaml"
+readonly BOOTSTRAP_DIR="${SCRIPT_DIR}/../bootstrap/${CLUSTER_PROVIDER}"
 
 SECONDS=0
 
@@ -88,8 +103,8 @@ fi
 if [ "${CLUSTER_EXISTS}" = true ]; then
   log_info "Cluster '${CLUSTER_NAME}' already exists, skipping creation"
 else
-  log_step "Creating cluster '${CLUSTER_NAME}'..."
-  run_cmd kind create cluster --name "${CLUSTER_NAME}" --config "${KIND_CONFIG}" --wait 120s
+  log_step "Creating cluster '${CLUSTER_NAME}' (provider: ${CLUSTER_PROVIDER})..."
+  run_cmd ${CLUSTER_PROVIDER} create cluster --name "${CLUSTER_NAME}" --config "${PROVIDER_CONFIG}" --wait 120s
   log_info "Cluster created"
 fi
 
@@ -98,43 +113,47 @@ log_step "Waiting for nodes..."
 run_cmd kubectl wait --for=condition=Ready nodes --all --timeout=120s
 log_info "All nodes are Ready"
 
-# Step 3: Detect IPv4 CIDR from the KIND Docker network (always re-run)
-log_step "Detecting network CIDR..."
-KIND_SUBNET=$(docker network inspect kind \
-  -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' \
-  | tr ' ' '\n' \
-  | grep -E '^[0-9]+\.')
+if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
+  # Step 3: Detect IPv4 CIDR from the KIND Docker network (always re-run)
+  log_step "Detecting network CIDR..."
+  KIND_SUBNET=$(docker network inspect kind \
+    -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' \
+    | tr ' ' '\n' \
+    | grep -E '^[0-9]+\.')
 
-if [ -z "${KIND_SUBNET}" ]; then
-  log_error "Failed to detect IPv4 subnet from KIND network"
-  exit 1
-fi
-log_info "Detected IPv4 subnet: ${KIND_SUBNET}"
+  if [ -z "${KIND_SUBNET}" ]; then
+    log_error "Failed to detect IPv4 subnet from KIND network"
+    exit 1
+  fi
+  log_info "Detected IPv4 subnet: ${KIND_SUBNET}"
 
-# Step 4: Store network info as a ConfigMap (always update)
-# NOTE: Cannot use run_cmd here -- the pipe needs stdout from the first command.
-log_step "Storing network info in ConfigMap..."
-if [ "${VERBOSE}" = true ]; then
-  kubectl create configmap kind-network-info \
-    --namespace kube-system \
-    --from-literal=ipv4-subnet="${KIND_SUBNET}" \
-    --dry-run=client -o yaml | kubectl apply -f -
+  # Step 4: Store network info as a ConfigMap (always update)
+  # NOTE: Cannot use run_cmd here -- the pipe needs stdout from the first command.
+  log_step "Storing network info in ConfigMap..."
+  if [ "${VERBOSE}" = true ]; then
+    kubectl create configmap kind-network-info \
+      --namespace kube-system \
+      --from-literal=ipv4-subnet="${KIND_SUBNET}" \
+      --dry-run=client -o yaml | kubectl apply -f -
+  else
+    kubectl create configmap kind-network-info \
+      --namespace kube-system \
+      --from-literal=ipv4-subnet="${KIND_SUBNET}" \
+      --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+  fi
+  log_info "ConfigMap kind-network-info updated in kube-system"
+
+  # Step 5: Calculate MetalLB IP range from detected CIDR
+  # Strategy: use upper range X.Y.255.200-X.Y.255.250 (51 IPs)
+  # Avoids gateway (X.Y.0.1) and KIND node IPs (low-numbered)
+  log_step "Calculating MetalLB IP range..."
+  METALLB_RANGE_START=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.200|')
+  METALLB_RANGE_END=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.250|')
+  METALLB_RANGE="${METALLB_RANGE_START}-${METALLB_RANGE_END}"
+  log_info "MetalLB IP range: ${METALLB_RANGE}"
 else
-  kubectl create configmap kind-network-info \
-    --namespace kube-system \
-    --from-literal=ipv4-subnet="${KIND_SUBNET}" \
-    --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+  log_info "Skipping network detection and MetalLB IP range (${CLUSTER_PROVIDER} addon)"
 fi
-log_info "ConfigMap kind-network-info updated in kube-system"
-
-# Step 5: Calculate MetalLB IP range from detected CIDR
-# Strategy: use upper range X.Y.255.200-X.Y.255.250 (51 IPs)
-# Avoids gateway (X.Y.0.1) and KIND node IPs (low-numbered)
-log_step "Calculating MetalLB IP range..."
-METALLB_RANGE_START=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.200|')
-METALLB_RANGE_END=$(echo "${KIND_SUBNET}" | sed 's|[0-9]*\.[0-9]*/.*|255.250|')
-METALLB_RANGE="${METALLB_RANGE_START}-${METALLB_RANGE_END}"
-log_info "MetalLB IP range: ${METALLB_RANGE}"
 
 # Step 6: Install ArgoCD
 # NOTE: Cannot use run_cmd for namespace pipe -- stdout needed by kubectl apply.
@@ -166,45 +185,46 @@ log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
 log_info "Root Application created -- ArgoCD will now manage all child Applications"
 
-# Step 10: Deploy MetalLB
-# Strategy: Try ArgoCD-managed deployment first (root-app discovers infra-metallb).
-# If ArgoCD cannot sync (e.g., repo unreachable), fall back to direct kustomize apply.
-# Either path produces the same result: MetalLB controller + speaker running.
-METALLB_BASE_DIR="${SCRIPT_DIR}/../infrastructure/metallb/base"
-log_step "Waiting for MetalLB deployment..."
-METALLB_WAIT=0
-METALLB_TIMEOUT=180
-until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
-  if [ ${METALLB_WAIT} -ge ${METALLB_TIMEOUT} ]; then
-    # Check if root-app has a ComparisonError (repo unreachable)
-    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
-    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying MetalLB directly"
-      # Apply AppProjects first (infra-metallb references the infrastructure project)
-      run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
-      # Apply the infra-metallb Application so it exists as a resource
-      run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-metallb.yaml"
-      # Apply MetalLB manifests directly via kustomize
-      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${METALLB_BASE_DIR}")
-      break
+if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
+  # Step 10: Deploy MetalLB
+  # Strategy: Try ArgoCD-managed deployment first (root-app discovers infra-metallb).
+  # If ArgoCD cannot sync (e.g., repo unreachable), fall back to direct kustomize apply.
+  # Either path produces the same result: MetalLB controller + speaker running.
+  METALLB_BASE_DIR="${SCRIPT_DIR}/../infrastructure/metallb/base"
+  log_step "Waiting for MetalLB deployment..."
+  METALLB_WAIT=0
+  METALLB_TIMEOUT=180
+  until kubectl get deployment controller -n metallb-system >/dev/null 2>&1; do
+    if [ ${METALLB_WAIT} -ge ${METALLB_TIMEOUT} ]; then
+      # Check if root-app has a ComparisonError (repo unreachable)
+      ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+      if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+        log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying MetalLB directly"
+        # Apply AppProjects first (infra-metallb references the infrastructure project)
+        run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
+        # Apply the infra-metallb Application so it exists as a resource
+        run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-metallb.yaml"
+        # Apply MetalLB manifests directly via kustomize
+        run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${METALLB_BASE_DIR}")
+        break
+      fi
+      log_error "Timed out waiting for MetalLB deployment to be created (${METALLB_TIMEOUT}s)"
+      exit 1
     fi
-    log_error "Timed out waiting for MetalLB deployment to be created (${METALLB_TIMEOUT}s)"
-    exit 1
-  fi
-  sleep 5
-  METALLB_WAIT=$((METALLB_WAIT + 5))
-done
-run_cmd kubectl wait --for=condition=available deployment/controller \
-  -n metallb-system --timeout=120s
-run_cmd kubectl rollout status daemonset/speaker \
-  -n metallb-system --timeout=120s
-log_info "MetalLB controller and speaker are ready"
+    sleep 5
+    METALLB_WAIT=$((METALLB_WAIT + 5))
+  done
+  run_cmd kubectl wait --for=condition=available deployment/controller \
+    -n metallb-system --timeout=120s
+  run_cmd kubectl rollout status daemonset/speaker \
+    -n metallb-system --timeout=120s
+  log_info "MetalLB controller and speaker are ready"
 
-# Step 11: Configure MetalLB L2 address pool
-# IPAddressPool and L2Advertisement are applied imperatively (not via Git)
-# because the address range is derived dynamically from the KIND Docker network.
-log_step "Configuring MetalLB L2 address pool (${METALLB_RANGE})..."
-kubectl apply -f - <<EOF
+  # Step 11: Configure MetalLB L2 address pool
+  # IPAddressPool and L2Advertisement are applied imperatively (not via Git)
+  # because the address range is derived dynamically from the KIND Docker network.
+  log_step "Configuring MetalLB L2 address pool (${METALLB_RANGE})..."
+  kubectl apply -f - <<EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -224,28 +244,31 @@ spec:
   ipAddressPools:
     - kind-pool
 EOF
-log_info "MetalLB configured with L2 pool: ${METALLB_RANGE}"
+  log_info "MetalLB configured with L2 pool: ${METALLB_RANGE}"
 
-# Step 12: Deploy Envoy Gateway controller
-# Apply the Helm Application directly -- ArgoCD will pull the OCI chart from docker.io/envoyproxy.
-# We apply directly because Helm OCI sources sync independently of root-app's Git source.
-log_step "Deploying Envoy Gateway controller..."
-run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway.yaml"
+  # Step 12: Deploy Envoy Gateway controller
+  # Apply the Helm Application directly -- ArgoCD will pull the OCI chart from docker.io/envoyproxy.
+  # We apply directly because Helm OCI sources sync independently of root-app's Git source.
+  log_step "Deploying Envoy Gateway controller..."
+  run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-envoy-gateway.yaml"
 
-EG_WAIT=0
-EG_TIMEOUT=120
-until kubectl get deployment envoy-gateway -n envoy-gateway-system >/dev/null 2>&1; do
-  if [ ${EG_WAIT} -ge ${EG_TIMEOUT} ]; then
-    log_error "Envoy Gateway controller deployment not created after ${EG_TIMEOUT}s"
-    log_error "Check: kubectl get app infra-envoy-gateway -n argocd -o yaml"
-    exit 1
-  fi
-  sleep 5
-  EG_WAIT=$((EG_WAIT + 5))
-done
-run_cmd kubectl wait --for=condition=available deployment/envoy-gateway \
-  -n envoy-gateway-system --timeout=120s
-log_info "Envoy Gateway controller is ready"
+  EG_WAIT=0
+  EG_TIMEOUT=120
+  until kubectl get deployment envoy-gateway -n envoy-gateway-system >/dev/null 2>&1; do
+    if [ ${EG_WAIT} -ge ${EG_TIMEOUT} ]; then
+      log_error "Envoy Gateway controller deployment not created after ${EG_TIMEOUT}s"
+      log_error "Check: kubectl get app infra-envoy-gateway -n argocd -o yaml"
+      exit 1
+    fi
+    sleep 5
+    EG_WAIT=$((EG_WAIT + 5))
+  done
+  run_cmd kubectl wait --for=condition=available deployment/envoy-gateway \
+    -n envoy-gateway-system --timeout=120s
+  log_info "Envoy Gateway controller is ready"
+else
+  log_info "Skipping MetalLB and Envoy Gateway controller deployment (${CLUSTER_PROVIDER} addons)"
+fi
 
 # Step 13: Apply Gateway API configuration
 # Strategy: Apply the ArgoCD Application, then poll for the Gateway resource to appear
@@ -336,52 +359,56 @@ fi
 backup_sealing_key
 log_info "Sealed Secrets controller is ready"
 
-# Step 15: Deploy cert-manager
-# Simpler than Sealed Secrets -- no key lifecycle to manage.
-# Deploy via ArgoCD Application with kustomize fallback, then wait for
-# both the controller and webhook to be ready.
-CM_BASE_DIR="${SCRIPT_DIR}/../infrastructure/cert-manager/base"
-log_step "Deploying cert-manager..."
+if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
+  # Step 15: Deploy cert-manager
+  # Simpler than Sealed Secrets -- no key lifecycle to manage.
+  # Deploy via ArgoCD Application with kustomize fallback, then wait for
+  # both the controller and webhook to be ready.
+  CM_BASE_DIR="${SCRIPT_DIR}/../infrastructure/cert-manager/base"
+  log_step "Deploying cert-manager..."
 
-# Apply the infra-cert-manager Application directly
-run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-cert-manager.yaml"
+  # Apply the infra-cert-manager Application directly
+  run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/infra-cert-manager.yaml"
 
-# Wait for cert-manager controller deployment to be created
-CM_WAIT=0
-CM_TIMEOUT=180
-until kubectl get deployment cert-manager -n cert-manager >/dev/null 2>&1; do
-  if [ ${CM_WAIT} -ge ${CM_TIMEOUT} ]; then
-    # Check if root-app has a ComparisonError (repo unreachable)
-    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
-    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying cert-manager directly"
-      # Apply the upstream cert-manager manifest first (CRDs + core resources).
-      # The ClusterIssuer must be applied separately AFTER CRDs are established,
-      # otherwise kubectl rejects the unknown resource kind.
-      CM_UPSTREAM_URL="https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml"
-      run_cmd kubectl apply --server-side --force-conflicts -f "${CM_UPSTREAM_URL}"
-      break
+  # Wait for cert-manager controller deployment to be created
+  CM_WAIT=0
+  CM_TIMEOUT=180
+  until kubectl get deployment cert-manager -n cert-manager >/dev/null 2>&1; do
+    if [ ${CM_WAIT} -ge ${CM_TIMEOUT} ]; then
+      # Check if root-app has a ComparisonError (repo unreachable)
+      ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
+      if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
+        log_warn "ArgoCD cannot sync from repo (repo unreachable?) -- applying cert-manager directly"
+        # Apply the upstream cert-manager manifest first (CRDs + core resources).
+        # The ClusterIssuer must be applied separately AFTER CRDs are established,
+        # otherwise kubectl rejects the unknown resource kind.
+        CM_UPSTREAM_URL="https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml"
+        run_cmd kubectl apply --server-side --force-conflicts -f "${CM_UPSTREAM_URL}"
+        break
+      fi
+      log_error "Timed out waiting for cert-manager deployment to be created (${CM_TIMEOUT}s)"
+      exit 1
     fi
-    log_error "Timed out waiting for cert-manager deployment to be created (${CM_TIMEOUT}s)"
-    exit 1
-  fi
-  sleep 5
-  CM_WAIT=$((CM_WAIT + 5))
-done
-run_cmd kubectl wait --for=condition=available deployment/cert-manager \
-  -n cert-manager --timeout=120s
-run_cmd kubectl wait --for=condition=available deployment/cert-manager-webhook \
-  -n cert-manager --timeout=120s
+    sleep 5
+    CM_WAIT=$((CM_WAIT + 5))
+  done
+  run_cmd kubectl wait --for=condition=available deployment/cert-manager \
+    -n cert-manager --timeout=120s
+  run_cmd kubectl wait --for=condition=available deployment/cert-manager-webhook \
+    -n cert-manager --timeout=120s
 
-# Apply ClusterIssuer after CRDs are established and webhook is ready.
-# This is separate from the main cert-manager apply because CRDs must be
-# registered before custom resources can be created.
-CM_CLUSTERISSUER="${CM_BASE_DIR}/selfsigned-clusterissuer.yaml"
-if [ -f "${CM_CLUSTERISSUER}" ]; then
-  run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
-  log_info "Self-signed ClusterIssuer applied"
+  # Apply ClusterIssuer after CRDs are established and webhook is ready.
+  # This is separate from the main cert-manager apply because CRDs must be
+  # registered before custom resources can be created.
+  CM_CLUSTERISSUER="${CM_BASE_DIR}/selfsigned-clusterissuer.yaml"
+  if [ -f "${CM_CLUSTERISSUER}" ]; then
+    run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
+    log_info "Self-signed ClusterIssuer applied"
+  fi
+  log_info "cert-manager controller and webhook are ready"
+else
+  log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon)"
 fi
-log_info "cert-manager controller and webhook are ready"
 
 # Step 16: Deploy OpenClaw
 # Strategy: Apply ArgoCD Application directly, poll for StatefulSet creation,
@@ -418,12 +445,19 @@ log_info "OpenClaw gateway is running"
 # ---------------------------------------------------------------------------
 echo ""
 echo "=============================================="
+echo "  Provider: ${CLUSTER_PROVIDER}"
 echo "  ArgoCD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443"
 echo "  Password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
-echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
-echo "  Gateway:    Envoy Gateway v1.7.0 (localhost:80)"
+if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
+  echo "  MetalLB:    L2 pool ${METALLB_RANGE}"
+  echo "  Gateway:    Envoy Gateway v1.7.0 (localhost:80)"
+  echo "  TLS:        cert-manager v1.19.2 (cert-manager namespace)"
+else
+  echo "  MetalLB:    ${CLUSTER_PROVIDER} addon (auto-configured)"
+  echo "  Gateway:    Envoy Gateway (${CLUSTER_PROVIDER} addon + ArgoCD DaemonSet config, localhost:80)"
+  echo "  TLS:        cert-manager (${CLUSTER_PROVIDER} addon)"
+fi
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
-echo "  TLS:        cert-manager v1.19.2 (cert-manager namespace)"
 echo "  OpenClaw:   openclaw-gateway in openclaw namespace (port 18789)"
 echo "=============================================="
 echo ""
