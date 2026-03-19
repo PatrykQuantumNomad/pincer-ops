@@ -234,15 +234,15 @@
   // Typing animation
   const commands = [
     { prompt: '$ ', text: 'make up', delay: 800 },
-    { prompt: '', text: '\n  Creating KIND cluster... done', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  Creating cluster (1 CP + 2 workers)... done', delay: 100, isOutput: true },
     { prompt: '', text: '\n  Installing ArgoCD... done', delay: 100, isOutput: true },
     { prompt: '', text: '\n  Bootstrapping apps... done', delay: 100, isOutput: true },
     { prompt: '', text: '\n  Cluster ready!\n\n', delay: 600, isOutput: true },
     { prompt: '$ ', text: 'make status', delay: 500 },
-    { prompt: '', text: '\n  argocd-self          Synced  Healthy', delay: 100, isOutput: true },
-    { prompt: '', text: '\n  infra-metallb        Synced  Healthy', delay: 100, isOutput: true },
-    { prompt: '', text: '\n  infra-envoy-gateway  Synced  Healthy', delay: 100, isOutput: true },
-    { prompt: '', text: '\n  workload-openclaw    Synced  Healthy  ← AI Gateway', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  argocd-self           Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  infra-sealed-secrets  Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  infra-envoy-gw-cfg   Synced  Healthy', delay: 100, isOutput: true },
+    { prompt: '', text: '\n  workload-openclaw     Synced  Healthy  ← AI Gateway', delay: 100, isOutput: true },
   ];
 
   async function typeCommands() {

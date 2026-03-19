@@ -37,15 +37,14 @@
 
             <!-- Description -->
             <p class="text-dim text-sm leading-relaxed mb-6">
-              Single command creates a KIND cluster, installs ArgoCD, and deploys the entire stack. Fully idempotent, run it again and nothing changes.
+              Single command creates a Kinder or KIND cluster, installs ArgoCD, and deploys the entire stack. Fully idempotent, run it again and nothing changes.
             </p>
 
             <!-- Mock terminal output -->
             <div class="mt-auto font-mono text-xs space-y-1 text-dim bg-void/40 rounded-lg p-4">
-              <div><span class="text-muted">1/4</span> Creating KIND cluster (1 CP + 2 workers)...</div>
-              <div><span class="text-muted">2/4</span> Installing ArgoCD + App of Apps...</div>
-              <div><span class="text-muted">3/4</span> MetalLB + Envoy Gateway networking...</div>
-              <div><span class="text-muted">4/4</span> Sealed Secrets + cert-manager...</div>
+              <div><span class="text-muted">1/3</span> Creating cluster (1 CP + 2 workers)...</div>
+              <div><span class="text-muted">2/3</span> Installing ArgoCD + App of Apps...</div>
+              <div><span class="text-muted">3/3</span> Sealed Secrets + Envoy Gateway config...</div>
               <div class="text-terminal-green mt-2">&#x2713; Cluster ready. All apps Synced.</div>
             </div>
           </div>
@@ -114,7 +113,7 @@
           <!-- Dashboard metrics -->
           <div class="grid grid-cols-3 gap-3">
             <div class="text-center">
-              <div class="font-mono text-2xl font-bold text-neon-cyan">73</div>
+              <div class="font-mono text-2xl font-bold text-neon-cyan">116</div>
               <div class="font-mono text-xs text-muted">tests</div>
             </div>
             <div class="text-center">

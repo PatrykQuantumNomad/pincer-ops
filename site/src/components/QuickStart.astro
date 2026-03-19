@@ -15,7 +15,7 @@ const steps = [
     step: '02',
     label: 'Bootstrap the cluster',
     commands: ['make up'],
-    note: 'Creates KIND cluster + deploys full stack (~3 min)',
+    note: 'Creates Kinder cluster + deploys full stack (~3 min). Use CLUSTER_PROVIDER=kind for KIND.',
   },
   {
     step: '03',
@@ -37,7 +37,7 @@ const steps = [
 const prereqs = [
   { name: 'Docker', url: 'https://docs.docker.com/get-docker/' },
   { name: 'kubectl', url: 'https://kubernetes.io/docs/tasks/tools/' },
-  { name: 'KIND', url: 'https://kind.sigs.k8s.io/docs/user/quick-start/#installation' },
+  { name: 'Kinder', url: 'https://kinder.patrykgolabek.dev/' },
   { name: 'ArgoCD CLI', url: 'https://argo-cd.readthedocs.io/en/stable/cli_installation/' },
 ];
 ---
