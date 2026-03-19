@@ -61,11 +61,11 @@ Plans:
   3. Envoy Gateway DaemonSet + hostPort configuration is managed by ArgoCD regardless of provider
   4. Sealed Secrets controller is managed by ArgoCD regardless of provider
   5. Sync wave ordering is correct for the Kinder path (fewer infra waves, no dangling dependencies)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — Dual-provider bootstrap directory structure (kind/ and kinder/)
+- [ ] 13-02-PLAN.md — BATS tests for directory structure invariants
 
 ### Phase 14: Bootstrap and Teardown Dual-Mode
 **Goal**: Users can create, destroy, and reset clusters with either provider using the same Makefile targets, with provider-appropriate steps executed automatically
