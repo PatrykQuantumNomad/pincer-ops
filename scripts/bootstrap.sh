@@ -66,7 +66,8 @@ parse_args "$@"
 
 # Check cluster existence BEFORE pre-flight (existing cluster holds ports 80/443)
 CLUSTER_EXISTS=false
-if ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+CLUSTER_LIST=$( ${CLUSTER_PROVIDER} get clusters 2>/dev/null || true )
+if echo "${CLUSTER_LIST}" | grep -q "^${CLUSTER_NAME}$"; then
   CLUSTER_EXISTS=true
 fi
 
@@ -128,18 +129,17 @@ if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
   log_info "Detected IPv4 subnet: ${KIND_SUBNET}"
 
   # Step 4: Store network info as a ConfigMap (always update)
-  # NOTE: Cannot use run_cmd here -- the pipe needs stdout from the first command.
+  # Variable capture avoids SIGPIPE under set -euo pipefail (grep -q / apply -f -
+  # can close stdin before the upstream command finishes writing).
   log_step "Storing network info in ConfigMap..."
+  CM_YAML=$(kubectl create configmap kind-network-info \
+    --namespace kube-system \
+    --from-literal=ipv4-subnet="${KIND_SUBNET}" \
+    --dry-run=client -o yaml)
   if [ "${VERBOSE}" = true ]; then
-    kubectl create configmap kind-network-info \
-      --namespace kube-system \
-      --from-literal=ipv4-subnet="${KIND_SUBNET}" \
-      --dry-run=client -o yaml | kubectl apply -f -
+    echo "${CM_YAML}" | kubectl apply -f -
   else
-    kubectl create configmap kind-network-info \
-      --namespace kube-system \
-      --from-literal=ipv4-subnet="${KIND_SUBNET}" \
-      --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+    echo "${CM_YAML}" | kubectl apply -f - >/dev/null 2>&1
   fi
   log_info "ConfigMap kind-network-info updated in kube-system"
 
@@ -156,12 +156,14 @@ else
 fi
 
 # Step 6: Install ArgoCD
-# NOTE: Cannot use run_cmd for namespace pipe -- stdout needed by kubectl apply.
+# Variable capture avoids SIGPIPE under set -euo pipefail (apply -f - can close
+# stdin before the create command finishes writing).
 log_step "Installing ArgoCD ${ARGOCD_VERSION}..."
+NS_YAML=$(kubectl create namespace argocd --dry-run=client -o yaml)
 if [ "${VERBOSE}" = true ]; then
-  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+  echo "${NS_YAML}" | kubectl apply -f -
 else
-  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+  echo "${NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
 fi
 run_cmd kubectl apply -n argocd --server-side --force-conflicts -f "${ARGOCD_INSTALL_URL}"
 log_info "ArgoCD ${ARGOCD_VERSION} installed"
@@ -435,11 +437,12 @@ until kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; do
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
       log_warn "ArgoCD cannot sync from repo -- applying OpenClaw directly"
-      # NOTE: Cannot use run_cmd here -- the pipe needs stdout from the first command.
+      # Variable capture avoids SIGPIPE under set -euo pipefail
+      OC_NS_YAML=$(kubectl create namespace openclaw --dry-run=client -o yaml)
       if [ "${VERBOSE}" = true ]; then
-        kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f -
+        echo "${OC_NS_YAML}" | kubectl apply -f -
       else
-        kubectl create namespace openclaw --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
+        echo "${OC_NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
       fi
       run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${OC_OVERLAY_DIR}")
       break

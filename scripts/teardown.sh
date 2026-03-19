@@ -60,7 +60,8 @@ fi
 SECONDS=0
 
 # Step 1: Delete cluster (idempotent)
-if ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+CLUSTER_LIST=$( ${CLUSTER_PROVIDER} get clusters 2>/dev/null || true )
+if echo "${CLUSTER_LIST}" | grep -q "^${CLUSTER_NAME}$"; then
   log_step "Deleting cluster '${CLUSTER_NAME}' (provider: ${CLUSTER_PROVIDER})..."
   run_cmd ${CLUSTER_PROVIDER} delete cluster --name "${CLUSTER_NAME}"
   log_info "Cluster deleted"

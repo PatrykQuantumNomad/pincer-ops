@@ -59,7 +59,8 @@ run_test() {
 log_step "Running pre-flight checks..."
 
 # Cluster exists
-if ! ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+CLUSTER_LIST=$( ${CLUSTER_PROVIDER} get clusters 2>/dev/null || true )
+if ! echo "${CLUSTER_LIST}" | grep -q "^${CLUSTER_NAME}$"; then
   log_error "Cluster '${CLUSTER_NAME}' not found (provider: ${CLUSTER_PROVIDER})"
   exit 1
 fi

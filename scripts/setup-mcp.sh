@@ -69,7 +69,8 @@ parse_args "$@"
 
 # Step 1: Verify cluster is running
 log_step "Verifying cluster '${CLUSTER_NAME}' is running (provider: ${CLUSTER_PROVIDER})..."
-if ! ${CLUSTER_PROVIDER} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+CLUSTER_LIST=$( ${CLUSTER_PROVIDER} get clusters 2>/dev/null || true )
+if ! echo "${CLUSTER_LIST}" | grep -q "^${CLUSTER_NAME}$"; then
   log_error "Cluster '${CLUSTER_NAME}' is not running (provider: ${CLUSTER_PROVIDER})."
   log_error "Run ./scripts/bootstrap.sh first."
   exit 1
