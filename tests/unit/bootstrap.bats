@@ -119,3 +119,106 @@ fc00:f853:ccd:e793::/64
   refute_output --partial "is in use"
   assert_output --partial "already exists, skipping creation"
 }
+
+# ===========================================================================
+# Provider directory structure validation (dual-provider bootstrap)
+# ===========================================================================
+
+@test "kind bootstrap directory contains all v1.0 Applications" {
+  local kind_dir="${PROJECT_ROOT}/bootstrap/kind"
+  local expected_files=(
+    root-app.yaml
+    argocd-self.yaml
+    argocd-cm.yaml
+    argocd-rbac-cm.yaml
+    argocd-notifications-cm.yaml
+    infra-metallb.yaml
+    infra-envoy-gateway.yaml
+    infra-envoy-gateway-config.yaml
+    infra-cert-manager.yaml
+    infra-sealed-secrets.yaml
+    workload-openclaw.yaml
+  )
+
+  # Count YAML files (excluding projects/ subdirectory)
+  local actual_count
+  actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
+  [ "${actual_count}" -eq 11 ]
+
+  # Verify each expected file exists
+  for f in "${expected_files[@]}"; do
+    assert_file_exists "${kind_dir}/${f}"
+  done
+}
+
+@test "kind bootstrap directory contains both project files" {
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/infrastructure.yaml"
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/workloads.yaml"
+}
+
+@test "kinder bootstrap directory excludes KIND-only Applications" {
+  assert_file_not_exists "${PROJECT_ROOT}/bootstrap/kinder/infra-metallb.yaml"
+  assert_file_not_exists "${PROJECT_ROOT}/bootstrap/kinder/infra-envoy-gateway.yaml"
+  assert_file_not_exists "${PROJECT_ROOT}/bootstrap/kinder/infra-cert-manager.yaml"
+}
+
+@test "kinder bootstrap directory contains shared Applications" {
+  local kinder_dir="${PROJECT_ROOT}/bootstrap/kinder"
+  local expected_files=(
+    root-app.yaml
+    argocd-self.yaml
+    argocd-cm.yaml
+    argocd-rbac-cm.yaml
+    argocd-notifications-cm.yaml
+    infra-envoy-gateway-config.yaml
+    infra-sealed-secrets.yaml
+    workload-openclaw.yaml
+  )
+
+  # Count YAML files (excluding projects/ subdirectory)
+  local actual_count
+  actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
+  [ "${actual_count}" -eq 8 ]
+
+  # Verify each expected file exists
+  for f in "${expected_files[@]}"; do
+    assert_file_exists "${kinder_dir}/${f}"
+  done
+}
+
+@test "kinder bootstrap directory contains both project files" {
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/infrastructure.yaml"
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/workloads.yaml"
+}
+
+@test "shared files are identical across provider directories" {
+  local shared_files=(
+    argocd-cm.yaml
+    argocd-rbac-cm.yaml
+    argocd-notifications-cm.yaml
+    infra-envoy-gateway-config.yaml
+    infra-sealed-secrets.yaml
+    workload-openclaw.yaml
+    projects/infrastructure.yaml
+    projects/workloads.yaml
+  )
+
+  for f in "${shared_files[@]}"; do
+    run diff "${PROJECT_ROOT}/bootstrap/kind/${f}" "${PROJECT_ROOT}/bootstrap/kinder/${f}"
+    assert_success "shared file drifted: ${f}"
+  done
+}
+
+@test "provider root-apps point to their own directory" {
+  run grep 'path: bootstrap/kind' "${PROJECT_ROOT}/bootstrap/kind/root-app.yaml"
+  assert_success
+
+  run grep 'path: bootstrap/kind' "${PROJECT_ROOT}/bootstrap/kind/argocd-self.yaml"
+  assert_success
+
+  run grep 'path: bootstrap/kinder' "${PROJECT_ROOT}/bootstrap/kinder/root-app.yaml"
+  assert_success
+
+  run grep 'path: bootstrap/kinder' "${PROJECT_ROOT}/bootstrap/kinder/argocd-self.yaml"
+  assert_success
+}
