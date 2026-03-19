@@ -11,8 +11,8 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 - [ ] **PROV-01**: User can bootstrap cluster with Kinder as default provider (`make up` or `make up PROVIDER=kinder`)
 - [ ] **PROV-02**: User can bootstrap cluster with KIND as opt-in provider (`make up PROVIDER=kind`)
-- [ ] **PROV-03**: Kinder cluster uses same topology as KIND (1 control-plane + 2 workers, ports 80/443 mapped)
-- [ ] **PROV-04**: Kinder cluster config file exists alongside KIND config with addons configured
+- [x] **PROV-03**: Kinder cluster uses same topology as KIND (1 control-plane + 2 workers, ports 80/443 mapped)
+- [x] **PROV-04**: Kinder cluster config file exists alongside KIND config with addons configured
 - [ ] **PROV-05**: User can teardown Kinder cluster (`make down`) preserving sealing keys
 - [ ] **PROV-06**: User can full-reset Kinder cluster (`make reset`)
 
@@ -37,7 +37,7 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 ### Developer Experience
 
-- [ ] **DX-01**: Makefile targets accept PROVIDER variable (kinder default, kind opt-in)
+- [x] **DX-01**: Makefile targets accept PROVIDER variable (kinder default, kind opt-in)
 - [ ] **DX-02**: Preflight checks detect and validate correct provider binary (kinder or kind)
 - [ ] **DX-03**: `make doctor` validates cluster health for current provider (binary present, cluster running, components healthy)
 - [ ] **DX-04**: README.md updated with dual-provider usage instructions
@@ -67,8 +67,8 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 |-------------|-------|--------|
 | PROV-01 | Phase 14 | Pending |
 | PROV-02 | Phase 14 | Pending |
-| PROV-03 | Phase 12 | Pending |
-| PROV-04 | Phase 12 | Pending |
+| PROV-03 | Phase 12 | Complete |
+| PROV-04 | Phase 12 | Complete |
 | PROV-05 | Phase 14 | Pending |
 | PROV-06 | Phase 14 | Pending |
 | ARGO-01 | Phase 13 | Pending |
@@ -84,7 +84,7 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 | BOOT-06 | Phase 14 | Pending |
 | BOOT-07 | Phase 14 | Pending |
 | BOOT-08 | Phase 14 | Pending |
-| DX-01 | Phase 12 | Pending |
+| DX-01 | Phase 12 | Complete |
 | DX-02 | Phase 12 | Pending |
 | DX-03 | Phase 15 | Pending |
 | DX-04 | Phase 15 | Pending |
