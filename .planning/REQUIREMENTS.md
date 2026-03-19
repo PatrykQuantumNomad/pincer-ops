@@ -65,37 +65,37 @@ Requirements for Kinder support milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROV-01 | — | Pending |
-| PROV-02 | — | Pending |
-| PROV-03 | — | Pending |
-| PROV-04 | — | Pending |
-| PROV-05 | — | Pending |
-| PROV-06 | — | Pending |
-| ARGO-01 | — | Pending |
-| ARGO-02 | — | Pending |
-| ARGO-03 | — | Pending |
-| ARGO-04 | — | Pending |
-| ARGO-05 | — | Pending |
-| BOOT-01 | — | Pending |
-| BOOT-02 | — | Pending |
-| BOOT-03 | — | Pending |
-| BOOT-04 | — | Pending |
-| BOOT-05 | — | Pending |
-| BOOT-06 | — | Pending |
-| BOOT-07 | — | Pending |
-| BOOT-08 | — | Pending |
-| DX-01 | — | Pending |
-| DX-02 | — | Pending |
-| DX-03 | — | Pending |
-| DX-04 | — | Pending |
-| DX-05 | — | Pending |
-| DX-06 | — | Pending |
+| PROV-01 | Phase 14 | Pending |
+| PROV-02 | Phase 14 | Pending |
+| PROV-03 | Phase 12 | Pending |
+| PROV-04 | Phase 12 | Pending |
+| PROV-05 | Phase 14 | Pending |
+| PROV-06 | Phase 14 | Pending |
+| ARGO-01 | Phase 13 | Pending |
+| ARGO-02 | Phase 13 | Pending |
+| ARGO-03 | Phase 13 | Pending |
+| ARGO-04 | Phase 13 | Pending |
+| ARGO-05 | Phase 13 | Pending |
+| BOOT-01 | Phase 14 | Pending |
+| BOOT-02 | Phase 14 | Pending |
+| BOOT-03 | Phase 14 | Pending |
+| BOOT-04 | Phase 14 | Pending |
+| BOOT-05 | Phase 14 | Pending |
+| BOOT-06 | Phase 14 | Pending |
+| BOOT-07 | Phase 14 | Pending |
+| BOOT-08 | Phase 14 | Pending |
+| DX-01 | Phase 12 | Pending |
+| DX-02 | Phase 12 | Pending |
+| DX-03 | Phase 15 | Pending |
+| DX-04 | Phase 15 | Pending |
+| DX-05 | Phase 15 | Pending |
+| DX-06 | Phase 15 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 25 total
-- Mapped to phases: 0
-- Unmapped: 25 ⚠️
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-19*
-*Last updated: 2026-03-19 after initial definition*
+*Last updated: 2026-03-19 after roadmap creation*
