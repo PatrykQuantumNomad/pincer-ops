@@ -1,5 +1,5 @@
 # root-app.yaml -- The singular entry point for the entire cluster state.
-# All Applications and AppProjects are discovered by scanning bootstrap/ recursively.
+# All Applications and AppProjects are discovered by scanning bootstrap/kinder/ recursively.
 #
 # DELETION PROTECTION (GOPS-03):
 # 1. No finalizers -- ArgoCD's cascade-deletion finalizer is NOT set, so deleting this
@@ -20,7 +20,7 @@ spec:
   source:
     repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
     targetRevision: main
-    path: bootstrap
+    path: bootstrap/kinder
     directory:
       recurse: true
   destination:

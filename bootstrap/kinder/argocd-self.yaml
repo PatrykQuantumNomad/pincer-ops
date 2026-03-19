@@ -19,7 +19,7 @@ spec:
   source:
     repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
     targetRevision: main
-    path: bootstrap
+    path: bootstrap/kinder
     directory:
       recurse: true
   destination:
