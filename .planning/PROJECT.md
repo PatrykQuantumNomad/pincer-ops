@@ -2,25 +2,11 @@
 
 ## What This Is
 
-A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND for local development with production-fidelity networking.
-
-## Current Milestone: v1.1 Kinder Support
-
-**Goal:** Make Kinder the default cluster provider while maintaining KIND as an opt-in alternative.
-
-**Target features:**
-- Kinder as default provider (`make up` or `make up PROVIDER=kinder`)
-- KIND as opt-in alternative (`make up PROVIDER=kind`)
-- Same cluster topology for both (1 CP + 2 workers, ports 80/443)
-- Kinder-provided components (MetalLB, Envoy Gateway controller, cert-manager) skip ArgoCD management
-- Envoy Gateway DaemonSet + hostPort config still managed by ArgoCD with both providers
-- Conditional root-app that excludes KIND-only ArgoCD Applications when using Kinder
-- Updated bootstrap/teardown scripts for dual-provider support
-- Updated documentation and CI
+A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND (opt-in) for local development with production-fidelity networking.
 
 ## Core Value
 
-Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete cluster state — full GitOps reproducibility from a single command.
+Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state — full GitOps reproducibility from a single command.
 
 ## Requirements
 
@@ -44,52 +30,63 @@ Running `kubectl apply -f bootstrap/root-app.yaml` must reconstruct the complete
 - ✓ Automated PVC backup and sealing key backup CronJobs — v1.0
 - ✓ MCP integration (kubernetes + argocd) for AI-assisted cluster operations — v1.0
 - ✓ Proven reproducibility: teardown → bootstrap → full operational state — v1.0
+- ✓ Kinder as default cluster provider with batteries-included infrastructure — v1.1
+- ✓ KIND as opt-in provider with full ArgoCD infrastructure management — v1.1
+- ✓ Dual-provider bootstrap and teardown scripts — v1.1
+- ✓ Conditional ArgoCD root-app per provider — v1.1
+- ✓ Provider-specific bootstrap directories with correct Application sets — v1.1
+- ✓ `make doctor` validates cluster health per provider — v1.1
+- ✓ Dual-provider CI validation and documentation — v1.1
+- ✓ Cross-provider sealing key portability — v1.1
+- ✓ SIGPIPE-safe operational scripts — v1.1
 
 ### Active
 
-- [ ] Kinder as default cluster provider with batteries-included infrastructure
-- [ ] KIND as opt-in provider with full ArgoCD infrastructure management
-- [ ] Dual-provider bootstrap and teardown scripts
-- [ ] Conditional ArgoCD root-app per provider
+(None — define next milestone with `/gsd:new-milestone`)
 
 ### Out of Scope
 
 - Application source code or Dockerfiles — belongs in pincer-app
 - CI/CD pipelines that build images — causes infinite GitOps loops
 - Horizontal scaling of OpenClaw — architectural constraint (single-instance monolith)
-- Production cloud deployment — this is local-first on KIND
+- Production cloud deployment — this is local-first on KIND/Kinder
 - Sister repositories (pincer-app, pincer-mcp) — separate projects
 - Service mesh (Istio/Linkerd) — massive overhead for one workload
 - Argo Rollouts / progressive delivery — meaningless with replicas:1
-- Multi-cluster ArgoCD management — premature for single-cluster KIND
+- Multi-cluster ArgoCD management — premature for single-cluster setup
+- Mobile app — web-first approach, PWA works well
+- Offline mode — real-time is core value
 
 ## Context
 
-Shipped v1.0 with 2,247 LOC across YAML/Shell/JSON.
-Tech stack: KIND, ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, Kustomize.
-Platform: 11 phases, 20 plans, 33 requirements — all delivered in 2 days.
+Shipped v1.1 with 21,933 LOC across YAML/Shell/JSON/BATS.
+Tech stack: Kinder (default), KIND (opt-in), ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, Kustomize.
+Platform: 17 phases, 32 plans, 58 requirements across 2 milestones — all delivered in 3 days total.
 Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic).
 
-Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries included: MetalLB, Envoy Gateway, cert-manager, Metrics Server, CoreDNS tuning, Headlamp dashboard, and local registry pre-installed. Local repo at /Users/patrykattc/work/git/kinder. Kinder uses default Deployment mode for Envoy Gateway — DaemonSet + hostPort config still needed for macOS localhost access. Kinder handles MetalLB IPAddressPool and cert-manager ClusterIssuer automatically.
+Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries included: MetalLB, Envoy Gateway, cert-manager, Metrics Server, CoreDNS tuning, Headlamp dashboard, and local registry pre-installed. Kinder uses default Deployment mode for Envoy Gateway — DaemonSet + hostPort config still needed for macOS localhost access. Kinder handles MetalLB IPAddressPool and cert-manager ClusterIssuer automatically.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | KIND for local cluster | Production-fidelity networking without cloud costs | ✓ Good — fully functional local platform |
-| ArgoCD App of Apps | Single root Application enables full cluster reconstruction from Git | ✓ Good — core invariant proven in Phase 8 |
+| ArgoCD App of Apps | Single root Application enables full cluster reconstruction from Git | ✓ Good — core invariant proven in Phase 8 and Phase 16 |
 | StatefulSet for OpenClaw | Stable storage identity required for file-backed monolith | ✓ Good — PVC mount works correctly |
-| Bitnami SealedSecrets over SOPS/External Secrets | Simpler GitOps workflow — encrypted secrets committed directly | ✓ Good — sealing key lifecycle works across teardown/rebuild |
+| Bitnami SealedSecrets over SOPS/External Secrets | Simpler GitOps workflow — encrypted secrets committed directly | ✓ Good — sealing key lifecycle works across teardown/rebuild and cross-provider |
 | Kustomize over Helm | Declarative overlays without template complexity; better GitOps fit | ✓ Good — clean separation of base/overlay |
 | Gateway API over ingress-nginx | Skip migration — Gateway API is the future standard | ✓ Good — eliminated future migration work |
 | MCP integration in v1 | AI-assisted ops from day one; aligns with OpenClaw's AI-native philosophy | ✓ Good — operational queries via Claude Code |
 | Sync waves with gaps | Allows future component insertion without renumbering | ✓ Good — wave gaps used for Envoy Gateway two-app pattern |
 | DaemonSet with hostPort for Envoy | Only viable path for localhost access on macOS/KIND | ✓ Good — localhost:80/443 routing works |
-| Exec-based probes for OpenClaw | HTTP health endpoint availability unconfirmed at build time | ⚠️ Revisit — verify if HTTP probe is viable |
+| Kinder as default provider | Batteries-included: fewer ArgoCD apps, faster bootstrap, simpler DX | ✓ Good — 5 vs 8 ArgoCD apps, fewer sync waves |
+| Provider-specific bootstrap directories | ArgoCD root-app scans correct directory per provider | ✓ Good — clean separation, byte-identical shared files |
+| Shared files duplicated (not symlinked) | ArgoCD directory scanning requires actual files in scanned path | ✓ Good — BATS tests enforce byte-identity |
+| SIGPIPE-safe variable capture | Prevents race conditions in pipefail scripts | ✓ Good — 20/20 consecutive test passes |
 
 ## Constraints
 
-- **Platform**: Kinder (default) or KIND — local development only
+- **Platform**: Kinder (default) or KIND (opt-in) — local development only
 - **GitOps**: ArgoCD watches `main` branch only; all changes flow through Git
 - **Secrets**: All secrets must be Bitnami SealedSecrets — no plaintext Secrets in Git
 - **OpenClaw scaling**: Always `replicas: 1`, always StatefulSet — cannot scale horizontally
@@ -97,4 +94,4 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-19 after v1.1 milestone start*
+*Last updated: 2026-03-19 after v1.1 milestone completion*
