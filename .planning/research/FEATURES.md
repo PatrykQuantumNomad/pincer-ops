@@ -1,215 +1,228 @@
-# Feature Research: NemoClaw Workload Support
+# Feature Research: NemoClaw Governance-Only Deployment
 
-**Domain:** GitOps workload management -- adding NemoClaw as alternative workload to Pincer Ops
-**Researched:** 2026-03-19
-**Confidence:** MEDIUM (NemoClaw is alpha-stage, launched 2026-03-16; documentation is incomplete in places)
+**Domain:** AI agent governance layer (inference routing, credential isolation, security hardening)
+**Researched:** 2026-03-20
+**Confidence:** MEDIUM -- NemoClaw is alpha software; official docs cover the full sandbox stack but not a standalone governance-only decomposition. The governance-only approach is our own architectural decision, informed by NemoClaw's component boundaries but not directly documented by NVIDIA.
+
+## Context: What Already Exists
+
+This is a v1.2 milestone on top of a shipped v1.0 platform. The following are **already built and working**:
+
+- OpenClaw StatefulSet (replicas:1, PVC at `/home/node/.openclaw`, port 18789)
+- NetworkPolicy: default-deny-all + openclaw-allow (DNS, HTTPS 443, Envoy ingress on 18789)
+- Sealed Secrets for encrypted secret management in Git
+- ArgoCD App of Apps with sync wave ordering (-10 through +10)
+- Gateway API routing via Envoy (HTTPRoute PathPrefix /)
+- CI validation (kubeconform + 116 BATS tests)
+- Dual-provider support (Kinder/KIND)
+
+**The current NetworkPolicy allows OpenClaw to egress directly to ANY IP on port 443.** This is the gap NemoClaw governance closes -- OpenClaw should only reach LLM APIs through a controlled gateway, never directly.
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (Must Have for Governance to Function)
 
-Features users assume exist when the platform claims NemoClaw support. Missing any of these makes the feature feel broken or incomplete.
+These are the minimum features required for the governance layer to provide any security value. Without any one of these, the "governance-only" claim is hollow.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Workload selector (`WORKLOAD=nemoclaw`) | Pincer Ops already has `CLUSTER_PROVIDER` pattern; users expect the same ergonomics for workload choice | MEDIUM | Needs Makefile variable, conditional bootstrap Application, separate Kustomize overlay. Pattern already proven with `CLUSTER_PROVIDER`. |
-| NemoClaw StatefulSet with PVC | NemoClaw stores data at `/sandbox/.openclaw` and `/sandbox/.nemoclaw`; identical to OpenClaw's PVC-backed single-replica constraint | LOW | Same `replicas: 1` StatefulSet pattern. Different image, different data path (`/sandbox/` vs `/home/node/`), same 20Gi RWO PVC. |
-| NVIDIA_API_KEY as SealedSecret | NemoClaw requires `NVIDIA_API_KEY` env var for cloud inference via `build.nvidia.com`. Pincer Ops never commits plaintext Secrets. | MEDIUM | Create SealedSecret, inject as env var on container. Existing `make seal` workflow applies. Must NOT be in ConfigMap like the OpenClaw gateway token. |
-| NemoClaw-specific NetworkPolicy | NemoClaw's allowed egress differs from OpenClaw: needs `integrate.api.nvidia.com:443`, `inference-api.nvidia.com:443`, plus standard DNS/ingress. OpenClaw's egress to `0.0.0.0/0:443` is too permissive for NemoClaw's security model. | MEDIUM | NemoClaw's whole value is security isolation. The K8s NetworkPolicy should mirror the sandbox's `openclaw-sandbox.yaml` baseline: explicit endpoint allowlist rather than blanket HTTPS egress. |
-| ConfigMap with NemoClaw-specific config | NemoClaw needs different seed config: inference provider settings, sandbox policy references, NemoClaw plugin configuration | LOW | Same initContainer seed-config pattern. Different JSON structure reflecting NemoClaw's `~/.nemoclaw/onboard.json` equivalent. |
-| HTTPRoute for NemoClaw dashboard | NemoClaw serves its dashboard on port 18789, same as OpenClaw. Gateway API HTTPRoute with PathPrefix `/` | LOW | Byte-identical to OpenClaw's HTTPRoute. Only the Service name changes if using a different namespace, or is identical if reusing `openclaw` namespace. |
-| Service on port 18789 | NemoClaw container exposes port 18789 for gateway HTTP (dashboard, API, WebChat) | LOW | ClusterIP Service, identical port mapping to OpenClaw. |
-| Health probes (startup, liveness, readiness) | NemoClaw container inherits OpenClaw's `/health` endpoint on port 18789 | LOW | Same probe configuration as OpenClaw StatefulSet. |
-| Backup CronJob for NemoClaw PVC | Users expect data safety for the NemoClaw PVC, same as OpenClaw | LOW | Same pattern, different PVC claim name. Adjust data mount path if needed. |
-| `make nemoclaw-onboard` target | Users need guided onboarding after deployment. NemoClaw's `nemoclaw onboard` wizard configures inference providers and sandbox policies. | LOW | `kubectl exec` into the NemoClaw pod. Equivalent to existing `make openclaw-onboard`. |
-| Dashboard access (`make nemoclaw-dashboard`) | Token-based dashboard URL with `#token=...` hash fragment for auto-pairing. Same UX as OpenClaw. | LOW | Extract token from pod, construct `http://localhost/#token=...` URL. Same pattern as `make openclaw-dashboard`. |
-| Provider-aware bootstrap Applications | Both `bootstrap/kinder/` and `bootstrap/kind/` need `workload-nemoclaw.yaml` ArgoCD Application definitions | LOW | Byte-identical copies following existing convention. Sync wave 10 (same as OpenClaw). |
-| Image tag pinning in dev overlay | `workloads/nemoclaw/overlays/dev/kustomization.yaml` must pin the NemoClaw container image tag | LOW | Same Kustomize images transformer. Image: `ghcr.io/nvidia/openshell-community/sandboxes/openclaw`. |
+| **openshell-gateway Deployment** | Core inference routing proxy. Without it, there is no governance intermediary. All LLM requests from OpenClaw must flow through this component instead of directly to provider APIs. | MEDIUM | Regular K8s Deployment in `nemoclaw` namespace. Mirrors OpenShell gateway role: accepts OpenAI-compatible requests on a known port, forwards to configured providers. Does NOT need the full OpenShell K3s-in-Docker sandbox. Must have health probes, resource limits, and be ArgoCD-managed. |
+| **privacy-router Deployment** | Credential isolation component. Holds real API keys (NVIDIA_API_KEY, ANTHROPIC_API_KEY, etc.), strips any client-supplied credentials from incoming requests, injects real provider credentials before forwarding upstream. Without this, credential isolation is impossible. | MEDIUM | Separate Deployment in `nemoclaw` namespace. Receives requests from openshell-gateway, rewrites model parameters, injects credentials, forwards to external LLM APIs on port 443. The only component that mounts the SealedSecret containing API keys. |
+| **NetworkPolicy: Block OpenClaw direct LLM egress** | Current policy allows OpenClaw to reach `0.0.0.0/0:443`. With governance, OpenClaw must ONLY egress to `openshell-gateway.nemoclaw:18789` (plus DNS and messaging platforms). Direct LLM API access must be blocked. | MEDIUM | Replaces the existing `openclaw-allow` NetworkPolicy. Changes egress from `0.0.0.0/0:443` to namespace-scoped `namespaceSelector` + `podSelector` targeting the gateway in `nemoclaw` namespace. This is the enforcement mechanism -- without it, OpenClaw can bypass the governance layer entirely. Depends on: openshell-gateway existing first. |
+| **NetworkPolicy: nemoclaw namespace** | The nemoclaw namespace needs its own default-deny + selective allow. privacy-router must be able to egress to LLM APIs (443), gateway must accept ingress from OpenClaw (18789) and egress to privacy-router. | MEDIUM | Two NetworkPolicy resources in `nemoclaw` namespace: default-deny-all + nemoclaw-allow. The privacy-router is the ONLY pod that can reach external LLM endpoints. The gateway can ONLY reach the privacy-router. |
+| **SealedSecret for LLM API keys** | Provider API keys (NVIDIA_API_KEY at minimum) must be stored encrypted in Git via SealedSecret and mounted only on the privacy-router pod. OpenClaw must never see these keys. | LOW | Uses existing Sealed Secrets infrastructure. Creates a SealedSecret in `nemoclaw` namespace, referenced as env vars or volume mount on privacy-router only. Existing backup/restore workflow applies. |
+| **OpenClaw configuration change** | OpenClaw must be reconfigured to route inference through the gateway instead of directly to LLM APIs. Requires env vars like `INFERENCE_GATEWAY_URL=http://openshell-gateway.nemoclaw:18789` and `INFERENCE_MODE=gateway`. | LOW | Modify `workloads/openclaw/base/statefulset.yaml` to add new env vars. May also need ConfigMap changes. The OpenClaw application must support gateway mode (verify against OpenClaw docs). Depends on: openshell-gateway being deployed and reachable. |
+| **ArgoCD Application for NemoClaw** | `infra-nemoclaw.yaml` in both `bootstrap/kinder/` and `bootstrap/kind/`. Must deploy before OpenClaw (sync wave 0, between infra at -3 and workload at +10). | LOW | Follows existing pattern from `infra-sealed-secrets.yaml`. Points to `infrastructure/nemoclaw/overlays/dev`. Must be byte-identical across providers. Automated prune + selfHeal. |
+| **Namespace with Pod Security Standards** | `nemoclaw` namespace must have `pod-security.kubernetes.io/enforce: restricted` label. The `openclaw` namespace should get the same enforcement. | LOW | PSS restricted profile requires: runAsNonRoot, seccomp RuntimeDefault, drop ALL capabilities, no privilege escalation. The namespace label triggers the built-in Pod Security Admission controller -- no additional admission controller needed. |
 
-### Differentiators (Competitive Advantage)
+### Differentiators (Exceed Expectations)
 
-Features that make Pincer Ops' NemoClaw support stand out versus just "running the container manually."
+Features that go beyond the minimum governance layer. Not required for the governance claim to hold, but significantly improve security posture, operational confidence, or observability.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Restricted NetworkPolicy mirroring NemoClaw sandbox baseline | NemoClaw's security value is defense-in-depth. Adding a K8s-level NetworkPolicy that mirrors the `openclaw-sandbox.yaml` baseline (explicit endpoint allowlist for `api.anthropic.com`, `integrate.api.nvidia.com`, `github.com`, `registry.npmjs.org`, etc.) provides network isolation at the cluster level in addition to NemoClaw's container-level isolation. | HIGH | Requires maintaining the allowlist in sync with NemoClaw's baseline policy. Eight endpoint groups to codify. Worth the effort because it demonstrates understanding of NemoClaw's security model. |
-| Inference provider switching documentation | NemoClaw supports runtime model switching via `openshell inference set` without sandbox restart. Documenting this as a Makefile target (`make nemoclaw-switch-model`) is a quality-of-life win. | LOW | Thin wrapper around `kubectl exec`. Four Nemotron models available: Super 120B (default), Ultra 253B, Super 49B v1.5, Nano 30B. |
-| Workload exclusivity guard | OpenClaw and NemoClaw compete for port 80/443 via the same Gateway. Only one workload should be active at a time. A guard preventing simultaneous deployment prevents confusing routing failures. | MEDIUM | Could be enforced via: (a) the root-app only scanning the active workload's Application YAML, (b) conditional file inclusion in bootstrap directory, or (c) documentation-only. Recommend (b) for safety. |
-| SealedSecret rotation workflow for NVIDIA_API_KEY | Unlike the OpenClaw gateway token (low-sensitivity, in ConfigMap), the NVIDIA_API_KEY is a real credential with billing implications. Providing a `make rotate-nvidia-key` target adds operational safety. | LOW | Reseal with `kubeseal`, apply, restart pod. Document the workflow. |
-| Doctor command for NemoClaw health | Extend `make doctor` to check NemoClaw StatefulSet health when `WORKLOAD=nemoclaw` | LOW | Add conditional check in Makefile doctor target, similar to existing OpenClaw health check. |
+| **Security hardening on OpenClaw StatefulSet** | Apply `readOnlyRootFilesystem: true`, `seccompProfile: RuntimeDefault`, `capabilities.drop: ["ALL"]`, `runAsNonRoot: true`, `allowPrivilegeEscalation: false` to the OpenClaw pod. Replicates the sandbox-equivalent protections using native K8s primitives. | MEDIUM | Requires identifying all writable paths and adding emptyDir mounts (`/tmp`, `/home/node/.cache`). The PVC at `/home/node/.openclaw` already provides a writable mount. InitContainer currently runs as `runAsUser: 0` -- must verify if it can work as non-root or needs a separate approach. HIGH risk of breaking OpenClaw if paths are missed. |
+| **Security hardening on governance pods** | Apply the same restricted securityContext to openshell-gateway and privacy-router. These are simpler containers (likely Go or Python binaries) with fewer filesystem needs. | LOW | Easier than hardening OpenClaw because governance pods are purpose-built with known filesystem requirements. Should be straightforward: readOnlyRootFilesystem + emptyDir for /tmp. |
+| **Inference request logging/audit** | Log every inference request that passes through the gateway: timestamp, source pod, target model, response status. Provides audit trail for governance compliance. | MEDIUM | Can be as simple as structured JSON logging from the gateway proxy, scraped by existing log infrastructure. No new storage needed -- just ensure the gateway emits useful access logs. |
+| **Request validation at gateway** | The gateway validates that incoming requests match expected inference API patterns (chat completions, model listing) and rejects unexpected paths. Prevents the gateway from being used as a generic proxy. | LOW | Path-based allowlist in the gateway configuration. Reject anything that is not `/v1/chat/completions`, `/v1/models`, `/v1/completions`, or `/v1/messages`. |
+| **Messaging platform egress for OpenClaw** | OpenClaw may need to reach messaging platforms (Slack, Discord, Telegram) on ports 443/5222 that are NOT LLM APIs. The NetworkPolicy must distinguish between "allowed external services" and "blocked LLM API endpoints". | MEDIUM | K8s NetworkPolicy cannot filter by hostname -- only by IP/CIDR. Two approaches: (1) allow specific IP ranges for messaging services (brittle, IPs change), or (2) keep port 443 open but only to the nemoclaw namespace for inference, while adding a separate egress proxy for messaging. The review checklist mentions 443+5222 for messaging. This needs careful design. |
+| **BATS test coverage for governance** | Unit tests validating: NetworkPolicy manifests block direct LLM egress, SealedSecret is only mounted on privacy-router, sync wave ordering is correct, PSS labels are present. | MEDIUM | Extends existing 116-test BATS suite. Tests validate manifest correctness, not runtime behavior. Runtime NetworkPolicy verification already exists via `make verify-netpol` -- extend to cover governance scenarios. |
+| **kubeconform validation for new manifests** | All new manifests in `infrastructure/nemoclaw/` pass kubeconform validation in CI. | LOW | Already have CI pipeline. Just need to ensure new manifests are in the kustomize build path and use explicit API versions. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features (Do NOT Build)
 
-Features that seem good but create problems in this context.
+Features that seem appealing but would violate architectural constraints, add unnecessary complexity, or go beyond the governance-only scope.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Running OpenClaw and NemoClaw simultaneously | "I want both workloads for comparison" | Both bind to port 18789 and both need the same Gateway HTTPRoute. Running both creates routing conflicts, and the cluster only has one `eg` Gateway with one set of extraPortMappings (host 80/443). | Use `WORKLOAD=` selector to swap. Tear down one before starting the other. Document the swap workflow. |
-| GPU passthrough for local Nemotron inference | "NemoClaw should run local models on my GPU" | Pincer Ops runs on KIND/Kinder, which are Docker-in-Docker without GPU passthrough. Local inference requires vLLM/Ollama on the host, not inside the cluster. NemoClaw's own K3s sandbox handles this differently than K8s. | Use cloud inference (default `nvidia-nim` provider via `build.nvidia.com`). Document that local GPU inference is a host concern, not a cluster concern. |
-| NemoClaw's full K3s sandbox inside K8s | "Run the complete NemoClaw stack including nested K3s" | NemoClaw's native deployment uses K3s-in-Docker with OpenShell orchestration. Running K3s-in-Docker inside KIND-in-Docker is deeply nested virtualization (3 layers). Memory overhead is extreme, cgroup conflicts are likely, and it violates the "single-instance monolith" constraint. | Deploy the NemoClaw container image directly as a StatefulSet (same pattern as OpenClaw). The container includes OpenClaw + NemoClaw plugin pre-installed. Skip the K3s sandbox layer -- K8s provides the isolation that K3s would otherwise provide. |
-| ApplicationSet for workload management | "Use ArgoCD ApplicationSet to template workloads" | With exactly two workloads (OpenClaw, NemoClaw) that are mutually exclusive, an ApplicationSet adds abstraction without benefit. The workloads have different secrets, different NetworkPolicies, and different ConfigMaps. Generator logic would be more complex than two static Application YAMLs. | Keep separate `workload-openclaw.yaml` and `workload-nemoclaw.yaml` in each bootstrap directory. Simplicity over abstraction at this scale. |
-| Shared namespace for both workloads | "Use `openclaw` namespace for NemoClaw too" | Name collision on Service, StatefulSet, ConfigMap names. Even if resources have different names, the backup CronJob needs PVC-specific affinity. The NetworkPolicy allowlists differ. Sharing the namespace makes cleanup and workload switching messy. | Use a dedicated `nemoclaw` namespace. Same pattern, clean separation, independent lifecycle. |
-| Privacy router / PII stripping in K8s | "Add NemoClaw's privacy router at the cluster level" | NemoClaw's privacy router runs inside the container as part of the OpenShell gateway. It intercepts inference calls before they leave the sandbox. Reimplementing this as a K8s-level proxy duplicates functionality and breaks the NemoClaw architecture. | Rely on NemoClaw's built-in privacy router. It works at the application level, which is the correct abstraction boundary. |
+| **Deploy the OpenShell sandbox container** | Full NemoClaw experience with kernel-level isolation (Landlock, seccomp-BPF, netns) | The sandbox runs K3s inside a Docker container. KIND/Kinder clusters cannot nest K3s. Requires privileged pods or Docker-in-Docker, both of which violate security principles and break in local dev. The sandbox is 2.4 GB compressed. | Use K8s-native security primitives (PSS restricted, NetworkPolicy, readOnlyRootFilesystem) to approximate sandbox protections. Defer full sandbox to production environments with proper infrastructure. |
+| **Deploy NIM (NVIDIA Inference Microservices) locally** | Run Nemotron models locally for full offline inference | Requires NVIDIA GPU hardware. Local dev clusters (KIND/Kinder) do not have GPU access. NIM images are very large. This is an infrastructure concern, not a governance concern. | Route to cloud inference endpoints (build.nvidia.com, api.anthropic.com, api.openai.com) through the privacy-router. The governance layer works regardless of whether inference is local or remote. |
+| **Implement the full OpenShell CLI integration** | `nemoclaw onboard`, `nemoclaw connect`, `nemoclaw status` commands | These commands orchestrate the full sandbox lifecycle (create gateway, create sandbox, apply policy). We are NOT running the sandbox. The CLI assumes Docker-based sandbox management that does not apply to our K8s-native approach. | Manage governance components declaratively through ArgoCD. Use `make` targets for operations (status, logs). |
+| **Real-time TUI-based network approval** | OpenShell surfaces blocked network requests in a TUI for operator approval | This is a sandbox-specific feature. In K8s, NetworkPolicy is enforced by the CNI plugin and there is no interactive approval flow. Blocked connections are silently dropped. | Define all allowed egress destinations declaratively in NetworkPolicy manifests. Use audit logging to detect unexpected connection attempts. |
+| **mTLS between governance components** | OpenShell gateway uses mTLS by default for inter-component communication | Adds significant operational complexity (certificate management, rotation) for inter-namespace traffic in a local dev cluster. The attack surface is already minimized by NetworkPolicy. | Rely on NetworkPolicy for access control between namespaces. mTLS can be added later via a service mesh if the platform moves to production. Plain HTTP between gateway and privacy-router within the cluster is acceptable for dev. |
+| **Multi-provider inference routing with runtime switching** | Dynamically switch between NVIDIA, OpenAI, Anthropic backends without redeployment | Over-engineered for a dev environment. Configuration changes should go through Git (GitOps). Runtime switching bypasses the declarative model. | Configure the target inference provider in the privacy-router's ConfigMap/env vars. Change providers by committing a new configuration and letting ArgoCD sync. |
+| **PII scrubbing / differential privacy** | NemoClaw's privacy router uses Gretel-derived differential privacy to strip PII from prompts | Extremely complex ML pipeline. Requires trained models for PII detection, adds latency, and the value in a local dev environment is minimal. | Defer to production NemoClaw deployment. The local governance layer focuses on credential isolation and access control, not content-level privacy. |
 
 ## Feature Dependencies
 
 ```
-[NVIDIA_API_KEY SealedSecret]
-    └──requires──> [Sealed Secrets controller (infra-sealed-secrets, wave -3)]
+[SealedSecret for API keys]
+    |
+    v
+[privacy-router Deployment] --requires--> [SealedSecret]
+    |
+    v
+[openshell-gateway Deployment] --requires--> [privacy-router reachable]
+    |
+    v
+[NetworkPolicy: nemoclaw namespace] --requires--> [both Deployments exist]
+    |
+    v
+[NetworkPolicy: Block OpenClaw direct egress] --requires--> [gateway reachable]
+    |
+    v
+[OpenClaw configuration change] --requires--> [gateway reachable + NetworkPolicy in place]
+    |
+    v
+[ArgoCD Application] --orchestrates--> [all of the above via sync waves]
 
-[NemoClaw StatefulSet]
-    └──requires──> [NemoClaw namespace (CreateNamespace=true)]
-    └──requires──> [NemoClaw ConfigMap (seed config)]
-    └──requires──> [NVIDIA_API_KEY SealedSecret]
+[Namespace PSS labels] --independent--> [can be applied at any time]
 
-[NemoClaw HTTPRoute]
-    └──requires──> [Envoy Gateway config (infra-envoy-gateway-config, wave -1)]
-    └──requires──> [NemoClaw Service]
+[Security hardening: OpenClaw] --enhances--> [OpenClaw configuration change]
+    NOTE: Higher risk, should come AFTER governance routing is verified working
 
-[NemoClaw NetworkPolicy]
-    └──requires──> [NemoClaw namespace]
+[Security hardening: governance pods] --enhances--> [governance Deployments]
+    NOTE: Lower risk, can be done alongside initial Deployment creation
 
-[Workload selector (WORKLOAD=)]
-    └──requires──> [workload-nemoclaw.yaml in bootstrap/{provider}/]
-    └──requires──> [NemoClaw base manifests in workloads/nemoclaw/]
-    └──conflicts──> [workload-openclaw.yaml being active simultaneously]
-
-[make nemoclaw-onboard]
-    └──requires──> [NemoClaw StatefulSet running and healthy]
-    └──requires──> [NVIDIA_API_KEY available in pod env]
-
-[make nemoclaw-dashboard]
-    └──requires──> [NemoClaw onboarding complete]
-    └──requires──> [Gateway token generated by NemoClaw]
-
-[Backup CronJob]
-    └──requires──> [NemoClaw StatefulSet running (for pod affinity)]
+[BATS tests] --validates--> [all manifests]
+    NOTE: Should be written as features are implemented, not deferred
 ```
 
 ### Dependency Notes
 
-- **NemoClaw StatefulSet requires NVIDIA_API_KEY SealedSecret:** Unlike OpenClaw which stores its gateway token in a ConfigMap (low-sensitivity), the NVIDIA API key has billing implications and must be encrypted at rest in Git. The SealedSecret must be deployed before the StatefulSet or the pod will fail to start with a missing secret reference.
-- **Workload selector conflicts with simultaneous workloads:** The HTTPRoute, Gateway port mappings, and `localhost:80/443` access all assume a single workload. The selector mechanism must ensure only one workload Application exists in the active bootstrap directory scan.
-- **NemoClaw NetworkPolicy requires careful scoping:** The allowlist endpoints (`api.anthropic.com`, `integrate.api.nvidia.com`, `github.com`, etc.) must be kept in sync with the NemoClaw container's `openclaw-sandbox.yaml`. If the container updates its baseline policy, the K8s NetworkPolicy must follow.
+- **privacy-router requires SealedSecret:** The privacy-router pod must mount the API key secret. The SealedSecret must be deployed and decrypted before the privacy-router can start. Sealed Secrets controller is already running (wave -3).
+- **openshell-gateway requires privacy-router:** The gateway forwards to the privacy-router. If the privacy-router is not available, the gateway has nowhere to send requests. However, the gateway can start without the privacy-router being healthy -- it just cannot serve inference requests.
+- **OpenClaw NetworkPolicy change requires gateway:** If you block OpenClaw's direct LLM egress BEFORE the gateway is ready, all inference stops. The gateway and privacy-router must be healthy and accepting traffic before the NetworkPolicy change is applied.
+- **OpenClaw config change requires gateway + NetworkPolicy:** There is no point reconfiguring OpenClaw to use the gateway if the gateway is not ready or if the old direct-egress NetworkPolicy still allows bypass.
+- **Security hardening conflicts with initial deployment debugging:** Applying `readOnlyRootFilesystem` immediately makes troubleshooting harder. Better to get governance routing working first, then harden.
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (v1.2.0 -- Governance Routing)
 
-Minimum viable NemoClaw support -- what is needed to deploy NemoClaw and have it functional.
+Minimum features to claim "LLM inference is governed." If any of these are missing, OpenClaw can still bypass governance.
 
-- [ ] `workloads/nemoclaw/base/` directory with StatefulSet, Service, ConfigMap, HTTPRoute, NetworkPolicy, backup CronJob, backup RBAC -- following the exact same structure as `workloads/openclaw/base/`
-- [ ] `workloads/nemoclaw/overlays/dev/kustomization.yaml` -- pinning `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` image tag
-- [ ] NVIDIA_API_KEY SealedSecret in `workloads/nemoclaw/base/` (encrypted, with placeholder generation instructions)
-- [ ] `bootstrap/{kinder,kind}/workload-nemoclaw.yaml` -- ArgoCD Application at sync wave 10, pointing to `workloads/nemoclaw/overlays/dev`
-- [ ] `WORKLOAD` variable in Makefile -- defaulting to `openclaw`, with `WORKLOAD=nemoclaw` enabling NemoClaw targets
-- [ ] `make nemoclaw-onboard` and `make nemoclaw-dashboard` Makefile targets
-- [ ] NemoClaw-specific NetworkPolicy with explicit endpoint allowlist (not blanket `0.0.0.0/0:443`)
-- [ ] Workload exclusivity: mechanism to prevent both `workload-openclaw.yaml` and `workload-nemoclaw.yaml` from being active simultaneously
+- [ ] **openshell-gateway Deployment** -- inference routing proxy in `nemoclaw` namespace
+- [ ] **privacy-router Deployment** -- credential isolation in `nemoclaw` namespace
+- [ ] **SealedSecret for API keys** -- encrypted provider credentials, mounted only on privacy-router
+- [ ] **NetworkPolicy: nemoclaw namespace** -- default-deny + selective allow for governance components
+- [ ] **NetworkPolicy: Block OpenClaw direct LLM egress** -- replace `0.0.0.0/0:443` with gateway-only egress
+- [ ] **OpenClaw configuration change** -- env vars to route inference through gateway
+- [ ] **ArgoCD Application** -- `infra-nemoclaw.yaml` in both provider bootstrap directories
+- [ ] **Namespace PSS labels** -- `restricted` enforcement on `nemoclaw` and `openclaw` namespaces
 
-### Add After Validation (v1.x)
+### Add After Validation (v1.2.x -- Security Hardening)
 
-Features to add once core NemoClaw deployment works reliably.
+Features to add once governance routing is verified working end-to-end.
 
-- [ ] `make nemoclaw-switch-model MODEL=...` -- inference provider switching via `openshell inference set`
-- [ ] `make rotate-nvidia-key` -- SealedSecret rotation workflow
-- [ ] Extended `make doctor` with NemoClaw-aware health checks
-- [ ] `make nemoclaw-logs` and `make nemoclaw-pods` targets
-- [ ] `make nemoclaw-status` -- sandbox health and inference config display
-- [ ] `make nemoclaw-shell` -- interactive shell in the NemoClaw pod
-- [ ] CI validation for NemoClaw manifests (kubeconform schema additions if needed)
-- [ ] NetworkPolicy verification tests for NemoClaw namespace (`make verify-netpol` extension)
+- [ ] **readOnlyRootFilesystem on OpenClaw** -- trigger: governance routing stable, writable paths identified
+- [ ] **seccomp + capabilities hardening on OpenClaw** -- trigger: readOnlyRootFilesystem working
+- [ ] **Security hardening on governance pods** -- trigger: Deployment images identified, filesystem needs known
+- [ ] **BATS tests for governance manifests** -- trigger: manifest structure finalized
+- [ ] **kubeconform validation** -- trigger: manifests committed
+- [ ] **Inference request logging** -- trigger: gateway operational, want audit trail
 
-### Future Consideration (v2+)
+### Future Consideration (v2+ / Production)
 
-Features to defer until NemoClaw stabilizes (currently alpha-stage).
+Features to defer until platform moves beyond local dev.
 
-- [ ] Local inference support (Ollama/vLLM endpoint types) -- requires host-level GPU setup outside cluster scope
-- [ ] NemoClaw blueprint version management -- tracking `nemoclaw-blueprint/` version compatibility
-- [ ] Multi-model concurrent profiles -- running different Nemotron models for different agent tasks
-- [ ] Network policy sync automation -- auto-generating K8s NetworkPolicy from NemoClaw's `openclaw-sandbox.yaml`
-- [ ] Workspace volume mount -- NemoClaw supports `/sandbox/workspace` for agent file access; may need a second PVC
+- [ ] **Full OpenShell sandbox** -- defer until: production K8s with proper container runtime
+- [ ] **NIM local inference** -- defer until: GPU-equipped infrastructure
+- [ ] **mTLS between governance components** -- defer until: service mesh or production security requirements
+- [ ] **PII scrubbing / differential privacy** -- defer until: production compliance requirements
+- [ ] **Multi-provider runtime switching** -- defer until: operational need demonstrated
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Workload selector (`WORKLOAD=`) | HIGH | MEDIUM | P1 |
-| NemoClaw StatefulSet + PVC | HIGH | LOW | P1 |
-| NVIDIA_API_KEY SealedSecret | HIGH | MEDIUM | P1 |
-| NemoClaw NetworkPolicy (explicit allowlist) | HIGH | MEDIUM | P1 |
-| Bootstrap Applications (both providers) | HIGH | LOW | P1 |
-| ConfigMap with NemoClaw config | HIGH | LOW | P1 |
-| Service + HTTPRoute | HIGH | LOW | P1 |
-| Health probes | HIGH | LOW | P1 |
-| Image tag pinning overlay | HIGH | LOW | P1 |
-| Makefile targets (onboard, dashboard) | HIGH | LOW | P1 |
-| Backup CronJob | MEDIUM | LOW | P1 |
-| Workload exclusivity guard | HIGH | MEDIUM | P1 |
-| Inference model switching target | MEDIUM | LOW | P2 |
-| SealedSecret rotation workflow | MEDIUM | LOW | P2 |
-| Doctor command extension | MEDIUM | LOW | P2 |
-| Extended Makefile targets (logs, shell, status) | MEDIUM | LOW | P2 |
-| CI validation extension | MEDIUM | LOW | P2 |
-| NetworkPolicy verification tests | MEDIUM | MEDIUM | P2 |
-| Local inference support | LOW | HIGH | P3 |
-| Blueprint version management | LOW | MEDIUM | P3 |
+| openshell-gateway Deployment | HIGH | MEDIUM | P1 |
+| privacy-router Deployment | HIGH | MEDIUM | P1 |
+| SealedSecret for API keys | HIGH | LOW | P1 |
+| NetworkPolicy: nemoclaw namespace | HIGH | MEDIUM | P1 |
+| NetworkPolicy: Block OpenClaw direct egress | HIGH | MEDIUM | P1 |
+| OpenClaw configuration change | HIGH | LOW | P1 |
+| ArgoCD Application (infra-nemoclaw) | HIGH | LOW | P1 |
+| Namespace PSS labels | MEDIUM | LOW | P1 |
+| readOnlyRootFilesystem on OpenClaw | MEDIUM | HIGH | P2 |
+| seccomp + capabilities on OpenClaw | MEDIUM | MEDIUM | P2 |
+| Security hardening: governance pods | MEDIUM | LOW | P2 |
+| BATS tests for governance | MEDIUM | MEDIUM | P2 |
+| Inference request logging | LOW | MEDIUM | P3 |
+| Request validation at gateway | LOW | LOW | P3 |
+| Messaging platform egress design | MEDIUM | HIGH | P2 |
 
 **Priority key:**
-- P1: Must have for launch -- NemoClaw is not usable without these
-- P2: Should have, add once core deployment works
-- P3: Nice to have, defer until NemoClaw exits alpha
+- P1: Must have for governance to function (v1.2.0)
+- P2: Should have for security posture completeness (v1.2.x)
+- P3: Nice to have, future consideration
 
-## NemoClaw vs OpenClaw Operational Comparison
+## Key Design Decisions
 
-| Aspect | OpenClaw (existing) | NemoClaw (new) |
-|--------|---------------------|----------------|
-| Container image | `ghcr.io/openclaw/openclaw` | `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` |
-| Image size | ~500MB | ~2.4GB compressed (includes OpenShell, NemoClaw plugin) |
-| Data directory | `/home/node/.openclaw/` | `/sandbox/.openclaw/` + `/sandbox/.nemoclaw/` |
-| Port | 18789 | 18789 (same) |
-| Health endpoint | `/health` on 18789 | `/health` on 18789 (same, OpenClaw underneath) |
-| Gateway command | `node dist/index.js gateway --bind lan --port 18789` | Runs OpenClaw gateway with NemoClaw plugin automatically |
-| Secrets | Gateway token in ConfigMap (low-sensitivity) | NVIDIA_API_KEY in SealedSecret (billing-sensitive credential) |
-| Onboarding | `openclaw onboard --no-install-daemon` | `nemoclaw onboard` (7-step wizard: preflight, API key, gateway, sandbox, inference, policy) |
-| Dashboard token | `#token=...` hash fragment | `#token=...` hash fragment (same mechanism) |
-| Network egress | Blanket `0.0.0.0/0:443` | Explicit allowlist: 8 endpoint groups (api.anthropic.com, integrate.api.nvidia.com, github.com, etc.) |
-| Security model | User-applied hardening | Out-of-process enforcement: Landlock, seccomp, namespace isolation |
-| Inference | User-configured LLM providers | NVIDIA Nemotron via `build.nvidia.com` (default), switchable at runtime |
-| Maturity | Production-ready | Alpha (launched 2026-03-16) |
+### What Container Images to Use for Gateway and Privacy-Router
 
-## Workload Selector Implementation Options
+**Problem:** OpenShell packages all governance components inside a single K3s-in-Docker container. There are no standalone published images for the gateway or privacy-router as individual components.
 
-The selector mechanism must address: which workload's ArgoCD Application is present in the bootstrap directory scan.
+**Decision needed:** We must either:
+1. **Extract and repackage** the gateway/privacy-router from the OpenShell container image -- complex, fragile, version-coupling risk
+2. **Build minimal proxy containers** that replicate the governance behavior -- a lightweight HTTP proxy (e.g., Envoy, nginx, or custom Go binary) that implements credential stripping/injection and request routing
 
-**Recommended approach: Conditional file copy during bootstrap.**
+**Recommendation:** Option 2. Build minimal purpose-built containers. The governance behavior is well-defined:
+- Gateway: accept OpenAI-compatible HTTP requests, forward to privacy-router
+- Privacy-router: strip client credentials, inject real API key from env var, rewrite model parameter, forward to upstream LLM API
 
-The bootstrap script already has provider awareness (`CLUSTER_PROVIDER`). Extend with `WORKLOAD` awareness:
+This is essentially a reverse proxy with credential injection -- achievable with a small Go binary, an Envoy configuration, or even an nginx `proxy_pass` with `proxy_set_header Authorization`. The behavior is simpler than it sounds.
 
-1. `workloads/` contains both `openclaw/` and `nemoclaw/` base + overlay directories (always present in Git)
-2. `bootstrap/{provider}/` contains `workload-openclaw.yaml` and `workload-nemoclaw.yaml` but a `.argoignore` or naming convention excludes the inactive one from root-app discovery
-3. Alternative: bootstrap script copies only the active workload's Application YAML into the bootstrap directory before applying root-app
+**Confidence:** MEDIUM -- this is the most significant open question. The exact implementation depends on how OpenClaw's gateway mode works (what HTTP requests it sends, what response format it expects).
 
-The simplest approach that fits the existing architecture: keep both Application YAMLs in bootstrap but use a Makefile variable to determine which one to apply. Since root-app scans the entire bootstrap directory, the inactive workload's Application YAML would need to be moved to a subdirectory not scanned by root-app (e.g., `bootstrap/{provider}/inactive/`).
+### Messaging Platform Egress
 
-**Simplest safe approach:** Store workload Applications in `bootstrap/{provider}/workloads/` subdirectory. The bootstrap script copies the selected workload into the provider directory (where root-app scans). Teardown removes it. This extends the existing pattern cleanly.
+**Problem:** OpenClaw needs to reach messaging platforms (Slack, Discord, Telegram) on port 443. But if we block all port 443 egress to enforce governance, messaging breaks too. K8s NetworkPolicy cannot filter by hostname.
+
+**Options:**
+1. Allow port 443 egress to specific IP CIDRs for known messaging services -- brittle, IPs change
+2. Use a separate egress proxy in the nemoclaw namespace for messaging traffic
+3. Keep broad port 443 egress but on specific non-inference ports (messaging uses WebSocket on 443 or XMPP on 5222)
+4. Accept that in dev, messaging platforms may not be reachable, and document this as a known limitation
+
+**Recommendation:** Option 4 for v1.2.0, investigate Option 2 for v1.2.x. In local dev, OpenClaw's primary function is inference routing. Messaging platform integration is a secondary concern that can be tested by temporarily relaxing NetworkPolicy.
+
+**Confidence:** LOW -- needs investigation into which external services OpenClaw actually contacts and on what ports.
 
 ## Sources
 
-- [NVIDIA NemoClaw GitHub](https://github.com/NVIDIA/NemoClaw) -- repository structure, README
-- [NemoClaw Architecture -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- container image, sandbox structure
-- [NemoClaw How It Works -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/about/how-it-works.html) -- blueprint system, inference routing
-- [NemoClaw Commands Reference -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/reference/commands.html) -- CLI commands, onboarding wizard
-- [NemoClaw Network Policies -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/reference/network-policies.html) -- baseline policy, endpoint allowlist
-- [NemoClaw Inference Profiles -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/reference/inference-profiles.html) -- Nemotron models, provider switching
-- [NemoClaw Quickstart -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/get-started/quickstart.html) -- installation, prerequisites
-- [NemoClaw Overview -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/about/overview.html) -- capabilities, security features
-- [DeepWiki NVIDIA/NemoClaw](https://deepwiki.com/NVIDIA/NemoClaw) -- comprehensive technical analysis (HIGH confidence)
-- [Customize Network Policy -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/network-policy/customize-network-policy.html) -- policy customization
-- [Switch Inference Models -- NVIDIA Developer Guide](https://docs.nvidia.com/nemoclaw/latest/inference/switch-inference-providers.html) -- runtime model switching
-- [ArgoCD ApplicationSet Documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/) -- considered and rejected for this use case
-- [ArgoCD Best Practices](https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/) -- repository structure guidance
+### NVIDIA Official Documentation
+- [How NemoClaw Works](https://docs.nvidia.com/nemoclaw/latest/about/how-it-works.html) -- lifecycle, blueprint, sandbox creation
+- [NemoClaw Architecture](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- plugin/blueprint structure, OpenShell resources
+- [OpenShell: Deploy and Manage Gateways](https://docs.nvidia.com/openshell/latest/sandboxes/manage-gateways.html) -- gateway port 8080, deployment models, mTLS
+- [OpenShell: Configure Inference Routing](https://docs.nvidia.com/openshell/latest/inference/configure.html) -- inference.local, credential injection, model rewriting
+- [OpenShell: About Inference Routing](https://docs.nvidia.com/openshell/latest/inference/index.html) -- privacy router flow, provider support
+
+### NVIDIA GitHub Repositories
+- [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) -- sandbox architecture, K3s-in-Docker, alpha status
+- [NVIDIA/NemoClaw](https://github.com/NVIDIA/NemoClaw) -- blueprint structure, openclaw-sandbox.yaml, system requirements
+
+### Industry Analysis
+- [NemoClaw Explained (gstory.ai)](https://www.gstory.ai/blog/nemoclaw/) -- technical breakdown of governance components
+- [NVIDIA NemoClaw Explained (particula.tech)](https://particula.tech/blog/nvidia-nemoclaw-openclaw-enterprise-security) -- privacy router details, Gretel acquisition context
+- [Futurum Group: OpenShell Control Plane](https://futurumgroup.com/insights/openshell-redraws-the-agent-control-plane-open-standard-or-product-launch/) -- out-of-process enforcement, trust boundaries
+- [OpenClaw Unboxed: Enterprise Problem](https://openclawunboxed.com/p/nemoclaw-helps-the-real-enterprise) -- realistic assessment of NemoClaw maturity
+
+### Kubernetes Security
+- [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) -- restricted profile requirements
+- [CNCF: Kubernetes Security 2025-2026](https://www.cncf.io/blog/2025/12/15/kubernetes-security-2025-stable-features-and-2026-preview/) -- PSS adoption, secrets management trends
+- [Northflank: How to Sandbox AI Agents](https://northflank.com/blog/how-to-sandbox-ai-agents) -- microVM vs container isolation tradeoffs
 
 ---
-*Feature research for: NemoClaw workload support in Pincer Ops*
-*Researched: 2026-03-19*
+*Feature research for: NemoClaw governance-only deployment on Pincer Ops*
+*Researched: 2026-03-20*

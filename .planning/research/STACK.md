@@ -1,258 +1,325 @@
-# Stack Research: NemoClaw Workload Support
+# Stack Research: NemoClaw Governance-Only Deployment
 
-**Domain:** NemoClaw workload additions to existing GitOps Kubernetes platform
-**Researched:** 2026-03-19
-**Confidence:** MEDIUM (NemoClaw and OpenShell are alpha-stage projects; container tags verified but ecosystem is evolving rapidly)
+**Domain:** AI agent governance layer (inference routing + privacy enforcement) on GitOps Kubernetes
+**Researched:** 2026-03-20
+**Confidence:** MEDIUM (see assessment below)
 
-## Scope
+## Critical Finding: No Standalone Container Images Exist
 
-This research covers ONLY the stack additions needed for NemoClaw support. The existing platform stack (ArgoCD v3.3.1, MetalLB v0.15.3, Envoy Gateway, Sealed Secrets v0.35.0, cert-manager v1.19.2, Kustomize) is validated and NOT re-researched here.
+**The milestone's target architecture assumes separate `openshell-gateway` and `privacy-router` container images that can be deployed as standard Kubernetes Deployments. This is NOT how OpenShell works.**
 
-## Critical Architecture Finding
+### What Actually Exists
 
-**NemoClaw does NOT require OpenShell as separate Kubernetes infrastructure.**
+OpenShell publishes exactly two container images:
 
-OpenShell runs a self-contained K3s cluster inside a single Docker container. The OpenShell gateway, policy engine, privacy router, and sandbox management all run within that container. When NemoClaw is deployed as a Kubernetes workload in Pincer Ops, the approach is to run the NemoClaw sandbox container image (`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`) directly as a StatefulSet -- the same pattern used for vanilla OpenClaw. The OpenShell security layers (Landlock, seccomp, netns) operate inside the container and do not require host-level K8s operators or CRDs.
+| Image | Purpose | Can Run Standalone? |
+|-------|---------|---------------------|
+| `ghcr.io/nvidia/openshell/gateway:0.0.11` | K3s-in-Docker container running the full control plane (gateway API, policy engine, privacy router, K3s) | **NO** -- it boots an internal K3s cluster |
+| `ghcr.io/nvidia/openshell/cluster:0.0.11` | Helm charts, K8s manifests, and openshell-sandbox supervisor binary for bootstrapping the internal control plane | **NO** -- addon package for the gateway container's K3s |
 
-This means: **no new CRDs, no new operators, no new controllers.** The NemoClaw workload is a drop-in replacement for the OpenClaw workload, running in the same architectural slot (StatefulSet, replicas: 1, PVC-backed, port 18789).
+The "privacy router" is NOT a separate container. It is a component running inside the gateway's embedded K3s cluster. The "openshell-gateway" image is the entire K3s-in-Docker runtime -- deploying it as a Kubernetes Deployment inside KIND would nest K3s inside KIND, which is exactly the constraint we must avoid.
 
-## Recommended Stack Additions
+**Confidence: HIGH** -- Verified across official docs, GitHub releases, NemoClaw issue #407 (OpenShift support request confirms K3s coupling), and the support matrix.
 
-### NemoClaw Sandbox Container
+### What the Milestone Review Checklist Assumes vs. Reality
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| NemoClaw sandbox image | `ghcr.io/nvidia/openshell-community/sandboxes/openclaw:latest` | OpenClaw + NemoClaw plugin in OpenShell sandbox | Pre-built image with OpenClaw, NemoClaw TypeScript plugin, and OpenShell security policies pre-installed. Based on `node:22-slim` with Python 3.13. Runs on port 18789 (same as vanilla OpenClaw). |
+| Checklist Item | Assumption | Reality |
+|----------------|------------|---------|
+| `openshell-gateway` Deployment | Standalone governance proxy image | No such image exists; gateway IS the K3s runtime |
+| `privacy-router` Deployment | Separate privacy proxy image | Privacy router is embedded in gateway's K3s |
+| Port 18789 on gateway | Gateway listens on 18789 | Gateway listens on **8080** (gRPC+HTTP multiplexed); 18789 is the OpenClaw port inside the sandbox |
+| Port 8080 on privacy-router | Privacy router has its own port | Privacy router is internal; sandboxes reach it via `https://inference.local` (intercepted by internal proxy at `10.200.0.1:3128`) |
 
-**Confidence: MEDIUM** -- The image exists on GHCR and is referenced in NemoClaw docs and the OpenShell-Community repository. However, no pinned semantic version tags have been published yet (project is alpha, v0.0.x). The OpenShell-Community repo has zero formal releases with only 44 commits on main. Using `latest` violates Pincer Ops conventions but may be the only available tag.
+## Recommended Stack: Build Governance Equivalents from Standard Components
 
-**CRITICAL ACTION NEEDED:** Before implementation, verify available tags at `https://github.com/NVIDIA/OpenShell-Community/pkgs/container/openshell-community%2Fsandboxes%2Fopenclaw`. If only `latest` exists, pin by digest (e.g., `ghcr.io/nvidia/openshell-community/sandboxes/openclaw@sha256:abc123...`) to maintain reproducibility.
+Since no standalone governance images exist, we must **build equivalent governance behavior using standard Kubernetes primitives and an OpenAI-compatible proxy**. This is architecturally sound because the NemoClaw governance model has three distinct concerns that map cleanly to K8s-native solutions:
 
-### NemoClaw Container Runtime Details
-
-| Property | Value | Notes |
-|----------|-------|-------|
-| Base image | `node:22-slim` + Python 3.13 | 22-step Dockerfile per community analysis |
-| Compressed size | ~2.4 GB | Significantly larger than vanilla OpenClaw (~500 MB) |
-| Port | 18789 (HTTP) | Same as vanilla OpenClaw -- OpenShell policy proxy on 18789 forwards to OpenClaw on internal 18788 |
-| Data directories | `/sandbox/.openclaw/`, `/sandbox/.nemoclaw/` | Different from vanilla OpenClaw's `/home/node/.openclaw/` |
-| Filesystem isolation | Landlock + seccomp + netns | Read-write: `/sandbox/`, `/tmp/`. System paths: read-only |
-| User | sandbox user (not root) | Different UID from OpenClaw's `1000:1000` -- verify exact UID |
-| Default inference | NVIDIA NIM cloud (`build.nvidia.com`) | Requires `NVIDIA_API_KEY` env var |
-| Default model | `nvidia/nemotron-3-super-120b-a12b` | Cloud-routed through OpenShell privacy router |
-| Health check | `httpGet /health` on port 18789 | Same endpoint as vanilla OpenClaw |
-| Startup command | `openclaw-start` or `openclaw gateway run` | Different from vanilla OpenClaw's `node dist/index.js gateway --bind lan --port 18789` |
-
-**Confidence: MEDIUM** -- Port, data directories, and filesystem layout verified across multiple sources (NemoClaw docs, GitHub issues, community blog posts). Startup command needs verification against actual container entrypoint.
-
-### NVIDIA GPU Device Plugin (Optional)
+### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| NVIDIA k8s-device-plugin | v0.17.1 | Expose GPUs as `nvidia.com/gpu` K8s resources | Official NVIDIA DaemonSet for GPU scheduling. Only needed if running local inference (Ollama, vLLM, NIM). Not needed for cloud inference (default NemoClaw mode). |
+| **OpenAI-compatible reverse proxy** | See options below | Inference gateway -- intercepts LLM calls, injects credentials, enforces routing policy | Replicates OpenShell's privacy router function without K3s nesting |
+| **Kubernetes NetworkPolicy** | v1 (networking.k8s.io) | Network isolation -- blocks OpenClaw direct LLM egress, forces traffic through proxy | Already used in platform; exact equivalent of NemoClaw's network namespace isolation |
+| **Pod Security Standards** | K8s 1.25+ built-in | Namespace-level enforcement of restricted security profile | Replaces Landlock/seccomp sandbox enforcement at namespace level |
+| **Kustomize** | v5.x (bundled with kubectl) | Overlay-based manifest management | Already the platform standard; no new tooling needed |
+| **SealedSecrets** | v0.35.0 (already deployed) | Encrypt NVIDIA_API_KEY for the proxy | Already deployed on platform |
 
-**Confidence: HIGH** -- v0.17.1 verified via GitHub releases (2025-03-17). Helm chart at `nvdp/nvidia-device-plugin` v0.17.1. Container image: `nvcr.io/nvidia/k8s-device-plugin:v0.17.1`.
+### Inference Proxy Options (Pick One)
 
-**Deployment method:** Helm chart via ArgoCD Application.
+The governance proxy must be an OpenAI-compatible reverse proxy that:
+1. Accepts requests from OpenClaw on an internal Service endpoint
+2. Strips any credentials OpenClaw sends
+3. Injects the real API key (from a mounted Secret)
+4. Forwards to the actual LLM provider (NVIDIA, OpenAI, Anthropic)
+5. Logs routing decisions
 
-```bash
-# Helm repo setup (for reference -- ArgoCD will use this directly)
-helm repo add nvdp https://nvidia.github.io/k8s-device-plugin
-helm repo update
+| Option | Image | Why Consider | Why Not | Recommendation |
+|--------|-------|-------------|---------|----------------|
+| **LiteLLM Proxy** | `ghcr.io/berriai/litellm:main-v1.65.4` | OpenAI-compatible proxy, multi-provider routing, built-in spend tracking, active community, official OpenClaw integration docs exist | Heavier than needed for single-provider routing; Python-based | **RECOMMENDED** -- best documented OpenClaw integration, supports all target LLM providers, provides the exact "credential injection + routing" that privacy-router does |
+| **Envoy + ext_authz** | `envoyproxy/envoy:v1.32` | Already familiar from Envoy Gateway; can inject headers via Lua or external auth | Requires custom Lua/ext_authz config; no built-in LLM routing awareness | Use if LiteLLM is too heavy |
+| **Custom Go/Node proxy** | Build from scratch | Minimal, purpose-built | Maintenance burden; not worth it when LiteLLM exists | Avoid |
+
+**Decision: Use LiteLLM Proxy** because:
+- Official OpenClaw integration documentation exists (`docs.litellm.ai/docs/tutorials/openclaw_integration`)
+- OpenAI-compatible API surface means OpenClaw needs zero code changes -- just point `baseUrl` at the proxy
+- Multi-provider routing (NVIDIA NIM, OpenAI, Anthropic) matches NemoClaw's inference profile capability
+- Credential injection is a core feature (API keys stored in proxy config, not exposed to callers)
+- Health endpoint at `/health/liveliness` and `/health/readiness` (confirmed in LiteLLM docs)
+- Runs on port 4000 by default (configurable via `--port`)
+
+**Confidence: MEDIUM** -- LiteLLM is well-documented and widely used, but its specific integration as a NemoClaw governance replacement is our own architectural decision, not an NVIDIA-recommended pattern.
+
+### How OpenClaw Connects to the Proxy (No Custom Env Vars Needed)
+
+**Critical finding:** `INFERENCE_GATEWAY_URL` and `INFERENCE_MODE` do NOT exist as OpenClaw environment variables. They are not in the official `.env.example` or documentation.
+
+OpenClaw routes inference through **provider configuration in `openclaw.json`** (or `models.providers`):
+
+```json
+{
+  "models": {
+    "providers": {
+      "governance-proxy": {
+        "baseUrl": "http://litellm-proxy.nemoclaw.svc.cluster.local:4000/v1",
+        "apiKey": "sk-placeholder-not-used",
+        "api": "openai-completions",
+        "models": [
+          { "id": "nvidia/nemotron-3-super-120b-a12b", "name": "Nemotron Super" }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "governance-proxy/nvidia/nemotron-3-super-120b-a12b" }
+    }
+  }
+}
 ```
 
-**Prerequisites on host/worker nodes:**
-- NVIDIA drivers (~= 384.81 or newer)
-- nvidia-container-toolkit >= 1.7.0
-- nvidia-container-runtime configured as default runtime
+This is exactly how OpenClaw works with any custom proxy or gateway -- it just needs a compatible `baseUrl`. No special environment variables required.
 
-**KIND/Kinder caveat:** GPU passthrough to KIND/Kinder containers requires the host to have NVIDIA drivers and nvidia-container-toolkit installed, plus KIND node images built with nvidia-container-runtime. This is NOT default KIND behavior and requires a custom node image. For local development, cloud inference (no GPU plugin needed) is the pragmatic default.
+**Confidence: HIGH** -- Verified in official OpenClaw docs (`docs.openclaw.ai/concepts/model-providers`), `.env.example`, and gateway configuration reference.
 
-### OpenShell Gateway (NOT Deployed as K8s Infrastructure)
+### Supporting Infrastructure (All Already Deployed)
 
-| Technology | Version | Status | Notes |
-|------------|---------|--------|-------|
-| OpenShell gateway | v0.0.11 | DO NOT DEPLOY | Runs inside the NemoClaw sandbox container, not as separate K8s infrastructure |
-| OpenShell cluster | v0.0.11 | DO NOT DEPLOY | K3s cluster embedded inside OpenShell gateway container -- not needed when running sandbox image directly |
+| Component | Version | Purpose | Status |
+|-----------|---------|---------|--------|
+| ArgoCD | 2.14.x | GitOps deployment of all NemoClaw governance resources | Already deployed |
+| Envoy Gateway | v1.3.x | External ingress (if governance proxy needs external access) | Already deployed |
+| Sealed Secrets | v0.35.0 | Encrypt NVIDIA_API_KEY | Already deployed |
+| cert-manager | v1.19.2 | TLS certificates (if mTLS between OpenClaw and proxy) | Already deployed |
+| NetworkPolicy | v1 | Block OpenClaw direct LLM egress | Already used in openclaw namespace |
 
-**Confidence: HIGH** -- This is the most important architectural finding. OpenShell is designed as a Docker-native tool where the gateway embeds K3s. In Pincer Ops, we bypass the OpenShell gateway entirely and run the sandbox container image as a standard K8s StatefulSet. The NemoClaw plugin, OpenClaw runtime, and security policies are all baked into the sandbox image.
+### New Container Images Required
 
-### Supporting Infrastructure
+| Image | Registry | Tag | Purpose | Port | Health Endpoint |
+|-------|----------|-----|---------|------|-----------------|
+| `ghcr.io/berriai/litellm` | GHCR | `main-v1.65.4` (or latest stable) | Inference governance proxy | 4000 | `/health/liveliness` (startup), `/health/readiness` (readiness) |
 
-| Technology | Version | Purpose | When to Use |
-|------------|---------|---------|-------------|
-| SealedSecret for NVIDIA_API_KEY | (existing v0.35.0) | Encrypt NVIDIA API key for NemoClaw inference | Always -- NemoClaw requires NVIDIA_API_KEY for cloud inference. Must be a SealedSecret, not a ConfigMap. |
+**No other new images are needed.** The governance layer is built entirely from:
+1. One new container (LiteLLM proxy)
+2. Kubernetes-native security primitives (NetworkPolicy, PSS, SecurityContext)
+3. Configuration changes to the existing OpenClaw workload
 
-**Confidence: HIGH** -- Sealed Secrets v0.35.0 is already deployed. NVIDIA_API_KEY requirement verified in NemoClaw docs.
+## LiteLLM Proxy Configuration
 
-## Workload Selector Mechanism
+### Environment Variables for the Proxy Pod
 
-**Problem:** Pincer Ops must run either OpenClaw OR NemoClaw, never both simultaneously (single-instance constraint, shared port 18789, shared HTTPRoute).
+| Variable | Value | Source | Purpose |
+|----------|-------|--------|---------|
+| `LITELLM_MASTER_KEY` | Generated token | SealedSecret | Admin API key for the proxy |
+| `NVIDIA_API_KEY` | User's NVIDIA key | SealedSecret | Injected into upstream requests to NVIDIA NIM |
+| `OPENAI_API_KEY` | User's OpenAI key (optional) | SealedSecret | For OpenAI provider routing |
+| `ANTHROPIC_API_KEY` | User's Anthropic key (optional) | SealedSecret | For Anthropic provider routing |
+| `LITELLM_LOG_LEVEL` | `INFO` | ConfigMap | Logging verbosity |
 
-**Recommended approach: Provider-directory pattern (same as KIND/Kinder).**
+### Proxy Config File (litellm_config.yaml)
 
-The existing platform already solves a similar problem -- KIND vs Kinder use separate `bootstrap/{provider}/` directories with provider-specific Application YAMLs. The workload selector follows the same pattern:
+```yaml
+model_list:
+  - model_name: "nvidia/nemotron-3-super-120b-a12b"
+    litellm_params:
+      model: "nvidia_nim/nvidia/nemotron-3-super-120b-a12b"
+      api_key: "os.environ/NVIDIA_API_KEY"
+      api_base: "https://integrate.api.nvidia.com/v1"
+
+  - model_name: "anthropic/claude-sonnet-4-20250514"
+    litellm_params:
+      model: "anthropic/claude-sonnet-4-20250514"
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+general_settings:
+  master_key: "os.environ/LITELLM_MASTER_KEY"
+```
+
+### Ports
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 4000 | HTTP | LiteLLM proxy API (OpenAI-compatible) |
+
+### Health Checks
+
+| Probe | Path | Port | Period |
+|-------|------|------|--------|
+| Startup | `/health/liveliness` | 4000 | 5s, failureThreshold: 30 |
+| Liveness | `/health/liveliness` | 4000 | 60s, failureThreshold: 5 |
+| Readiness | `/health/readiness` | 4000 | 10s, failureThreshold: 3 |
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `ghcr.io/nvidia/openshell/gateway` | Boots internal K3s -- would nest K3s inside KIND, the exact architectural constraint we must avoid | LiteLLM proxy for inference routing, K8s NetworkPolicy for network isolation |
+| `ghcr.io/nvidia/openshell/cluster` | Addon package for the gateway's internal K3s; useless without the gateway container | Not applicable |
+| `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` | Full sandbox image (2.4GB) with embedded OpenClaw + NemoClaw plugin; designed to run inside K3s sandbox | Our existing OpenClaw StatefulSet already runs the equivalent workload |
+| `INFERENCE_GATEWAY_URL` env var | Does not exist in OpenClaw | Configure via `models.providers` in `openclaw.json` |
+| `INFERENCE_MODE` env var | Does not exist in OpenClaw | Configure via `models.providers` in `openclaw.json` |
+| Helm charts for NemoClaw components | NemoClaw uses `openshell` CLI + Python blueprint, not Helm; no Helm charts exist for governance components | Kustomize bases (platform standard) |
+
+## Mapping NemoClaw Sandbox to Kubernetes Primitives
+
+This is how each OpenShell/NemoClaw governance feature maps to our stack:
+
+| NemoClaw Feature | OpenShell Implementation | Our Kubernetes Equivalent | New? |
+|------------------|--------------------------|---------------------------|------|
+| Privacy router (credential injection) | Internal proxy at `10.200.0.1:3128` intercepting `inference.local` | LiteLLM proxy Deployment + Service in `nemoclaw` namespace | **YES** |
+| Network namespace isolation | Sandbox container has isolated netns | NetworkPolicy on `openclaw` namespace blocking direct LLM egress | Modified (tighten existing) |
+| Filesystem isolation (Landlock) | Kernel LSM restricting paths to `/sandbox` + `/tmp` | `readOnlyRootFilesystem: true` + explicit emptyDir mounts | **YES** (SecurityContext change) |
+| Syscall filtering (seccomp) | Custom seccomp-BPF profiles | `seccompProfile.type: RuntimeDefault` + `capabilities.drop: ["ALL"]` | **YES** (SecurityContext change) |
+| Credential isolation | API keys never in sandbox; injected by gateway | NVIDIA_API_KEY only in LiteLLM pod; OpenClaw has no LLM API keys | **YES** (remove keys from OpenClaw, add SealedSecret for proxy) |
+| Pod Security Standards | N/A (sandbox is a container, not a K8s namespace) | `pod-security.kubernetes.io/enforce: restricted` on both namespaces | **YES** |
+| Inference routing | `openshell inference set --provider X --model Y` | LiteLLM `litellm_config.yaml` model routing table | **YES** |
+| Audit logging | OpenShell policy engine logs | LiteLLM request/response logging | **YES** (built into LiteLLM) |
+
+## ArgoCD Integration
+
+### New ArgoCD Application
+
+| Field | Value |
+|-------|-------|
+| Name | `infra-nemoclaw` |
+| Namespace | `argocd` |
+| Source path | `infrastructure/nemoclaw/overlays/dev` |
+| Destination namespace | `nemoclaw` |
+| Sync wave | `0` (after infra at negative waves, before OpenClaw at +10) |
+| Sync options | `CreateNamespace=true`, `ServerSideApply=true` |
+| Automated | `prune: true`, `selfHeal: true` |
+| Manifest-generate-paths | `infrastructure/nemoclaw` |
+
+### Modified ArgoCD Application
+
+| Application | Change |
+|-------------|--------|
+| `workload-openclaw` | OpenClaw ConfigMap updated to route inference through proxy; NetworkPolicy tightened to block direct LLM egress; SecurityContext hardened |
+
+## Directory Structure
 
 ```
+infrastructure/
+  nemoclaw/
+    base/
+      kustomization.yaml          # Resources list
+      namespace.yaml              # nemoclaw namespace with PSS labels
+      litellm-deployment.yaml     # LiteLLM proxy Deployment (replicas: 1)
+      litellm-service.yaml        # ClusterIP Service on port 4000
+      litellm-configmap.yaml      # litellm_config.yaml (model routing)
+      networkpolicy.yaml          # default-deny + selective allow for proxy
+    overlays/
+      dev/
+        kustomization.yaml        # Image tag pinning
+
+workloads/
+  openclaw/
+    base/
+      networkpolicy.yaml          # MODIFIED: block direct 443 egress to LLM APIs, allow egress to nemoclaw namespace on 4000
+      statefulset.yaml            # MODIFIED: add readOnlyRootFilesystem, emptyDir mounts, seccomp, drop capabilities
+      configmap.yaml              # MODIFIED: openclaw.json with governance-proxy provider pointing to LiteLLM
+
 bootstrap/
   kinder/
-    workload-openclaw.yaml    # Present when OpenClaw selected
-    # OR
-    workload-nemoclaw.yaml    # Present when NemoClaw selected (mutually exclusive)
+    infra-nemoclaw.yaml           # NEW ArgoCD Application
   kind/
-    workload-openclaw.yaml    # Same pattern
-    # OR
-    workload-nemoclaw.yaml
+    infra-nemoclaw.yaml           # NEW ArgoCD Application (byte-identical)
 ```
 
-**Implementation options evaluated:**
+## Version Compatibility
 
-| Option | Mechanism | Pros | Cons | Verdict |
-|--------|-----------|------|------|---------|
-| **A: File swap** | Only one `workload-*.yaml` exists in `bootstrap/{provider}/` at a time | Simple, explicit, no ArgoCD tricks needed. `prune: false` on root-app prevents accidental deletion. | Manual git operation to switch. Requires commit to change workload. | **RECOMMENDED** |
-| B: Kustomize components | Use Kustomize components to conditionally include workload Application | Works with ArgoCD, standard Kustomize pattern | Root app uses `directory.recurse` not Kustomize -- would require restructuring root app source type | Not viable without restructuring |
-| C: ApplicationSet with selector | ApplicationSet with Git generator filtering by directory | Elegant for multiple clusters | Overkill for single-cluster, single-workload switching. Adds ApplicationSet controller dependency. | Over-engineered |
-| D: ArgoCD Application disabled annotation | Set `argocd.argoproj.io/sync-wave: "999"` or manually suspend | No git changes needed | Violates GitOps -- cluster state diverges from git. Suspended app still exists as CRD. | Anti-pattern |
+| Component | Version | Compatible With | Notes |
+|-----------|---------|-----------------|-------|
+| LiteLLM Proxy | v1.65.x | OpenClaw 2026.3.13 | OpenAI-compatible API surface; no version coupling |
+| LiteLLM Proxy | v1.65.x | K8s 1.28+ | Standard container; no K8s API dependencies |
+| Pod Security Standards | K8s 1.25+ | Kinder/KIND clusters | Built into Kubernetes; no addon needed |
+| NetworkPolicy | v1 | Any CNI with policy support | Already validated on platform with existing policies |
 
-**Why Option A (file swap):** The root-app has `prune: false`, meaning removing a file from `bootstrap/{provider}/` does NOT auto-delete the child Application. This is a safety feature (GOPS-03) but it means switching workloads requires:
-1. Remove old `workload-openclaw.yaml` from git
-2. Add new `workload-nemoclaw.yaml` to git
-3. Commit and push
-4. ArgoCD syncs the new Application
-5. Manually delete the old ArgoCD Application (`argocd app delete workload-openclaw`) since prune is disabled
+## Installation
 
-This is a deliberate, auditable, GitOps-native process. A Makefile target (`make workload-switch WORKLOAD=nemoclaw`) can automate steps 1-3.
+No new CLI tools or host-level dependencies. All changes are declarative manifests.
 
-## Workload Directory Structure
+```bash
+# Load LiteLLM proxy image into cluster (one-time)
+make load-image IMAGE=ghcr.io/berriai/litellm:main-v1.65.4
 
-```
-workloads/
-  openclaw/           # Existing
-    base/
-    overlays/dev/
-  nemoclaw/           # NEW
-    base/
-      kustomization.yaml
-      statefulset.yaml      # ghcr.io/nvidia/openshell-community/sandboxes/openclaw
-      service.yaml          # ClusterIP, port 18789 (same as OpenClaw)
-      configmap.yaml        # nemoclaw-specific config (if needed)
-      sealedsecret.yaml     # NVIDIA_API_KEY (encrypted)
-      httproute.yaml        # Same Gateway API HTTPRoute (PathPrefix /)
-      networkpolicy.yaml    # default-deny + nemoclaw-allow (wider egress for NIM)
-      backup-rbac.yaml
-      backup-cronjob.yaml
-    overlays/dev/
-      kustomization.yaml    # Image tag/digest pinning
+# Or let the cluster pull it (if registry access is available)
+# The image is public on GHCR
 ```
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Sandbox image as StatefulSet | Full OpenShell gateway deployment | Never for Pincer Ops. OpenShell gateway embeds K3s and manages its own containers -- this conflicts with ArgoCD's declarative model. Use the sandbox image directly. |
-| k8s-device-plugin standalone | NVIDIA GPU Operator | If managing GPU drivers, monitoring (DCGM), and MIG on production clusters. For local dev with optional GPU, the standalone plugin is simpler and lighter. GPU Operator installs drivers, Container Toolkit, and monitoring -- overkill for KIND. |
-| SealedSecret for API key | ConfigMap or env var | Never. API keys are secrets. Always use SealedSecret per Pincer Ops conventions. |
-| File swap workload selector | ApplicationSet | If Pincer Ops grows to manage multiple clusters or 10+ workloads. For two mutually exclusive workloads on one cluster, file swap is clearer. |
-| Cloud inference (default) | Local GPU inference | When NVIDIA GPU hardware is available and local inference latency matters. Cloud inference via NIM requires only NVIDIA_API_KEY, no GPU hardware. |
+| LiteLLM Proxy | Envoy Gateway ext_authz + Lua filter | If LiteLLM adds unacceptable overhead or if proxy must be zero-dependency; requires writing custom Lua for credential injection |
+| LiteLLM Proxy | nginx + OpenResty | Lighter weight but no built-in LLM provider awareness; credential injection requires custom Lua scripting |
+| LiteLLM Proxy | Custom Go binary | Maximum control and minimal image size; only if LiteLLM proves too heavy for the use case |
+| LiteLLM Proxy (with DB) | LiteLLM Proxy (stateless) | Default LiteLLM uses SQLite/Postgres for spend tracking; for governance-only we run stateless with just config file routing |
+| K8s NetworkPolicy | Cilium NetworkPolicy | If CiliumNetworkPolicy CRDs are available for FQDN-based egress rules (block `api.openai.com` by DNS name instead of IP); not needed on KIND/Kinder with standard CNI |
 
-## What NOT to Use
+## Confidence Assessment
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| OpenShell gateway as K8s Deployment | Embeds K3s inside Docker, conflicts with host K8s. Creates cluster-in-cluster anti-pattern. Cannot be managed by ArgoCD. | Run sandbox container image directly as StatefulSet |
-| NVIDIA GPU Operator for KIND | Installs drivers, Container Toolkit, and monitoring. Massive overhead for local dev. Requires specific node OS support. | k8s-device-plugin DaemonSet (optional, only when GPU hardware exists) |
-| `latest` tag for sandbox image | Violates Pincer Ops conventions. Non-reproducible. KIND imagePullPolicy issues. | Pin by digest if no version tags exist: `image@sha256:...` |
-| NemoClaw CLI (`nemoclaw onboard`) for K8s | Designed for single-developer Docker Desktop workflow. Creates its own gateway, manages its own containers. Incompatible with GitOps. | Declarative K8s manifests (StatefulSet + Service + NetworkPolicy) managed by ArgoCD |
-| Running both OpenClaw and NemoClaw simultaneously | Same port (18789), same HTTPRoute, same namespace resources. Would conflict. Single-instance constraint. | Workload selector -- only one active at a time |
+| Area | Confidence | Reason |
+|------|------------|--------|
+| OpenShell images cannot run standalone | HIGH | Verified via official docs, GitHub issues (#407, #241), release notes, support matrix |
+| `INFERENCE_GATEWAY_URL`/`INFERENCE_MODE` do not exist | HIGH | Verified in OpenClaw `.env.example`, official docs, provider configuration reference |
+| OpenClaw `models.providers` baseUrl routing | HIGH | Verified in official OpenClaw docs (`docs.openclaw.ai/concepts/model-providers`) |
+| LiteLLM as governance proxy | MEDIUM | Well-documented project with official OpenClaw integration tutorial, but this specific governance pattern is our design |
+| LiteLLM health endpoints | MEDIUM | Documented in LiteLLM docs; `/health/liveliness` spelling is intentional (known LiteLLM convention) |
+| Port 4000 for LiteLLM | HIGH | Default port documented in LiteLLM official docs |
+| Sync wave 0 for NemoClaw | HIGH | Between infrastructure (negative waves) and OpenClaw (+10); matches existing platform convention |
 
-## NemoClaw vs OpenClaw Container Differences
+## Open Questions
 
-| Property | OpenClaw (current) | NemoClaw sandbox | Impact on Manifests |
-|----------|-------------------|------------------|---------------------|
-| Image | `ghcr.io/openclaw/openclaw` | `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` | Different image reference in StatefulSet |
-| Tag format | `2026.3.13-1` (date-based) | TBD (alpha, may be `latest` only) | Must pin by digest if no tags |
-| Image size | ~500 MB | ~2.4 GB compressed | Larger pull time, more disk in KIND |
-| Port | 18789 | 18789 (same) | No service change needed |
-| Data dir | `/home/node/.openclaw/` | `/sandbox/.openclaw/` + `/sandbox/.nemoclaw/` | Different PVC mount paths |
-| Run user | 1000:1000 (node) | TBD (sandbox user) | May need different securityContext |
-| Startup cmd | `node dist/index.js gateway --bind lan --port 18789` | `openclaw-start` or `openclaw gateway run` | Different command in StatefulSet |
-| Env vars | `NODE_ENV=production` | `NODE_ENV=production` + `NVIDIA_API_KEY` | Additional SealedSecret needed |
-| Config seed | ConfigMap -> initContainer copies to PVC | May use same pattern or built-in onboarding | initContainer logic may differ |
-| Egress needs | HTTPS 443 (LLM APIs) | HTTPS 443 + NIM endpoints (build.nvidia.com) | NetworkPolicy may need additional egress rules for NVIDIA NIM |
-| Health check | `GET /health` on 18789 | `GET /health` on 18789 (same) | No probe change needed |
-| Security layers | None (standard container) | Landlock + seccomp + netns | May need privileged securityContext or specific capabilities |
-
-## Sync Wave Integration
-
-NemoClaw workload uses the same sync wave as OpenClaw (wave +10) since it occupies the same architectural slot.
-
-| Wave | Component | Change |
-|------|-----------|--------|
-| -10 | ArgoCD self-management + AppProjects | No change |
-| -5 | MetalLB | No change |
-| -4 | Envoy Gateway controller | No change |
-| -3 | Sealed Secrets | No change (needed for NVIDIA_API_KEY SealedSecret) |
-| -2 | cert-manager | No change |
-| -1 | Envoy Gateway config | No change |
-| +5 | NVIDIA GPU device plugin (NEW, optional) | New wave between infra and workload. Only deployed if GPU nodes exist. |
-| +10 | NemoClaw Gateway OR OpenClaw Gateway | Same wave, mutually exclusive. Only one Application YAML present in bootstrap dir. |
-
-## Installation (New Components Only)
-
-```bash
-# No new CLI tools required for NemoClaw workload deployment
-# ArgoCD handles everything declaratively
-
-# For NVIDIA GPU device plugin (optional, only if GPU hardware exists):
-# ArgoCD Application pointing to Helm chart:
-#   repo: https://nvidia.github.io/k8s-device-plugin
-#   chart: nvidia-device-plugin
-#   version: 0.17.1
-
-# To pre-pull the large NemoClaw image into KIND:
-make load-image IMAGE=ghcr.io/nvidia/openshell-community/sandboxes/openclaw:latest
-# Or by digest:
-# make load-image IMAGE=ghcr.io/nvidia/openshell-community/sandboxes/openclaw@sha256:<digest>
-```
-
-## Version Compatibility
-
-| Component | Compatible With | Notes |
-|-----------|-----------------|-------|
-| NemoClaw sandbox image | Node.js 22, Python 3.13 | Bundled in image, no host dependency |
-| NemoClaw sandbox image | Port 18789 | Same as existing OpenClaw Service and HTTPRoute |
-| NVIDIA k8s-device-plugin v0.17.1 | K8s 1.10+ (API), practically 1.26+ | Requires nvidia-container-toolkit on host |
-| NVIDIA k8s-device-plugin v0.17.1 | NVIDIA drivers >= 384.81 | Host requirement, not K8s cluster requirement |
-| OpenShell-Community sandbox | Docker 28.04+ | For local builds; pre-built GHCR image avoids this |
-| NemoClaw + NVIDIA NIM | NVIDIA_API_KEY | Required env var for cloud inference (default mode) |
-
-## Open Questions (Require Phase-Specific Research)
-
-1. **Sandbox image tags:** What pinned tags are available? Only `latest` as of 2026-03-19? Need to check GHCR package registry directly.
-2. **securityContext requirements:** Does the NemoClaw sandbox image require `privileged: true` or specific Linux capabilities for Landlock/seccomp enforcement inside K8s? This could conflict with Pincer Ops security posture.
-3. **Startup command:** Is `openclaw-start` the correct entrypoint, or does the container image have a different default CMD/ENTRYPOINT? Need to inspect image metadata.
-4. **PVC mount path:** Confirm `/sandbox/.openclaw/` vs `/sandbox/` as the correct PVC mount path for state persistence.
-5. **InitContainer pattern:** Does the NemoClaw sandbox need a config seed initContainer like OpenClaw, or does `openclaw-start` handle onboarding automatically?
-6. **GPU passthrough in KIND:** What custom KIND node image configuration is needed for nvidia-container-runtime? Is this documented anywhere?
-7. **NetworkPolicy for NIM:** What specific NVIDIA NIM API endpoints need egress access beyond generic HTTPS 443? Are there IP ranges to allowlist?
+1. **LiteLLM image size and startup time** -- Need to verify the image fits comfortably in KIND's resource constraints. LiteLLM is Python-based and may have a larger image than ideal.
+2. **LiteLLM stateless mode** -- Need to confirm LiteLLM can run without a database backend (SQLite or Postgres) for pure config-file-based routing.
+3. **OpenClaw config hot-reload** -- When we modify `openclaw.json` to add the governance-proxy provider, does OpenClaw pick it up without pod restart? Docs suggest `hybrid` reload mode handles model provider changes.
+4. **FQDN-based NetworkPolicy** -- Standard K8s NetworkPolicy operates on IP addresses, not domain names. Blocking `api.openai.com` by IP is fragile (IPs change). May need to block ALL external 443 egress and only allow egress to the `nemoclaw` namespace. This is actually cleaner and more secure.
 
 ## Sources
 
-- [NemoClaw GitHub](https://github.com/NVIDIA/NemoClaw) -- repository structure, installation, requirements (MEDIUM confidence -- alpha project)
-- [NemoClaw Architecture Docs](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- container image reference, blueprint mechanism, sandbox architecture (MEDIUM confidence)
-- [NemoClaw Quickstart](https://docs.nvidia.com/nemoclaw/latest/get-started/quickstart.html) -- system requirements, CLI commands (MEDIUM confidence)
-- [OpenShell GitHub](https://github.com/NVIDIA/OpenShell) -- releases v0.0.6 through v0.0.11, gateway and cluster images (MEDIUM confidence -- alpha, v0.0.x)
-- [OpenShell Architecture](https://docs.nvidia.com/openshell/latest/about/architecture.html) -- gateway, sandbox, policy engine, privacy router components (MEDIUM confidence)
-- [OpenShell Support Matrix](https://docs.nvidia.com/openshell/latest/reference/support-matrix.html) -- Docker 28.04+, linux/amd64 + linux/arm64 (MEDIUM confidence)
-- [OpenShell-Community GitHub](https://github.com/NVIDIA/OpenShell-Community) -- sandbox Dockerfiles, openclaw sandbox definition (MEDIUM confidence -- 44 commits, no releases)
-- [OpenShell-Community sandboxes/openclaw](https://github.com/NVIDIA/OpenShell-Community/tree/main/sandboxes/openclaw) -- port 18789, config location, startup methods (MEDIUM confidence)
-- [NVIDIA k8s-device-plugin GitHub](https://github.com/NVIDIA/k8s-device-plugin) -- v0.17.1, deployment methods, prerequisites (HIGH confidence -- mature project)
-- [NVIDIA k8s-device-plugin releases](https://github.com/NVIDIA/k8s-device-plugin/releases) -- v0.19.0 latest, v0.17.1 Helm chart (HIGH confidence)
-- [NVIDIA k8s-device-plugin Helm chart](https://nvidia.github.io/k8s-device-plugin) -- nvdp/nvidia-device-plugin repository (HIGH confidence)
-- [NemoClaw Issue #397](https://github.com/NVIDIA/NemoClaw/issues/397) -- port 8080/18789 architecture, gateway lifecycle (MEDIUM confidence)
-- [NemoClaw on Apple Silicon](https://www.ajeetraina.com/can-i-run-nvidia-nemoclaw-on-apple-silicon/) -- container architecture, GPU-less operation, port mappings (LOW confidence -- blog post)
-- [DeepWiki k8s-device-plugin deployment](https://deepwiki.com/NVIDIA/k8s-device-plugin/8-deployment) -- Helm chart configuration options (MEDIUM confidence)
+### Official Documentation (HIGH confidence)
+- [OpenShell Architecture](https://docs.nvidia.com/openshell/latest/about/architecture.html) -- component overview
+- [OpenShell Gateway Management](https://docs.nvidia.com/openshell/latest/sandboxes/manage-gateways.html) -- port 8080, TLS modes, standalone model
+- [OpenShell Support Matrix](https://docs.nvidia.com/openshell/latest/reference/support-matrix.html) -- two images (gateway + cluster)
+- [OpenShell Inference Routing](https://docs.nvidia.com/openshell/latest/inference/configure.html) -- inference.local, credential injection
+- [OpenShell Gateway Auth](https://docs.nvidia.com/openshell/latest/reference/gateway-auth.html) -- mTLS, plaintext modes
+- [OpenShell Releases](https://github.com/NVIDIA/OpenShell/releases) -- v0.0.11 latest
+- [NemoClaw Architecture](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- blueprint structure
+- [NemoClaw Network Policies](https://docs.nvidia.com/nemoclaw/latest/reference/network-policies.html) -- baseline egress rules
+- [NemoClaw Inference Profiles](https://docs.nvidia.com/nemoclaw/latest/reference/inference-profiles.html) -- nvidia-nim provider config
+- [OpenClaw Model Providers](https://docs.openclaw.ai/concepts/model-providers) -- baseUrl routing mechanism
+- [OpenClaw Gateway Configuration](https://docs.openclaw.ai/gateway/configuration) -- openclaw.json format
+- [OpenClaw .env.example](https://github.com/openclaw/openclaw/blob/main/.env.example) -- no INFERENCE_GATEWAY_URL
+
+### GitHub Issues (HIGH confidence for architecture constraints)
+- [NemoClaw #407: OpenShift support](https://github.com/NVIDIA/NemoClaw/issues/407) -- confirms K3s coupling, community workaround for external K8s
+- [NemoClaw #397: Port 8080/18789 conflicts](https://github.com/NVIDIA/NemoClaw/issues/397) -- confirms port assignments
+- [NemoClaw #241: Gateway Helm chart URL](https://github.com/NVIDIA/NemoClaw/issues/241) -- reveals internal K3s manifest structure
+
+### Community/Analysis (MEDIUM confidence)
+- [LiteLLM OpenClaw Integration](https://docs.litellm.ai/docs/tutorials/openclaw_integration) -- official integration tutorial
+- [Particula: NemoClaw Explained](https://particula.tech/blog/nvidia-nemoclaw-openclaw-enterprise-security) -- three-pillar architecture analysis
+- [OpenShell Private IP Routing Example](https://github.com/NVIDIA/OpenShell/tree/main/examples/private-ip-routing) -- proxy at 10.200.0.1:3128
 
 ---
-*Stack research for: NemoClaw workload support in Pincer Ops*
-*Researched: 2026-03-19*
+*Stack research for: NemoClaw governance-only deployment on Pincer Ops*
+*Researched: 2026-03-20*
