@@ -1,0 +1,50 @@
+# networkpolicy.yaml -- LiteLLM Proxy allow rules for the nemoclaw namespace.
+#
+# The nemoclaw namespace has a default-deny-all NetworkPolicy
+# (infrastructure/nemoclaw/base/networkpolicy.yaml) that blocks all traffic.
+# This policy adds specific allow rules for the litellm-proxy pod:
+#
+#   Ingress: OpenClaw namespace -> litellm-proxy:4000 (inference requests)
+#   Egress:  litellm-proxy -> kube-system:53 (DNS resolution)
+#   Egress:  litellm-proxy -> 0.0.0.0/0:443 (LLM API calls)
+#
+# Follows the same pattern as workloads/openclaw/base/networkpolicy.yaml.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: litellm-proxy-allow
+  namespace: nemoclaw
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: litellm-proxy
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow inference requests from OpenClaw namespace on port 4000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openclaw
+      ports:
+        - protocol: TCP
+          port: 4000
+  egress:
+    # Allow DNS resolution via CoreDNS in kube-system
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS egress to external LLM APIs (NVIDIA NIM, OpenAI, Anthropic)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443

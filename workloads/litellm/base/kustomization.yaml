@@ -6,3 +6,4 @@ resources:
   - service.yaml
   - configmap.yaml
   - sealedsecret.yaml
+  - networkpolicy.yaml
