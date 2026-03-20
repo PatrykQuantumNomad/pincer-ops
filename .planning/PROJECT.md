@@ -42,18 +42,24 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 
 ### Active
 
-## Current Milestone: v1.2 NemoClaw Support
+## Current Milestone: v1.2 NemoClaw Governance Support
 
-**Goal:** Add NemoClaw as an alternative workload selectable at bootstrap time, with full OpenShell security stack and optional NVIDIA GPU inference.
+**Goal:** Add NemoClaw governance layer (openshell-gateway + privacy-router) as K8s-native infrastructure, route OpenClaw inference through the gateway, and harden security with K8s primitives replacing sandbox security layers.
+
+**Architecture: Governance-only (no sandbox deployment)**
+The OpenShell sandbox container (`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`) runs K3s internally and CANNOT be deployed inside KIND — nesting Kubernetes clusters is not viable. Instead, deploy the governance components (gateway, privacy router) as standalone K8s Deployments, and use K8s-native security primitives to replace sandbox security layers.
 
 **Target features:**
-- Workload selector mechanism (`WORKLOAD=nemoclaw`) mirroring provider selector pattern
-- NemoClaw workload manifests using NVIDIA's upstream container image
-- OpenShell infrastructure as a separate ArgoCD-managed component
-- NVIDIA GPU device plugin for optional local inference
-- NVIDIA_API_KEY SealedSecret management
-- Workload-aware bootstrap/teardown scripts
-- CI validation for NemoClaw manifests
+- `openshell-gateway` Deployment in `nemoclaw` namespace (port 18789) — inference routing
+- `privacy-router` Deployment in `nemoclaw` namespace (port 8080) — credential isolation
+- OpenClaw routes inference via `INFERENCE_GATEWAY_URL=http://openshell-gateway.nemoclaw:18789`
+- NetworkPolicy replacing sandbox netns: OpenClaw cannot directly reach LLM APIs
+- Filesystem isolation replacing sandbox Landlock: `readOnlyRootFilesystem` + explicit writable mounts
+- Syscall filtering replacing sandbox seccomp-BPF: `seccompProfile`, `capabilities.drop: ["ALL"]`
+- NVIDIA_API_KEY SealedSecret mounted ONLY in privacy-router (not OpenClaw)
+- ArgoCD Application for nemoclaw infrastructure (sync wave 0, before OpenClaw)
+- Pod Security Standards on both namespaces
+- CI validation for nemoclaw manifests
 
 ### Out of Scope
 
@@ -65,8 +71,9 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 - Service mesh (Istio/Linkerd) — massive overhead for one workload
 - Argo Rollouts / progressive delivery — meaningless with replicas:1
 - Multi-cluster ArgoCD management — premature for single-cluster setup
-- Mobile app — web-first approach, PWA works well
-- Offline mode — real-time is core value
+- Deploying the OpenShell sandbox container — runs K3s internally, cannot nest K8s in KIND
+- Full sandbox security (Landlock, seccomp-BPF, netns) — replaced by K8s-native equivalents
+- NVIDIA GPU device plugin — deferred until governance layer proven; cloud inference is default
 
 ## Context
 
@@ -94,6 +101,9 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 | Provider-specific bootstrap directories | ArgoCD root-app scans correct directory per provider | ✓ Good — clean separation, byte-identical shared files |
 | Shared files duplicated (not symlinked) | ArgoCD directory scanning requires actual files in scanned path | ✓ Good — BATS tests enforce byte-identity |
 | SIGPIPE-safe variable capture | Prevents race conditions in pipefail scripts | ✓ Good — 20/20 consecutive test passes |
+| Governance-only NemoClaw (no sandbox) | OpenShell sandbox runs K3s internally — cannot nest K8s in KIND | — Pending |
+| K8s-native security replacing sandbox layers | NetworkPolicy, readOnlyRootFilesystem, seccomp, capabilities replace Landlock/seccomp-BPF/netns | — Pending |
+| Credential isolation via gateway routing | NVIDIA_API_KEY only in privacy-router; OpenClaw routes through gateway | — Pending |
 
 ## Constraints
 
@@ -105,4 +115,4 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-19 after v1.2 milestone started*
+*Last updated: 2026-03-20 after v1.2 architectural pivot to governance-only*

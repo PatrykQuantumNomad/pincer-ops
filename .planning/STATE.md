@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: NemoClaw Support
+milestone_name: NemoClaw Governance Support
 status: active
 stopped_at: null
-last_updated: "2026-03-20T12:00:00.000Z"
-last_activity: "2026-03-20 -- Roadmap created for v1.2 (6 phases, 11 plans, 20 requirements)"
+last_updated: "2026-03-20T18:00:00.000Z"
+last_activity: "2026-03-20 -- Architectural pivot: governance-only (no sandbox). Restarting v1.2 milestone."
 progress:
-  total_phases: 6
+  total_phases: 0
   completed_phases: 0
-  total_plans: 11
+  total_plans: 0
   completed_plans: 0
   percent: 0
 ---
@@ -18,19 +18,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-19)
+See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 18 - Image Validation and Pinning (v1.2 NemoClaw Support)
+**Current focus:** v1.2 NemoClaw Governance Support -- restarting after architectural pivot
 
 ## Current Position
 
-Phase: 18 of 23 (Image Validation and Pinning)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-20 -- Roadmap created for v1.2 NemoClaw Support (6 phases, 20 requirements)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-20 -- Architectural pivot to governance-only. Restarting v1.2 milestone.
 
-Progress: [..........] 0% (0/11 v1.2 plans)
+Progress: [..........] 0%
 
 ## Performance Metrics
 
@@ -48,10 +48,12 @@ Progress: [..........] 0% (0/11 v1.2 plans)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v1.2]: Deploy NemoClaw sandbox image as StatefulSet (bypass OpenShell gateway -- not designed for K8s)
-- [v1.2]: Pin image by digest (no semver tags exist for alpha-stage image)
-- [v1.2]: Workload selector follows provider-directory pattern (file-swap in bootstrap dirs)
-- [v1.2]: GPU support is optional, cloud inference is default mode
+- [v1.2 PIVOT]: Do NOT deploy OpenShell sandbox container -- runs K3s internally, cannot nest K8s in KIND
+- [v1.2 PIVOT]: Deploy openshell-gateway + privacy-router as standalone K8s Deployments (governance-only)
+- [v1.2 PIVOT]: OpenClaw routes inference through gateway (INFERENCE_GATEWAY_URL, INFERENCE_MODE=gateway)
+- [v1.2 PIVOT]: K8s-native security replaces sandbox layers (NetworkPolicy, readOnlyRootFilesystem, seccomp, capabilities)
+- [v1.2 PIVOT]: NVIDIA_API_KEY only in privacy-router, not in OpenClaw pod
+- [v1.2]: GPU device plugin deferred -- cloud inference is default mode
 
 ### Pending Todos
 
@@ -59,13 +61,12 @@ None.
 
 ### Blockers/Concerns
 
-- Alpha-stage image: NemoClaw sandbox has no pinned tags, only `:latest`. Digest pinning mitigates but requires manual updates.
-- Image size: 2.4 GB sandbox image (5x OpenClaw) will impact bootstrap time.
-- securityContext: In-container Landlock/seccomp may need specific Linux capabilities. Needs Phase 18 validation.
-- argocd-self/root circular dependency: Cosmetic Progressing/OutOfSync -- accepted, does not affect operations (carried from v1.0).
+- openshell-gateway and privacy-router are designed to run inside OpenShell's K3s container -- need to verify they can run standalone as K8s Deployments
+- Container images for governance components: need to identify correct images (may differ from sandbox image)
+- argocd-self/root circular dependency: Cosmetic Progressing/OutOfSync -- accepted, does not affect operations (carried from v1.0)
 
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Roadmap created for v1.2 milestone
+Stopped at: Architectural pivot -- restarting v1.2 with governance-only approach
 Resume file: None
