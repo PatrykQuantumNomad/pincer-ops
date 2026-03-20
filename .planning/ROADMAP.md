@@ -58,11 +58,11 @@
   1. NemoClaw sandbox image reference uses `@sha256:` digest pinning in a Kustomize overlay (no tag-based references)
   2. Running `make validate` confirms the digest-pinned image reference passes manifest validation
   3. The pinned image digest is documented so operators can verify it against the upstream registry
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: Pull sandbox image, inspect tags/digest, validate startup command and container metadata
-- [ ] 18-02: Create NemoClaw Kustomize base and overlay with digest-pinned image reference
+- [ ] 18-01-PLAN.md — Create NemoClaw Kustomize base/overlay with digest-pinned image and extend make validate
+- [ ] 18-02-PLAN.md — Create generic make pin-image target for updating workload image digests
 
 ### Phase 19: NemoClaw Workload Core
 **Goal**: NemoClaw runs as a StatefulSet accessible via Gateway API routing, following the same deployment pattern as OpenClaw
