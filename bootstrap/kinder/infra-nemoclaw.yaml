@@ -1,0 +1,41 @@
+# infra-nemoclaw.yaml -- ArgoCD Application for the nemoclaw namespace.
+#
+# Manages the nemoclaw namespace with Pod Security Standards (PSS) enforcement
+# at the restricted level and a default-deny-all NetworkPolicy. These are the
+# foundational security primitives for the NemoClaw governance layer.
+#
+# v1.2 Sync Wave Map:
+#   Wave  0: infra-nemoclaw (namespace + default-deny NetworkPolicy) [this app]
+#   Wave  5: workload-litellm (LiteLLM Proxy Deployment, Service, ConfigMap)
+#   Wave 10: workload-openclaw (existing -- integration updates in Phase 21)
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-nemoclaw
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/nemoclaw
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: infrastructure
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/nemoclaw/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nemoclaw
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
