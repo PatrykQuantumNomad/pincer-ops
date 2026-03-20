@@ -87,11 +87,11 @@ make openclaw-onboard
 # 2. Open the authenticated dashboard (extracts token and opens browser)
 make openclaw-dashboard
 
-# 3. Approve the dashboard's pairing request
-make openclaw-cli CMD="pairing list"
-make openclaw-cli CMD="pairing approve <code>"
+# 3. Click "Connect" in the dashboard, then approve the device pairing request
+make openclaw-cli CMD="devices list"
+make openclaw-cli CMD="devices approve <requestId>"
 
-# 4. Click "Connect" in the dashboard — status should go Online
+# 4. Click "Connect" again — status should go Online
 ```
 
 LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding or through the OpenClaw UI at `http://localhost` — they are **not** set in the deployment manifests.

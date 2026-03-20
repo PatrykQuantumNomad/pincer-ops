@@ -36,10 +36,10 @@ const steps = [
     step: '05',
     label: 'Pair the dashboard',
     commands: [
-      'make openclaw-cli CMD="pairing list"',
-      'make openclaw-cli CMD="pairing approve <code>"',
+      'make openclaw-cli CMD="devices list"',
+      'make openclaw-cli CMD="devices approve <requestId>"',
     ],
-    note: 'Approve the dashboard pairing request, then click Connect in the UI',
+    note: 'Approve the pending device, then click Connect again in the dashboard',
   },
 ];
 
