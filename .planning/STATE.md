@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: defining_requirements
-stopped_at: Milestone v2.0 started
-last_updated: "2026-03-20T18:00:00Z"
-last_activity: 2026-03-20 -- Milestone v2.0 OpenShell Sandbox started
+status: ready_to_plan
+stopped_at: Roadmap created for v2.0
+last_updated: "2026-03-20T19:00:00Z"
+last_activity: 2026-03-20 -- v2.0 roadmap created (7 phases, 39 requirements)
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Defining v2.0 requirements
+**Current focus:** Phase 23 - Namespace Architecture and Infrastructure Foundation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: --
-Status: Defining requirements
-Last activity: 2026-03-20 -- Milestone v2.0 OpenShell Sandbox started
+Phase: 23 of 29 (Namespace Architecture and Infrastructure Foundation)
+Plan: -- (phase not yet planned)
+Status: Ready to plan
+Last activity: 2026-03-20 -- v2.0 roadmap created (7 phases, 39 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -37,6 +39,7 @@ Last activity: 2026-03-20 -- Milestone v2.0 OpenShell Sandbox started
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
+- v2.0: Not started
 
 ## Accumulated Context
 
@@ -51,16 +54,14 @@ None.
 
 ### Blockers/Concerns
 
-- OpenShell gateway image availability -- verify ghcr.io/nvidia/openshell/gateway:latest is pullable
-- agent-sandbox controller v0.2.1 compatibility with Sandbox CR spec
-- Supervisor binary side-loading via DaemonSet -- verify hostPath persistence across pod restarts
-- mTLS certificate lifecycle -- bootstrap generation + SealedSecret storage for Git
-- PSS privileged on openshell namespace -- deliberate tradeoff, supervisor enforces isolation internally
-- Envoy Gateway HTTPRoute target change -- gateway service vs sandbox pod exposed port
-- argocd-self/root circular dependency: Cosmetic Progressing/OutOfSync -- accepted (carried from v1.0)
+- Gateway image tag: verify ghcr.io/nvidia/openshell/gateway:0.0.11 is pullable before Phase 25
+- Gateway static CR adoption: spike needed before Phase 26 planning (does gateway adopt pre-existing Sandbox CR?)
+- Supervisor binary arch: confirm arm64 availability before Phase 27 planning
+- LiteLLM stays running through Phase 27 as inference fallback -- removed only in Phase 28 after privacy router verified
+- PSS privileged on openshell namespace: deliberate tradeoff, supervisor enforces isolation internally
 
 ## Session Continuity
 
-Last session: 2026-03-20T18:00:00Z
-Stopped at: Defining v2.0 requirements
+Last session: 2026-03-20T19:00:00Z
+Stopped at: v2.0 roadmap created, ready to plan Phase 23
 Resume file: None

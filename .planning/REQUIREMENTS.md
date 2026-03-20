@@ -101,51 +101,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| INFRA-04 | — | Pending |
-| INFRA-05 | — | Pending |
-| SAND-01 | — | Pending |
-| SAND-02 | — | Pending |
-| SAND-03 | — | Pending |
-| SAND-04 | — | Pending |
-| SAND-05 | — | Pending |
-| SAND-06 | — | Pending |
-| SAND-07 | — | Pending |
-| SAND-08 | — | Pending |
-| MIGR-01 | — | Pending |
-| MIGR-02 | — | Pending |
-| MIGR-03 | — | Pending |
-| MIGR-04 | — | Pending |
-| MIGR-05 | — | Pending |
-| MIGR-06 | — | Pending |
-| MIGR-07 | — | Pending |
-| SUPV-01 | — | Pending |
-| SUPV-02 | — | Pending |
-| SUPV-03 | — | Pending |
-| SUPV-04 | — | Pending |
-| SUPV-05 | — | Pending |
-| SUPV-06 | — | Pending |
-| INFER-01 | — | Pending |
-| INFER-02 | — | Pending |
-| INFER-03 | — | Pending |
-| INFER-04 | — | Pending |
-| SEC-01 | — | Pending |
-| SEC-02 | — | Pending |
-| SEC-03 | — | Pending |
-| SEC-04 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| TEST-05 | — | Pending |
+| INFRA-01 | Phase 23 | Pending |
+| INFRA-02 | Phase 23 | Pending |
+| INFRA-03 | Phase 23 | Pending |
+| INFRA-04 | Phase 23 | Pending |
+| INFRA-05 | Phase 23 | Pending |
+| SAND-01 | Phase 24 | Pending |
+| SAND-02 | Phase 24 | Pending |
+| SAND-03 | Phase 24 | Pending |
+| SAND-04 | Phase 25 | Pending |
+| SAND-05 | Phase 25 | Pending |
+| SAND-06 | Phase 25 | Pending |
+| SAND-07 | Phase 25 | Pending |
+| SAND-08 | Phase 25 | Pending |
+| MIGR-01 | Phase 26 | Pending |
+| MIGR-02 | Phase 26 | Pending |
+| MIGR-03 | Phase 26 | Pending |
+| MIGR-04 | Phase 26 | Pending |
+| MIGR-05 | Phase 26 | Pending |
+| MIGR-06 | Phase 26 | Pending |
+| MIGR-07 | Phase 26 | Pending |
+| SUPV-01 | Phase 27 | Pending |
+| SUPV-02 | Phase 27 | Pending |
+| SUPV-03 | Phase 27 | Pending |
+| SUPV-04 | Phase 27 | Pending |
+| SUPV-05 | Phase 27 | Pending |
+| SUPV-06 | Phase 27 | Pending |
+| INFER-01 | Phase 28 | Pending |
+| INFER-02 | Phase 28 | Pending |
+| INFER-03 | Phase 28 | Pending |
+| INFER-04 | Phase 28 | Pending |
+| SEC-01 | Phase 29 | Pending |
+| SEC-02 | Phase 29 | Pending |
+| SEC-03 | Phase 29 | Pending |
+| SEC-04 | Phase 29 | Pending |
+| TEST-01 | Phase 29 | Pending |
+| TEST-02 | Phase 29 | Pending |
+| TEST-03 | Phase 29 | Pending |
+| TEST-04 | Phase 29 | Pending |
+| TEST-05 | Phase 29 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 39 total
-- Mapped to phases: 0
-- Unmapped: 39
+- Mapped to phases: 39
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 after roadmap creation (traceability populated)*
