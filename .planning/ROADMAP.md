@@ -118,8 +118,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 22-01-PLAN.md -- Add NemoClaw PASS label assertions to validate-manifests unit test
-- [ ] 22-02-PLAN.md -- Create BATS tests for LiteLLM manifest structure and OpenClaw network isolation
+- [x] 22-01-PLAN.md -- Add NemoClaw PASS label assertions to validate-manifests unit test
+- [x] 22-02-PLAN.md -- Create BATS tests for LiteLLM manifest structure and OpenClaw network isolation
 
 ## Progress
 
@@ -149,4 +149,4 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 19. LiteLLM Proxy Deployment | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 20. Security Hardening | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 1/1 | Complete | 2026-03-20 |
-| 22. Validation and Testing | 2/2 | Complete   | 2026-03-20 | - |
+| 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
