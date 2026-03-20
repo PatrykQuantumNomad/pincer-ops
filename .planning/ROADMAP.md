@@ -73,11 +73,11 @@ Plans:
   3. LiteLLM ConfigMap provides model routing configuration for NVIDIA NIM, OpenAI, and Anthropic providers
   4. NVIDIA_API_KEY is managed as a SealedSecret and mounted only in the LiteLLM pod (not accessible from other namespaces)
   5. LiteLLM NetworkPolicy enforces default-deny with allow rules for ingress from openclaw namespace, DNS egress, and HTTPS egress to LLM APIs
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 19-01: Create LiteLLM Deployment, Service, ConfigMap, and SealedSecret manifests
-- [ ] 19-02: Create LiteLLM NetworkPolicy and verify pod connectivity
+- [ ] 19-01-PLAN.md -- LiteLLM workload manifests, Kustomize structure, ArgoCD Application, and AppProject update
+- [ ] 19-02-PLAN.md -- LiteLLM NetworkPolicy and kubeconform validation extension
 
 ### Phase 20: Security Hardening
 **Goal**: Both OpenClaw and LiteLLM pods run with minimal privileges, and namespace-level security policies are enforced
