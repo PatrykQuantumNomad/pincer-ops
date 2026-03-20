@@ -1,332 +1,306 @@
 # Pitfalls Research
 
-**Domain:** GitOps Kubernetes platform (ArgoCD App of Apps on KIND, deploying a stateful single-instance workload)
-**Researched:** 2026-02-19
-**Confidence:** HIGH (ArgoCD/KIND pitfalls are well-documented; OpenClaw-specific risks cross-referenced with CLAUDE.md constraints)
+**Domain:** Adding NemoClaw workload support to an existing GitOps Kubernetes platform (Pincer Ops)
+**Researched:** 2026-03-19
+**Confidence:** MEDIUM -- NemoClaw and OpenShell are alpha-stage (released 2026-03-16), so documentation is sparse and APIs are unstable. Platform-side pitfalls (ArgoCD, KIND, SealedSecrets) are HIGH confidence from official docs.
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data loss, or broken bootstrap reproducibility.
-
-### Pitfall 1: Sync Waves Do Not Work Across Applications Without Custom Health Check
+### Pitfall 1: macOS Has Zero NVIDIA GPU Support -- Do Not Make GPU a Hard Dependency
 
 **What goes wrong:**
-You annotate child Application manifests in the root app-of-apps with different `sync-wave` values (e.g., MetalLB at wave -5, Nginx Ingress at wave -4), expecting ArgoCD to deploy them sequentially. Instead, all child Applications sync simultaneously. Infrastructure components race each other, and workloads deploy before their dependencies exist. Ingress fails because MetalLB has not allocated IPs yet. SealedSecrets fail because the controller is not running yet.
+NemoClaw documentation references GPU inference (Nemotron models, local vLLM). Developers assume they need GPU passthrough in KIND/Kinder to run NemoClaw locally. On macOS (the primary Pincer Ops dev platform), this is architecturally impossible: Docker Desktop on macOS uses Apple's Hypervisor.framework, which provides no GPU passthrough for NVIDIA CUDA or even Apple Metal to containers. There is no workaround -- not with KIND, not with Kinder, not with Docker Desktop GPU settings. The `nvidiaGPU: false` addon in Kinder's config confirms this is already a known constraint.
 
 **Why it happens:**
-Since ArgoCD 1.8, the health assessment for Application resources was removed from the default configuration. Without health assessment, ArgoCD cannot determine whether a child Application is "Healthy" before proceeding to the next wave. It treats all Application resources as immediately healthy and fires all waves at once.
+NemoClaw's default inference configuration uses `nvidia/nemotron-3-super-120b-a12b` via NVIDIA cloud API. Developers conflate "NVIDIA inference" with "local GPU required." NemoClaw documentation targets DGX Spark and Linux workstations with NVIDIA GPUs, creating an expectation that GPU hardware is needed.
 
 **How to avoid:**
-Add a custom Lua health check to `argocd-cm` ConfigMap that restores Application health assessment:
-
-```yaml
-data:
-  resource.customizations.health.argoproj.io_Application: |
-    hs = {}
-    hs.status = "Progressing"
-    hs.message = ""
-    if obj.status ~= nil then
-      if obj.status.health ~= nil then
-        hs.status = obj.status.health.status
-        if obj.status.health.message ~= nil then
-          hs.message = obj.status.health.message
-        end
-      end
-    end
-    return hs
-```
-
-This must be in place before the root application syncs child apps. Include it in the `bootstrap/argocd-cm.yaml` manifest.
+- Make GPU support strictly optional: a feature gate, not a requirement
+- Default NemoClaw configuration must use NVIDIA cloud inference (API key + network egress), not local GPU inference
+- Guard GPU-related manifests behind a clear opt-in mechanism (e.g., `ENABLE_GPU=true` or a separate kustomize overlay)
+- On macOS: NemoClaw works fine with cloud inference -- test this path first and make it the default
+- On Linux with NVIDIA GPU: use nvkind or Kinder's `nvidiaGPU: true` addon as an enhancement, not a prerequisite
+- Document the matrix: macOS = cloud inference only, Linux + NVIDIA = optional local inference
 
 **Warning signs:**
-- All child apps appear to sync at the same time in the ArgoCD UI
-- Race conditions where workloads start before infrastructure is ready
-- Intermittent failures on fresh bootstrap that "fix themselves" on manual re-sync
-- Ingress resources stuck in `Progressing` because MetalLB is not ready
+- Bootstrap script fails on macOS with NVIDIA device plugin errors
+- GPU-related DaemonSets stuck in `Pending` or `CrashLoopBackOff` on macOS nodes
+- NemoClaw pod spec requires `nvidia.com/gpu: 1` resource limit in its default configuration
 
 **Phase to address:**
-Phase 1 (Bootstrap / ArgoCD setup) -- this must be configured before any multi-application sync is attempted.
+Phase 1 (NemoClaw infrastructure) -- establish cloud inference as the default path before any GPU work. GPU support belongs in a separate, later phase.
 
 ---
 
-### Pitfall 2: ArgoCD Self-Management Crash Loop Deadlock
+### Pitfall 2: OpenShell Is Not a Kubernetes Operator -- It Is K3s-in-Docker
 
 **What goes wrong:**
-ArgoCD manages its own configuration via an Application pointing at `bootstrap/`. A bad commit to ArgoCD configuration (e.g., invalid `argocd-cm.yaml`, broken RBAC, resource limits too low) causes ArgoCD server or controller to crash-loop. Since ArgoCD is down, it cannot sync the fix from Git. You are locked out of the GitOps loop entirely.
+Developers assume OpenShell is a standard Kubernetes component they can deploy as an ArgoCD Application (like MetalLB or Sealed Secrets). In reality, OpenShell runs its own K3s cluster inside a single Docker container. It cannot be deployed as a Kubernetes Deployment/StatefulSet managed by ArgoCD. It is a Docker-level dependency, not a Kubernetes-level one. Attempting to create an ArgoCD Application for OpenShell results in a conceptual mismatch -- the "infrastructure" is a Docker container running its own Kubernetes cluster with its own containerd, not a pod in your existing cluster.
 
 **Why it happens:**
-Self-management is the correct GitOps approach, but it creates a circular dependency: the tool that applies configuration changes is itself subject to those changes. A single bad config can break the feedback loop.
+OpenShell's architecture is unconventional: it bundles a gateway, policy engine, privacy router, and sandbox runtime inside K3s-in-Docker. Pincer Ops' existing pattern (ArgoCD Application pointing at kustomize manifests) does not apply. The kubernetes-sigs/agent-sandbox project provides a true Kubernetes-native CRD approach, but OpenShell/NemoClaw does not use it.
 
 **How to avoid:**
-1. Always validate ArgoCD configuration manifests with `kubectl apply --dry-run=server` before committing
-2. Keep a "break glass" procedure documented: `kubectl apply -f bootstrap/argocd-install.yaml` to restore ArgoCD from outside the GitOps loop
-3. Set resource requests/limits conservatively -- ArgoCD controller needs at least 256Mi memory for small clusters
-4. Use `argocd-self.yaml` at wave -10 so ArgoCD config is always the first thing applied
-5. Consider running ArgoCD application-controller with 2 replicas (though for KIND dev this is overkill)
+- Treat OpenShell as infrastructure that runs alongside the cluster, not inside it
+- Deploy OpenShell via bootstrap.sh steps (similar to how ArgoCD itself is installed -- imperatively, before GitOps takes over)
+- Create a dedicated bootstrap step: "Step N: Start OpenShell gateway" that uses `docker run` or `openshell` CLI, not `kubectl apply`
+- The ArgoCD Application for NemoClaw should manage the NemoClaw workload inside the existing cluster, while OpenShell is a pre-existing external dependency
+- Monitor the agent-sandbox project (kubernetes-sigs/agent-sandbox) as a potential future replacement that is actually Kubernetes-native
+- Do NOT write a StatefulSet or Deployment manifest for OpenShell itself
 
 **Warning signs:**
-- ArgoCD pods in CrashLoopBackOff after a config commit
-- `argocd app list` returns connection errors
-- ArgoCD UI unreachable
-- No sync activity despite pending Git changes
+- Attempting to write a `StatefulSet` or `Deployment` manifest for OpenShell
+- Creating an ArgoCD Application with `path: infrastructure/openshell/base`
+- OpenShell pods in `CrashLoopBackOff` because they try to start K3s inside a regular container without Docker socket access
 
 **Phase to address:**
-Phase 1 (Bootstrap) -- establish the break-glass procedure and dry-run validation from day one.
+Phase 1 (OpenShell infrastructure) -- establish the correct deployment model before writing any manifests. This is the single most important architectural decision for the NemoClaw milestone.
 
 ---
 
-### Pitfall 3: SealedSecrets Sealing Key Loss Makes All Secrets Irrecoverable
+### Pitfall 3: Workload Selector Breaks ArgoCD -- PVCs Survive, Routes Conflict
 
 **What goes wrong:**
-You tear down and recreate the KIND cluster (normal dev workflow). The SealedSecrets controller generates a new sealing key pair. All existing SealedSecret manifests in Git were encrypted with the old key. They are now permanently undecryptable. OpenClaw cannot start because `OPENCLAW_GATEWAY_TOKEN` and `ANTHROPIC_API_KEY` are gone.
+When switching between OpenClaw and NemoClaw workloads, three things go wrong simultaneously:
+
+1. **PVC lifecycle mismatch:** OpenClaw uses a PVC at `/home/node/.openclaw` (20Gi). NemoClaw uses `/sandbox` and `/tmp`. If `workload-openclaw` is pruned by ArgoCD, the `resources-finalizer.argocd.argoproj.io` finalizer triggers cascade deletion, destroying the PVC and all OpenClaw data. Switching back to OpenClaw means starting from scratch -- onboarding wizard, LLM API keys, conversation history, all gone.
+
+2. **HTTPRoute conflicts:** Both workloads use port 18789 and both need `PathPrefix: /` on the same Gateway. Two HTTPRoutes with identical match rules on the same Gateway create undefined routing behavior -- the Gateway API spec says "when multiple HTTPRoutes match, the most specific match wins," but `PathPrefix: /` vs `PathPrefix: /` is a tie. Traffic may randomly route to the wrong backend or the Gateway controller may reject one route.
+
+3. **Orphaned resources:** If the workload selector removes the ArgoCD Application YAML from `bootstrap/{provider}/` and `prune: true` is set on the root app... except root-app has `prune: false` (GOPS-03 protection). So the old Application persists as a ghost -- it still exists in ArgoCD but its source path no longer has manifests, so it shows as `OutOfSync` or `Missing` indefinitely.
 
 **Why it happens:**
-SealedSecrets is a one-way encryption system: secrets are encrypted with the cluster's public key and can only be decrypted by the corresponding private key stored as a Kubernetes Secret in the `sealed-secrets` namespace. When the cluster is destroyed, the private key is destroyed with it. New clusters generate new key pairs. Old SealedSecret manifests are cryptographically bound to the old key.
+The current architecture assumes exactly one workload. The root-app recursively scans `bootstrap/{provider}/` and discovers ALL Application YAMLs. There is no conditional inclusion mechanism. ArgoCD's App of Apps pattern does not natively support "deploy A XOR B."
 
 **How to avoid:**
-1. **Backup the sealing key** immediately after first cluster creation: `kubectl get secret -n sealed-secrets -l sealing.bitnami.com/sealed-secrets-key -o yaml > sealing-key-backup.yaml`
-2. **Restore before SealedSecrets controller starts** in bootstrap: `kubectl apply -f sealing-key-backup.yaml` then install the controller
-3. Store the backup securely outside the Git repo (password manager, encrypted vault, not committed to pincer-ops)
-4. Add this to `scripts/bootstrap.sh` as an explicit step with a warning if backup file is missing
-5. Remember that key renewal happens every 30 days by default -- backups must include all renewed keys
+- Never deploy both workload Applications simultaneously in the same bootstrap directory
+- Use separate bootstrap subdirectories per workload: `bootstrap/kinder/openclaw/` and `bootstrap/kinder/nemoclaw/`, with root-app pointed at only one
+- Or use ApplicationSets with a generator that reads a config file (e.g., `workload: openclaw` in a ConfigMap) to conditionally generate the correct Application
+- Protect PVCs with `argocd.argoproj.io/sync-options: Prune=false` annotation, or use `preserveResourcesOnDeletion: true` on the ApplicationSet
+- For HTTPRoutes: put each workload in its own namespace (`openclaw` / `nemoclaw`) and ensure only one HTTPRoute is active at a time
+- For the transition: create a `make switch-workload WORKLOAD=nemoclaw` target that handles the full lifecycle (scale down old, verify PVC backup, remove old Application, deploy new Application)
+- Do NOT rely on ArgoCD pruning to handle the switch -- it will either delete too much (PVCs) or too little (orphaned Applications)
 
 **Warning signs:**
-- SealedSecret resources show `Unseal` errors in controller logs
-- Pods referencing sealed secrets stuck in `CreateContainerConfigError`
-- Bootstrap succeeds for infrastructure but OpenClaw fails to start
-- `kubeseal --fetch-cert` returns a different certificate than what was used to seal
+- Both `workload-openclaw` and `workload-nemoclaw` YAMLs present in the same `bootstrap/{provider}/` directory
+- ArgoCD shows two Applications targeting overlapping resources
+- HTTPRoute shows `status.conditions` with `ResolvedRefs: False` or `Conflicted: True`
+- PVC `data-openclaw-gateway-0` deleted during a workload switch
 
 **Phase to address:**
-Phase 1 (Bootstrap) -- sealing key backup/restore must be part of the bootstrap script before any SealedSecrets are applied.
+Phase 2 (workload selector mechanism) -- this must be solved before NemoClaw can be deployed. It determines the entire bootstrap directory structure.
 
 ---
 
-### Pitfall 4: KIND `:latest` Tag Causes Silent ImagePullBackOff
+### Pitfall 4: Provider x Workload Matrix Multiplies Bootstrap Complexity 4x
 
 **What goes wrong:**
-A developer builds a local image tagged `:latest`, loads it into KIND with `kind load docker-image`, and the pod enters `ImagePullBackOff`. The image is confirmed present on KIND nodes via `docker exec`, yet Kubernetes refuses to use it.
+Pincer Ops currently has 2 providers (kinder, kind) with byte-identical shared files and provider-specific files. Adding a workload dimension creates 4 combinations: kinder+openclaw, kinder+nemoclaw, kind+openclaw, kind+nemoclaw. The naive approach -- creating 4 bootstrap directories -- leads to 4 copies of shared files (argocd-cm.yaml, argocd-self.yaml, projects/). When argocd-cm.yaml needs an update, you must update 4 files. You will forget one. The cluster state will diverge between combinations.
 
 **Why it happens:**
-Kubernetes defaults `imagePullPolicy` to `Always` when the tag is `:latest` or omitted. With `Always`, kubelet tries to pull from a remote registry, which fails because KIND has no registry configured. The locally-loaded image is ignored entirely. This is a Kubernetes behavior, not a KIND bug.
+The existing dual-provider pattern uses file copying (CLAUDE.md: "Shared files are byte-identical copies, not symlinks"). This works at 2 copies but breaks at 4. The root cause is that Pincer Ops chose file duplication over symlinks or dynamic generation, which was acceptable for 2 providers but does not scale to a 2x2 matrix.
 
 **How to avoid:**
-1. **Never use `:latest` tags** -- use explicit version tags (e.g., `openclaw/openclaw:0.7.2`)
-2. **Always set `imagePullPolicy: IfNotPresent`** on every container spec (already mandated in CLAUDE.md)
-3. Add a CI/linting check that rejects manifests containing `:latest` or missing `imagePullPolicy`
-4. Wrapper script `scripts/load-image.sh` should validate the tag is not `:latest` before loading
+- Do NOT create 4 bootstrap directories. Instead, use a 2-dimensional structure:
+  - Provider dimension: `bootstrap/kinder/` vs `bootstrap/kind/` (existing, keep as-is)
+  - Workload dimension: handled by workload selector mechanism (see Pitfall 3), not directory duplication
+- Shared files (argocd-cm, argocd-self, projects) stay in the provider directories (2 copies, as today)
+- Workload-specific Applications (workload-openclaw.yaml, workload-nemoclaw.yaml) are conditionally included via the selector mechanism, not via separate directory trees
+- Alternative: use kustomize overlays for the bootstrap directory itself, with a base containing shared files and overlays for provider-specific additions
+- If duplication is unavoidable, create a CI check (`make validate`) that verifies byte-identity of shared files across all copies
 
 **Warning signs:**
-- `ImagePullBackOff` or `ErrImagePull` in pod events
-- `docker exec kind-worker crictl images` shows the image exists
-- Works after manually patching `imagePullPolicy` but breaks again on next sync
+- More than 2 copies of argocd-cm.yaml in the repository
+- `git diff` shows changes to shared files in only some bootstrap directories
+- `make validate` passes but clusters behave differently depending on provider+workload combination
+- bootstrap.sh has nested if/else blocks for provider AND workload
 
 **Phase to address:**
-Phase 1 (Cluster setup) -- enforce in manifest conventions and validate in CI from the start.
+Phase 2 (workload selector) -- must be designed before any NemoClaw bootstrap files are created.
 
 ---
 
-### Pitfall 5: MetalLB VIPs Unreachable on macOS -- Wrong Networking Assumptions
+### Pitfall 5: NemoClaw Port 18789 Conflict With OpenClaw -- Same Port, Different Process Lifecycle
 
 **What goes wrong:**
-On macOS, you configure MetalLB with an IP pool from the Docker `kind` bridge network. MetalLB allocates IPs, Services get External IPs, and everything looks healthy. But `curl http://<external-ip>` from the host machine times out. Developers waste hours debugging MetalLB thinking it is broken.
+Both OpenClaw and NemoClaw use port 18789. But the process lifecycle is fundamentally different:
+- OpenClaw: Node.js gateway process binding directly to 18789 (`node dist/index.js gateway --bind lan --port 18789`)
+- NemoClaw: OpenShell gateway on port 8080, SSH proxy forwarding to 18789 in the sandbox
+
+On the host/cluster level, if OpenClaw's launchd agent (macOS) or systemd service holds port 18789, NemoClaw's SSH proxy cannot bind. This is a documented NemoClaw issue (GitHub issue #397): "gateway and ssh-proxy processes started by NemoClaw/OpenShell continue running, holding ports 8080 and 18789." The fix in NemoClaw's issue tracker (stale gateway detection) only helps within NemoClaw -- it does not detect an OpenClaw process holding the same port.
 
 **Why it happens:**
-Docker Desktop on macOS runs containers inside a Linux VM (via Apple Virtualization or HyperKit). The Docker bridge network exists inside this VM, not on the host. ARP advertisements from MetalLB L2 mode never reach the macOS host network. This is a fundamental Docker Desktop architecture limitation, not a MetalLB bug. On Linux hosts, MetalLB VIPs work as expected.
+Port 18789 is OpenClaw's canonical port. NemoClaw inherits it because NemoClaw IS OpenClaw-inside-a-sandbox. The port is hardcoded in OpenClaw's Gateway API.
 
 **How to avoid:**
-1. **Document this prominently** -- it is the #1 confusion point for macOS developers
-2. **Use `localhost:80` and `localhost:443`** via KIND `extraPortMappings` on the control-plane node, not MetalLB VIPs
-3. MetalLB is still needed for in-cluster LoadBalancer Services (Nginx Ingress needs a LoadBalancer IP to bind to), but external access is through port mappings only
-4. Do not hardcode MetalLB IP ranges -- derive from `docker network inspect kind` at bootstrap time
-5. Optionally install `docker-mac-net-connect` (WireGuard-based tunnel) if direct VIP access is needed, but this adds complexity
+- In Kubernetes, port conflicts between namespaces do not exist -- each Service has its own ClusterIP. The conflict is only at the host-level port-forward or during `make port-forward` / `make logs` workflows
+- Ensure `make` targets are workload-aware: `make logs` should detect which workload is active and tail the correct pod
+- The HTTPRoute is the real routing boundary -- ensure only one HTTPRoute with `PathPrefix: /` exists at any time
+- For the bootstrap script: add a check that port 18789 is not held by a stale OpenClaw or NemoClaw process before starting the new workload
+- Do NOT try to run both workloads simultaneously -- OpenClaw is a "single-instance monolith" and NemoClaw inherits this constraint
 
 **Warning signs:**
-- Services show External IPs but are unreachable from host
-- `curl localhost:80` works but `curl <metallb-vip>:80` does not
-- Works perfectly on a colleague's Linux machine
-- MetalLB speaker logs show successful ARP responses (it thinks it is working)
+- `kubectl logs` showing `EADDRINUSE` on port 18789
+- Two Services both selecting on port 18789 in different namespaces but only one HTTPRoute working
+- `make port-forward` connecting to the wrong workload
 
 **Phase to address:**
-Phase 1 (Cluster networking) -- MetalLB configuration and port mapping must be set up correctly in `cluster/kind-config.yaml` from the start.
+Phase 3 (NemoClaw workload manifests) -- when writing the StatefulSet and Service for NemoClaw.
 
 ---
 
-### Pitfall 6: Cascade Delete Destroys All Cluster Resources When Root App Is Deleted
+### Pitfall 6: NemoClaw's Nested Container Architecture Breaks Image Loading
 
 **What goes wrong:**
-Someone deletes the root application from the ArgoCD UI (or runs `argocd app delete root-app`). Because the app-of-apps pattern has finalizers enabled, ArgoCD cascades the deletion: it deletes all child Applications, which in turn delete all their managed resources. The entire cluster state is wiped -- namespaces, StatefulSets, PVCs, everything.
+NemoClaw runs OpenClaw inside an OpenShell sandbox, which is K3s-in-Docker. KIND/Kinder load images into the outer cluster's containerd via `kind load docker-image`. But the OpenShell sandbox has its own containerd instance (inside K3s). Images loaded into the outer cluster are NOT visible inside the sandbox. The sandbox's inner containerd tries to pull from registries, fails in air-gapped or rate-limited environments, and pods inside the sandbox enter `ImagePullBackOff`.
+
+This is the exact same problem documented in NemoClaw's WSL2 tracking issue (#305): "the innermost containerd cannot reliably reach container registries, while the outer Docker can." The workaround requires manually importing images into the inner containerd using a tool like Google's `crane`.
 
 **Why it happens:**
-ArgoCD's default deletion behavior includes the `resources-finalizer.argocd.argoproj.io` finalizer, which triggers cascading deletion of all managed resources. In an app-of-apps setup, this cascades through every level: root app -> child apps -> all Kubernetes resources. This is by design for cleanup, but catastrophic when triggered accidentally.
+Docker-in-Docker (or containerd-in-containerd) creates nested image stores. Each layer has its own image cache. `kind load docker-image` only populates the outermost layer. The NemoClaw sandbox image (`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`) is approximately 2.4 GB compressed, making pull timeouts likely.
 
 **How to avoid:**
-1. **Never enable auto-prune on the root application** -- the root app should have `syncPolicy.automated.prune: false`
-2. Set `preserveResourcesOnDeletion: true` on the root app to prevent cascade deletion
-3. Restrict `argocd app delete` permissions via RBAC -- only admins should be able to delete Applications in the `argocd` namespace
-4. Consider removing the resources-finalizer from the root-app (use non-cascading delete as default)
-5. Document the recovery procedure: `kubectl apply -f bootstrap/root-app.yaml` recreates everything from Git
+- If OpenShell runs as a Docker container alongside (not inside) the KIND/Kinder cluster, this problem is mitigated -- the sandbox pulls directly from Docker's image cache
+- If OpenShell must run inside the cluster, pre-seed the sandbox images:
+  1. Load images into the outer cluster: `kind load docker-image ghcr.io/nvidia/openshell-community/sandboxes/openclaw:tag`
+  2. The sandbox's K3s must be configured with `imagePullPolicy: IfNotPresent` AND have images pre-loaded
+  3. Consider enabling Kinder's `localRegistry: true` addon as a shared registry accessible from all container layers
+- Test image loading explicitly in the bootstrap script before declaring NemoClaw ready
+- Pre-pull the 2.4 GB sandbox image during `make up` rather than on first sandbox creation
 
 **Warning signs:**
-- Multiple Applications showing as "Deleting" simultaneously in ArgoCD UI
-- Namespaces being terminated unexpectedly
-- PVCs being deleted (data loss for OpenClaw)
+- Pods inside the OpenShell sandbox stuck in `ImagePullBackOff`
+- `ErrImagePull` errors referencing `ghcr.io/nvidia/openshell-community/sandboxes/openclaw`
+- Sandbox creation timing out at 5+ minutes
+- WSL2 users reporting failures that macOS/Linux users do not see (nested containerd issue)
 
 **Phase to address:**
-Phase 1 (Root app setup) -- configure deletion protection before any real workloads are deployed.
+Phase 1 (OpenShell infrastructure) -- image loading strategy must be validated before NemoClaw workload deployment.
 
 ---
 
-### Pitfall 7: StatefulSet PVC Not Expandable on KIND local-path-provisioner
+### Pitfall 7: SealedSecret Scope Vulnerability When Adding NVIDIA_API_KEY
 
 **What goes wrong:**
-OpenClaw's session transcripts grow unbounded (per CLAUDE.md). After weeks of use, the 10Gi PVC fills up. You edit the `volumeClaimTemplates` in the StatefulSet to request 20Gi. ArgoCD shows the resource as OutOfSync but refuses to apply the change. Kubernetes rejects the update because `volumeClaimTemplates` is immutable after creation.
+NemoClaw requires an `NVIDIA_API_KEY` for cloud inference (the default and only path on macOS). This key must be sealed as a SealedSecret. Two things go wrong:
+
+1. **Scope widening CVE:** There is a critical vulnerability (CVE-2026-22728) in Sealed Secrets: the `/v1/rotate` API endpoint allows an attacker who can submit a strict-scoped SealedSecret to set `sealedsecrets.bitnami.com/cluster-wide=true` in the template annotations, widening the scope to cluster-wide. Any namespace can then decrypt the rotated secret, exposing the API key.
+
+2. **Wrong namespace sealing:** If NemoClaw runs in a different namespace than `openclaw` (e.g., `nemoclaw`), the SealedSecret must be sealed for that specific namespace. Using `kubeseal` without `--namespace nemoclaw` produces a secret that cannot be decrypted in the target namespace.
 
 **Why it happens:**
-Kubernetes does not allow modifying `volumeClaimTemplates` on an existing StatefulSet. Additionally, KIND's default `local-path-provisioner` does not support volume expansion (`allowVolumeExpansion: false`). Even if you patch the PVC directly, the underlying provisioner cannot resize the volume.
+SealedSecrets scope is an annotation, not enforced by the controller at creation time. The rotate endpoint was historically trusted. The CVE was disclosed in 2026 and may not be patched in the version Pincer Ops uses (v0.35.0). Namespace-scoping errors are common when adding a second namespace to a platform that previously had only one workload namespace.
 
 **How to avoid:**
-1. **Start with generous PVC sizing** -- 20Gi or more for dev, since local disk is cheap
-2. **Plan the resize procedure**: delete StatefulSet (with `--cascade=orphan` to keep pods), patch PVC, recreate StatefulSet
-3. **Back up OpenClaw data** before any PVC operations: `kubectl cp openclaw/openclaw-gateway-0:/home/node/.openclaw/ ./backup/`
-4. For production, use a StorageClass that supports volume expansion
-5. Monitor PVC usage with `kubectl exec` + `df -h` on the OpenClaw pod periodically
+- Check if Sealed Secrets v0.35.0 is affected by CVE-2026-22728 and upgrade if necessary
+- Always seal with explicit namespace: `kubeseal --namespace nemoclaw --name nvidia-api-key`
+- Disable the rotate endpoint if not needed: set `--rotate-period=0` on the controller
+- Create a `make seal-nemoclaw` target that enforces the correct namespace and name
+- Consider using NemoClaw's PVC-based key storage pattern (similar to OpenClaw's onboarding wizard) as an alternative to Kubernetes Secrets for the API key
+- Add the SealedSecret to the pre-commit hook validation: reject if `cluster-wide: true` annotation is present
+- Extend the `workloads` AppProject to allow the `nemoclaw` namespace (currently it only allows `openclaw`)
 
 **Warning signs:**
-- OpenClaw logs showing disk write errors
-- Pod events showing `Evicted` due to ephemeral storage pressure
-- ArgoCD showing StatefulSet as OutOfSync with diff in `volumeClaimTemplates`
-- `kubectl get pvc` showing PVC at capacity
+- SealedSecret YAML with `sealedsecrets.bitnami.com/cluster-wide: "true"` annotation
+- `kubeseal` invoked without `--namespace` flag in documentation or Makefile targets
+- NVIDIA_API_KEY accessible from pods in namespaces other than the NemoClaw namespace
+- `workloads` AppProject rejecting NemoClaw Application because destination namespace is not whitelisted
 
 **Phase to address:**
-Phase 2 (OpenClaw deployment) -- set appropriate initial sizing and document the expansion procedure.
+Phase 3 (NemoClaw workload manifests) -- when setting up the NVIDIA_API_KEY secret.
 
 ---
 
-## Moderate Pitfalls
-
-### Pitfall 8: ServerSideApply Required for CRD-Heavy Components But Causes Field Conflicts
+### Pitfall 8: NetworkPolicy Default-Deny Blocks OpenShell Gateway Communication
 
 **What goes wrong:**
-CRD-heavy components like cert-manager and ArgoCD itself ship large CRDs that exceed the 262144-byte annotation size limit for client-side apply. Sync fails with "metadata.annotations too long" errors. You enable `ServerSideApply=true`, which fixes the size issue but introduces field ownership conflicts with other controllers.
+The existing OpenClaw NetworkPolicy pattern is default-deny-all + explicit allow for Envoy ingress (18789/TCP), DNS (53), and HTTPS egress (443). NemoClaw has different egress needs:
+1. It must reach the OpenShell gateway (port 8080) -- which may be running as a Docker container outside the cluster, not accessible via standard Kubernetes networking
+2. It needs egress to `integrate.api.nvidia.com:443` (NVIDIA cloud inference) in addition to OpenClaw's existing LLM API endpoints
+3. The sandbox's internal K3s may need to reach the outer cluster's DNS for service discovery
 
-**Prevention:**
-- Enable `ServerSideApply=true` sync option specifically for CRD-heavy Applications (ArgoCD self-management, cert-manager)
-- Do not enable it globally -- use per-Application sync options
-- If field conflicts arise with other controllers, use `argocd.argoproj.io/sync-options: ServerSideApply=false` on specific resources
+If you copy the OpenClaw NetworkPolicy and just change the pod selector, NemoClaw's connection to OpenShell is blocked. The sandbox cannot route inference requests, and the agent silently fails with no error in the NemoClaw logs (the connection just times out).
+
+**Why it happens:**
+NetworkPolicies are additive within a namespace but do not cross the Kubernetes/Docker boundary. If OpenShell runs as a Docker container on the host, the cluster's NetworkPolicy cannot grant access to it -- you need host-network egress or an ExternalService/Endpoints object pointing to the host IP.
+
+**How to avoid:**
+- Map the deployment topology first: where does OpenShell run relative to the Kubernetes cluster?
+  - If OpenShell is a Docker container on the same host: NemoClaw pods need egress to the host IP on port 8080
+  - If OpenShell is inside the cluster: standard Service + NetworkPolicy works
+- Create NemoClaw-specific NetworkPolicy that explicitly allows:
+  - Ingress from `envoy-gateway-system` on 18789/TCP (same as OpenClaw)
+  - Egress to DNS (53/UDP+TCP)
+  - Egress to HTTPS (443/TCP) for NVIDIA cloud and LLM APIs
+  - Egress to OpenShell gateway (8080/TCP) -- target depends on deployment topology
+- Do NOT reuse the OpenClaw NetworkPolicy unchanged -- copy and modify with NemoClaw-specific rules
+- Extend `make verify-netpol` to test NemoClaw connectivity
+
+**Warning signs:**
+- NemoClaw pod healthy but inference requests timing out
+- `curl` from NemoClaw pod to OpenShell gateway returns "connection refused" or hangs
+- NetworkPolicy only allows port 443 egress but OpenShell gateway is on port 8080
+- NemoClaw logs show no errors but agent actions never complete
+
+**Phase to address:**
+Phase 3 (NemoClaw workload manifests) -- NetworkPolicy must be written alongside the workload manifests.
 
 ---
 
-### Pitfall 9: Resource Tracking Label Conflicts With External Tools
+### Pitfall 9: Sync Wave Collision Between OpenShell Infrastructure and NemoClaw Workload
 
 **What goes wrong:**
-ArgoCD's default label-based tracking uses `app.kubernetes.io/instance`, which is also used by Helm charts and other Kubernetes tools. ArgoCD falsely claims ownership of resources it did not create, or shows "shared resource" warnings.
+OpenShell (if deployed as infrastructure) needs a sync wave between existing infrastructure (-3 for Sealed Secrets, -1 for Envoy Gateway config) and workloads (+10). NemoClaw depends on OpenShell being fully ready before it starts. If both are assigned the same wave, or if OpenShell is at a wave higher than NemoClaw, the NemoClaw pod starts before OpenShell is available and fails to connect to the sandbox runtime.
 
-**Prevention:**
-- Use `annotation+label` tracking method (already configured per CLAUDE.md in `argocd-cm`)
-- This adds an ArgoCD-specific annotation for tracking while preserving the standard label for compatibility
-- Set `installationID` if ever running multiple ArgoCD instances
+Additionally, if OpenShell is deployed via bootstrap.sh (not ArgoCD), it is invisible to ArgoCD's sync wave system entirely. ArgoCD has no way to know OpenShell is ready before deploying NemoClaw. The NemoClaw Application at wave +10 may deploy before the bootstrap script finishes setting up OpenShell.
+
+**Why it happens:**
+OpenShell does not fit the existing sync wave model because it is not a Kubernetes resource. Sync waves only order ArgoCD-managed resources. External dependencies (Docker containers, host services) are outside ArgoCD's awareness.
+
+**How to avoid:**
+- If OpenShell is deployed via bootstrap.sh: ensure the bootstrap step for OpenShell runs BEFORE the bootstrap step that applies the NemoClaw Application. The NemoClaw Application should only be applied after OpenShell responds to health checks.
+- If OpenShell is managed by ArgoCD: assign it wave +5 (between infrastructure and workloads), and NemoClaw at wave +10 (current OpenClaw wave). Use `SkipDryRunOnMissingResource=true` if OpenShell introduces CRDs.
+- Add a health check/readiness gate: NemoClaw's initContainer or startupProbe should verify OpenShell connectivity before the main container starts
+- Use the existing sync wave gap: current waves are -10, -5, -4, -3, -2, -1, +10 -- there is room at 0, +1, +2, +3, +4, +5 for OpenShell
+
+**Warning signs:**
+- NemoClaw pod starts but fails health check because OpenShell is not ready
+- `argocd app sync` shows NemoClaw as `Healthy` but NemoClaw logs show connection failures to OpenShell
+- Race condition: works when bootstrap.sh runs sequentially, fails when ArgoCD syncs in parallel
+
+**Phase to address:**
+Phase 1 (OpenShell infrastructure) -- determine the deployment model and ordering before NemoClaw manifests are written.
 
 ---
 
-### Pitfall 10: Bootstrap Script Not Idempotent -- Fails on Re-run
+### Pitfall 10: AppProject Namespace Whitelist Blocks NemoClaw Deployment
 
 **What goes wrong:**
-`scripts/bootstrap.sh` works on a clean machine but fails when run again after a partial failure. Resources already exist, namespaces conflict, or KIND cluster name is taken. Developer must manually clean up before retrying.
+The existing `workloads` AppProject restricts destinations to `namespace: 'openclaw'` only. If NemoClaw deploys to a different namespace (e.g., `nemoclaw`), ArgoCD rejects the sync with "application destination namespace 'nemoclaw' is not permitted in project 'workloads'." The deployment appears to be correct in Git, but ArgoCD refuses to apply it.
 
-**Prevention:**
-- Bootstrap script should check for existing KIND cluster and offer to delete/recreate
-- Use `kubectl apply` (idempotent) not `kubectl create` (fails if exists)
-- Guard each step with existence checks: `kind get clusters | grep openclaw-dev`
-- Include a `--force` flag that runs teardown first
+**Why it happens:**
+AppProjects enforce RBAC boundaries. The current `workloads.yaml` was designed for a single-workload platform. Adding a second workload in a different namespace requires updating the AppProject.
 
----
-
-### Pitfall 11: NetworkPolicy Blocks DNS and Breaks Everything
-
-**What goes wrong:**
-You add a default-deny NetworkPolicy to the `openclaw` namespace for security. OpenClaw pod starts but cannot resolve any hostnames -- API calls to Anthropic fail, health checks that depend on DNS fail, the pod enters CrashLoopBackOff.
-
-**Prevention:**
-- Always include a DNS egress rule in any default-deny policy:
+**How to avoid:**
+- If NemoClaw uses the same `openclaw` namespace: no AppProject changes needed, but resource naming must not conflict with OpenClaw resources
+- If NemoClaw uses a separate `nemoclaw` namespace (recommended for clean separation): update `workloads.yaml` to allow both namespaces:
   ```yaml
-  egress:
-    - to:
-        - namespaceSelector: {}
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
+  destinations:
+    - namespace: 'openclaw'
+      server: https://kubernetes.default.svc
+    - namespace: 'nemoclaw'
+      server: https://kubernetes.default.svc
   ```
-- Test NetworkPolicies incrementally -- add deny-all, then add allow rules one at a time
-- Note that KIND uses CoreDNS in `kube-system` namespace, so the namespace selector must allow it
+- If OpenShell infrastructure needs cluster-scoped resources (CRDs, ClusterRoles): it must use the `infrastructure` AppProject, not `workloads`
+- Update AppProject in both provider directories (kinder and kind) -- they are byte-identical copies
 
----
+**Warning signs:**
+- ArgoCD Application status: `ComparisonError` or `InvalidSpecError` mentioning project restrictions
+- `argocd app sync workload-nemoclaw` returns "destination namespace not permitted"
+- OpenShell-related CRDs rejected because `workloads` project does not allow cluster-scoped resources
 
-### Pitfall 12: OpenClaw ConfigMap Mount Conflicts With PVC Data Directory
-
-**What goes wrong:**
-The OpenClaw config file lives at `/home/node/.openclaw/openclaw.json`, which is inside the PVC mount path `/home/node/.openclaw/`. Mounting a ConfigMap as a file inside a PVC-backed directory requires a `subPath` mount. Without `subPath`, the ConfigMap mount shadows the entire PVC directory, and all OpenClaw data disappears.
-
-**Prevention:**
-- Use `subPath` when mounting the ConfigMap:
-  ```yaml
-  volumeMounts:
-    - name: config
-      mountPath: /home/node/.openclaw/openclaw.json
-      subPath: openclaw.json
-  ```
-- Test that both the PVC data and ConfigMap file are accessible after pod start
-- Note that `subPath` mounts do not receive ConfigMap updates automatically -- pod restart is needed after config changes
-
----
-
-### Pitfall 13: Kustomize Overlay Breaks Sync-Wave Annotations
-
-**What goes wrong:**
-A Kustomize overlay in `workloads/openclaw/overlays/dev/` uses `commonAnnotations` or patches that strip or override the `argocd.argoproj.io/sync-wave` annotation on resources. Resources deploy in the wrong order or all at wave 0.
-
-**Prevention:**
-- Never use `commonAnnotations` in kustomization.yaml for ArgoCD-specific annotations
-- If you must use it, verify with `kustomize build overlays/dev/` that sync-wave annotations are preserved
-- Prefer explicit patches over commonAnnotations for ArgoCD metadata
-- Test the rendered output: `kustomize build | grep sync-wave` should show expected values
-
----
-
-## Minor Pitfalls
-
-### Pitfall 14: Forgetting manifest-generate-paths Causes Unnecessary Re-renders
-
-**What goes wrong:**
-Without `argocd.argoproj.io/manifest-generate-paths` annotation, any commit to the repo triggers ArgoCD to re-render manifests for every Application, even if the changed files are unrelated. This causes unnecessary sync cycles and slows down ArgoCD.
-
-**Prevention:**
-Set `manifest-generate-paths` on each Application to scope it to its own directory (e.g., `.` or the specific path relative to the repo root).
-
----
-
-### Pitfall 15: SealedSecrets Key Renewal Confused With Secret Rotation
-
-**What goes wrong:**
-Developers see that SealedSecrets auto-renews the sealing key every 30 days and assume their actual secret values (API keys, tokens) are also being rotated. They are not. The sealing key renewal only adds a new encryption key -- old keys are retained, and secret values remain unchanged.
-
-**Prevention:**
-- Document that key renewal and secret rotation are separate concerns
-- Establish a procedure for rotating actual secret values: generate new secret, seal it, commit, sync
-- If a sealing key is suspected compromised, renew immediately AND rotate all secret values
-
----
-
-### Pitfall 16: ArgoCD Initial Admin Password Left as Default
-
-**What goes wrong:**
-The initial admin password is auto-generated and stored in `argocd-initial-admin-secret`. Developers use it indefinitely without changing it. The secret remains in the cluster as plaintext, and anyone with namespace access can read it.
-
-**Prevention:**
-- Change the admin password after first login
-- Delete the `argocd-initial-admin-secret` after password change
-- For dev environments, this is low risk but establishes bad habits for production
+**Phase to address:**
+Phase 2 (workload selector) -- AppProject updates must happen alongside the selector mechanism design.
 
 ---
 
@@ -336,50 +310,57 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Skipping sealing key backup | Faster bootstrap | Complete secret loss on cluster recreation | Never |
-| Using `kubectl apply` instead of GitOps for quick fixes | Immediate fix | Configuration drift, ArgoCD auto-corrects back | Only in break-glass emergencies, commit fix immediately after |
-| Hardcoding MetalLB IP range | Simpler config | Breaks when Docker network CIDR changes | Never -- derive at bootstrap time |
-| Skipping resource limits on dev workloads | Faster iteration | Pod evictions, OOM kills, unstable cluster | Only on local-only throwaway clusters |
-| Single large kustomization.yaml | Simpler structure | Blast radius of changes, harder to review | Only in early prototyping, refactor before Phase 2 |
-| Disabling NetworkPolicies in dev | Everything just works | Security issues never caught in dev, surprise failures in prod | Only for initial debugging, re-enable immediately |
+| Hardcode workload=openclaw in bootstrap.sh | Quick, no selector needed | Every new workload requires forking the script | Never -- design the selector mechanism from Phase 2 |
+| Copy all bootstrap files for each provider+workload combo | Works immediately | 4+ copies of shared files that drift apart | Only for MVP proof-of-concept, refactor within same milestone |
+| Skip NetworkPolicy for NemoClaw during dev | Faster iteration, no connectivity debugging | Security regression, violates default-deny invariant | During Phase 1 prototyping only, must be enforced by Phase 3 |
+| Deploy OpenShell as a Kubernetes Deployment | Fits existing ArgoCD pattern | Fundamentally will not work -- OpenShell needs Docker socket or privileged mode for K3s-in-Docker | Never -- use the correct deployment model from the start |
+| Use `imagePullPolicy: Always` for NemoClaw sandbox images | Always gets latest image | Breaks air-gapped development, violates CLAUDE.md convention, 2.4 GB pull on every pod restart | Never -- pin versions with `IfNotPresent` |
+| Store NVIDIA_API_KEY in a ConfigMap instead of SealedSecret | Simpler, no kubeseal dependency | Plaintext API key in Git, rejected by pre-commit hook | Never |
+| Put NemoClaw in the `openclaw` namespace to avoid AppProject changes | Avoids AppProject update | Resource naming conflicts, cannot run both workloads even for testing, unclear ownership | Only if workloads are truly mutually exclusive and you accept never running both |
 
 ## Integration Gotchas
 
-Common mistakes when connecting components in this stack.
+Common mistakes when connecting NemoClaw components together.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| MetalLB + Nginx Ingress | Ingress controller starts before MetalLB assigns IPs, gets stuck in Pending | Sync wave ordering: MetalLB at -5, Ingress at -4, with health check Lua enabled |
-| SealedSecrets + OpenClaw | Sealing against wrong cluster cert (stale cert after cluster rebuild) | Always `kubeseal --fetch-cert` fresh before sealing; add cert fetch to seal script |
-| ArgoCD + Kustomize overlays | ArgoCD not detecting kustomization.yaml, using plain directory | Set `spec.source.kustomize` in Application YAML explicitly, or ensure kustomization.yaml is at the path root |
-| OpenClaw ConfigMap + PVC | ConfigMap mount shadows PVC directory | Use `subPath` mount for the single config file |
-| KIND + Docker images | Image loaded but pod cannot pull it | Use explicit version tags + `imagePullPolicy: IfNotPresent` |
-| cert-manager + Ingress TLS | cert-manager CRDs not installed when Ingress with TLS annotation syncs | cert-manager at wave -2, workloads at wave 10; use `ServerSideApply=true` for cert-manager |
+| NemoClaw to OpenShell | Assuming OpenShell is reachable via Kubernetes Service DNS | Determine actual topology: Docker container = host IP, in-cluster = Service DNS |
+| NemoClaw to NVIDIA Cloud | Hardcoding `integrate.api.nvidia.com` in the container config but not the NetworkPolicy egress rules | Add NVIDIA endpoint to NetworkPolicy egress AND NemoClaw config simultaneously |
+| OpenShell sandbox to container registry | Assuming images loaded into outer cluster are available in nested containerd | Pre-load images into sandbox's containerd, or use a shared local registry |
+| Workload switch (OpenClaw to NemoClaw) | Using `kubectl delete` or ArgoCD prune to remove old workload | Scale down gracefully, backup PVC, remove Application, verify cleanup, deploy new workload |
+| HTTPRoute attachment to Gateway | Creating a second HTTPRoute with same PathPrefix without removing the first | Remove old HTTPRoute before creating new one, or use hostname-based routing |
+| NemoClaw to LLM APIs | Copying OpenClaw's egress rules without adding NVIDIA endpoints | NemoClaw uses different inference providers -- audit the sandbox policy YAML |
+| AppProject for NemoClaw namespace | Deploying to `nemoclaw` namespace without updating workloads AppProject | Update destinations in workloads.yaml to include both `openclaw` and `nemoclaw` |
+| Makefile targets after adding NemoClaw | `make logs` / `make pods` hardcoded to openclaw namespace | Make all targets workload-aware: detect active workload or accept `WORKLOAD=` parameter |
 
 ## Security Mistakes
 
-Domain-specific security issues beyond general web security.
+Domain-specific security issues beyond general Kubernetes security.
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Committing plaintext secrets to pincer-ops repo | API keys (ANTHROPIC_API_KEY) exposed in Git history forever | Use SealedSecrets exclusively; add `.gitignore` entries for `secret.yaml` (unsealed); pre-commit hook to reject `kind: Secret` |
-| Leaving ArgoCD UI exposed without auth on KIND | Anyone on local network can modify cluster state | KIND port mappings only bind to localhost; set up ArgoCD RBAC even in dev |
-| OpenClaw gateway token weak or default | Unauthorized access to AI agent runtime | Generate strong tokens; seal them; rotate periodically |
-| SealedSecrets backup stored in same repo as sealed secrets | Defeats the purpose of encryption -- private key + encrypted data in same place | Store backup in external vault/password manager only |
-| NetworkPolicy missing egress restrictions | OpenClaw pod can reach any endpoint, potential data exfiltration vector | Default-deny egress, allow only: DNS (UDP/TCP 53), HTTPS (443) to LLM provider IPs, and cluster-internal services |
+| Committing NVIDIA_API_KEY as plaintext Secret | API key exposed in Git history forever | Pre-commit hook already rejects `kind: Secret`; extend to check for NVIDIA_API_KEY in ConfigMaps too |
+| SealedSecret with cluster-wide scope for API keys | Any namespace can decrypt the key (amplified by CVE-2026-22728) | Always use strict scope; disable rotate endpoint; add pre-commit check for cluster-wide annotation |
+| OpenShell sandbox with Docker socket mounted into workload pods | Container escape via Docker API | Never mount Docker socket into workload pods; OpenShell manages its own Docker access externally |
+| Running NemoClaw sandbox as root | Sandbox escape via privilege escalation | NemoClaw sandbox enforces non-root via Landlock + seccomp; verify `securityContext.runAsUser` is set in StatefulSet spec |
+| Skipping NetworkPolicy for NemoClaw "because it is in development" | Violates default-deny invariant; NemoClaw pod can reach any internal service | Deploy NetworkPolicy simultaneously with workload manifests; test with `make verify-netpol` |
+| NVIDIA_API_KEY visible in pod environment via `kubectl describe` | Any cluster admin can read the key | Use SealedSecret mounted as volume file rather than inline env var; or use NemoClaw's PVC-based key storage |
+| OpenShell running with `--privileged` flag | Full host access from sandbox container | Use minimum required capabilities; audit OpenShell Docker run flags |
 
 ## "Looks Done But Isn't" Checklist
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Bootstrap script:** Often missing sealing key restore step -- verify `scripts/bootstrap.sh` includes conditional sealing key restoration before SealedSecrets controller starts
-- [ ] **Sync waves:** Often missing Lua health check config -- verify `bootstrap/argocd-cm.yaml` includes `resource.customizations.health.argoproj.io_Application` Lua script
-- [ ] **MetalLB config:** Often hardcoded IP range -- verify `infrastructure/metallb/base/ipaddresspool.yaml` derives range from Docker network or is parameterized
-- [ ] **StatefulSet probes:** Often missing or misconfigured -- verify OpenClaw StatefulSet has both `livenessProbe` and `readinessProbe` hitting `GET /health` on port 18789
-- [ ] **PVC retention:** Often default policy deletes PVC on StatefulSet delete -- verify `persistentVolumeClaimRetentionPolicy` is set to `Retain` (or not set, defaulting to Retain in older K8s)
-- [ ] **Root app deletion protection:** Often missing -- verify root app has `preserveResourcesOnDeletion: true` or no resources-finalizer
-- [ ] **Image tags:** Often `:latest` slips in -- verify all container specs have explicit version tags and `imagePullPolicy: IfNotPresent`
-- [ ] **DNS in NetworkPolicy:** Often forgotten in default-deny -- verify egress rules include UDP/TCP port 53
+- [ ] **NemoClaw StatefulSet deployed:** Often missing OpenShell connectivity -- verify `curl` from pod to OpenShell gateway returns 200
+- [ ] **NetworkPolicy applied:** Often missing OpenShell gateway egress rule -- verify inference requests complete end-to-end, not just that the pod starts
+- [ ] **Workload switch works:** Often missing PVC backup -- verify switching from NemoClaw back to OpenClaw preserves OpenClaw data (and vice versa)
+- [ ] **GPU support enabled:** Often missing macOS guard -- verify bootstrap.sh skips GPU setup on macOS and the workload still starts with cloud inference
+- [ ] **HTTPRoute created:** Often missing cleanup of previous route -- verify only ONE HTTPRoute with `PathPrefix: /` exists at any time across all namespaces
+- [ ] **SealedSecret for NVIDIA_API_KEY:** Often missing namespace scope -- verify `kubeseal --validate` confirms the secret is bound to the correct namespace
+- [ ] **Bootstrap matrix tested:** Often missing one combination -- verify kinder+openclaw, kinder+nemoclaw, kind+openclaw, kind+nemoclaw all bootstrap successfully
+- [ ] **Makefile targets updated:** Often missing workload-awareness -- verify `make logs`, `make pods`, `make status` work for both OpenClaw and NemoClaw
+- [ ] **AppProject updated:** Often forgotten when adding new namespace -- verify workloads AppProject allows destination namespace for both workloads
+- [ ] **OpenShell running:** Often assumed because NemoClaw pod is healthy -- verify OpenShell Docker container is running with `docker ps | grep openshell`
 
 ## Recovery Strategies
 
@@ -387,15 +368,16 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Sync waves not ordered | LOW | Add Lua health check to argocd-cm, commit, force-sync ArgoCD self-management app, then re-sync root app |
-| ArgoCD crash loop | MEDIUM | `kubectl apply -f bootstrap/argocd-install.yaml` to restore, revert bad commit, let ArgoCD re-sync |
-| Sealing key lost | HIGH | Generate new sealing key pair, re-seal ALL secrets from plaintext originals (you do have them somewhere, right?), commit all new SealedSecrets |
-| `:latest` tag ImagePullBackOff | LOW | Retag image with explicit version, reload into KIND, update manifest, commit |
-| MetalLB VIPs unreachable on macOS | LOW | Use `localhost:80/443` instead; no cluster changes needed, just developer education |
-| Cascade delete of root app | HIGH | Re-run `scripts/bootstrap.sh` from scratch; PVC data is lost unless backed up |
-| PVC full | MEDIUM | Exec into pod, clean old transcripts; or backup data, delete StatefulSet with `--cascade=orphan`, resize PVC, recreate |
-| NetworkPolicy blocks DNS | LOW | Delete the offending NetworkPolicy, add DNS egress rule, reapply |
-| ConfigMap shadows PVC | MEDIUM | Fix mount to use `subPath`, delete and recreate pod; PVC data intact if mount was only overridden, not deleted |
+| PVC deleted during workload switch | HIGH | Restore from daily backup CronJob (02:00); if no backup, data is lost -- re-run onboarding wizard |
+| OpenShell deployed as K8s workload (wrong model) | MEDIUM | Delete the broken Application and manifests; start over with Docker-based deployment in bootstrap.sh |
+| Both HTTPRoutes active (routing conflict) | LOW | `kubectl delete httproute` for the inactive workload; Gateway resolves immediately |
+| GPU DaemonSet deployed on macOS (stuck) | LOW | Delete the DaemonSet; add macOS detection guard to prevent re-deployment |
+| SealedSecret sealed for wrong namespace | LOW | Re-seal with correct `--namespace` flag; `kubectl delete sealedsecret` the wrong one |
+| NetworkPolicy blocking OpenShell | MEDIUM | Add egress rule for OpenShell gateway; `kubectl apply` the corrected policy; pods reconnect without restart |
+| Bootstrap matrix drift (shared files out of sync) | MEDIUM | Diff all shared files across directories; copy canonical version to all locations; add CI check |
+| NVIDIA_API_KEY exposed in Git | HIGH | Rotate key immediately at build.nvidia.com; use `git filter-branch` or BFG to remove from history; re-seal new key |
+| AppProject blocks NemoClaw deployment | LOW | Update workloads.yaml in both provider directories to add nemoclaw namespace; commit and sync |
+| OpenShell not running when NemoClaw starts | LOW | Start OpenShell via bootstrap.sh or `openshell` CLI; NemoClaw will reconnect via startupProbe retry |
 
 ## Pitfall-to-Phase Mapping
 
@@ -403,46 +385,41 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Sync waves across apps (#1) | Phase 1: Bootstrap | `argocd app sync root-app` deploys children in correct wave order |
-| ArgoCD crash loop (#2) | Phase 1: Bootstrap | Break-glass doc exists; `kubectl apply` recovery tested |
-| Sealing key loss (#3) | Phase 1: Bootstrap | `bootstrap.sh` includes key backup/restore; teardown+recreate preserves secrets |
-| `:latest` tag (#4) | Phase 1: Conventions | CI lint rejects `:latest`; all manifests have explicit tags |
-| MetalLB VIPs macOS (#5) | Phase 1: Networking | README documents macOS limitation; bootstrap derives IP range dynamically |
-| Cascade delete (#6) | Phase 1: Root app | Root app has deletion protection; RBAC restricts delete |
-| PVC not expandable (#7) | Phase 2: OpenClaw deploy | Initial PVC is 20Gi+; expansion procedure documented |
-| ServerSideApply conflicts (#8) | Phase 1: ArgoCD config | SSA enabled only for cert-manager and ArgoCD apps |
-| Resource tracking (#9) | Phase 1: ArgoCD config | `annotation+label` method configured in argocd-cm |
-| Bootstrap idempotency (#10) | Phase 1: Scripts | `bootstrap.sh` succeeds on clean run and re-run |
-| NetworkPolicy DNS (#11) | Phase 2: Security | Default-deny + DNS allow rule tested before other policies |
-| ConfigMap + PVC conflict (#12) | Phase 2: OpenClaw deploy | Config file readable AND PVC data persists after restart |
-| Kustomize strips annotations (#13) | Phase 2: Overlays | `kustomize build` output verified to contain sync-wave annotations |
-| Unnecessary re-renders (#14) | Phase 1: App definitions | `manifest-generate-paths` set on all Applications |
-| Key renewal vs rotation (#15) | Phase 1: Docs | Secret rotation procedure documented separately from key renewal |
-| Default admin password (#16) | Phase 1: Bootstrap | Password change step in bootstrap; initial-admin-secret deleted |
+| macOS GPU impossibility (#1) | Phase 1: Infrastructure | `make up` succeeds on macOS without GPU; NemoClaw pod starts with cloud inference |
+| OpenShell deployment model (#2) | Phase 1: Infrastructure | OpenShell runs as Docker container; `docker ps` shows it; no K8s workload manifest exists for it |
+| Workload selector mechanism (#3) | Phase 2: Selector | `WORKLOAD=nemoclaw make up` deploys NemoClaw; `WORKLOAD=openclaw make up` deploys OpenClaw; never both |
+| Bootstrap matrix complexity (#4) | Phase 2: Selector | Shared files exist in at most 2 copies (per provider); CI validates byte-identity |
+| Port 18789 conflict (#5) | Phase 3: Manifests | Only one Service on 18789 exists at any time; `make logs` targets correct workload |
+| Nested image loading (#6) | Phase 1: Infrastructure | Sandbox images available inside OpenShell; no `ImagePullBackOff` after bootstrap |
+| SealedSecret scope vulnerability (#7) | Phase 3: Manifests | `kubeseal --validate` confirms strict scope; CVE-2026-22728 mitigated or upgraded |
+| NetworkPolicy for OpenShell (#8) | Phase 3: Manifests | `make verify-netpol` passes for NemoClaw; inference requests complete end-to-end |
+| Sync wave collision (#9) | Phase 1: Infrastructure | OpenShell ready before NemoClaw Application is applied; health check passes |
+| AppProject namespace whitelist (#10) | Phase 2: Selector | workloads AppProject allows both openclaw and nemoclaw namespaces |
 
 ## Sources
 
-- [ArgoCD Sync Waves official docs](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/) -- HIGH confidence
-- [Kubito: Enable ArgoCD sync waves between apps](https://kubito.dev/posts/enable-argocd-sync-wave-between-apps/) -- MEDIUM confidence (community blog, verified with ArgoCD issue tracker)
-- [ArgoCD Discussion #19712: Enforce sync order in app of apps](https://github.com/argoproj/argo-cd/discussions/19712) -- HIGH confidence (official repo)
-- [ArgoCD Issue #5146: App of apps sync-waves not working](https://github.com/argoproj/argo-cd/issues/5146) -- HIGH confidence
-- [Codefresh: Top 30 Argo CD Anti-Patterns](https://codefresh.io/blog/argo-cd-anti-patterns-for-gitops/) -- MEDIUM confidence (reputable vendor blog)
-- [ArgoCD self-management blog](https://sofianedjerbi.com/en/blog/argocd-manage-itself/) -- MEDIUM confidence
-- [KIND Issue #328: `:latest` tag behavior](https://github.com/kubernetes-sigs/kind/issues/328) -- HIGH confidence (official repo)
-- [KIND Known Issues](https://kind.sigs.k8s.io/docs/user/known-issues/) -- HIGH confidence (official docs)
-- [KIND + MetalLB on macOS](https://waddles.org/2024/06/04/kind-with-metallb-in-docker-desktop-on-macos/) -- MEDIUM confidence
-- [MetalLB on macOS Docker Desktop](https://medium.com/@jehadnasser/setting-up-metallb-with-kind-cluster-on-linux-but-not-on-macos-e47f83c2718d) -- MEDIUM confidence
-- [Bitnami SealedSecrets GitHub](https://github.com/bitnami-labs/sealed-secrets) -- HIGH confidence (official repo)
-- [SealedSecrets Issue #262: Key rotation](https://github.com/bitnami-labs/sealed-secrets/issues/262) -- HIGH confidence
-- [SealedSecrets Issue #25: Backup/recovery of sealing key](https://github.com/bitnami-labs/sealed-secrets/issues/25) -- HIGH confidence
-- [ArgoCD Resource Tracking docs](https://argo-cd.readthedocs.io/en/latest/user-guide/resource_tracking/) -- HIGH confidence
-- [ArgoCD App Deletion docs](https://argo-cd.readthedocs.io/en/stable/user-guide/app_deletion/) -- HIGH confidence
-- [ArgoCD Application Pruning docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Application-Deletion/) -- HIGH confidence
-- [Kubernetes StatefulSet docs](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) -- HIGH confidence
-- [KIND Issue #3734: PVC expansion with local-path-provisioner](https://github.com/kubernetes-sigs/kind/issues/3734) -- HIGH confidence
-- [ArgoCD ServerSideApply for CRDs](https://medium.com/@paolocarta_it/argocd-server-side-apply-for-bulky-crds-373cd3c0ac2a) -- MEDIUM confidence
-- [ArgoCD Cluster Bootstrapping docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/) -- HIGH confidence
+- [NemoClaw GitHub Repository](https://github.com/NVIDIA/NemoClaw) -- HIGH confidence (official repo)
+- [NemoClaw Architecture Documentation](https://github.com/NVIDIA/NemoClaw/blob/main/docs/reference/architecture.md) -- HIGH confidence (official docs)
+- [NemoClaw Port Conflict Issue #397](https://github.com/NVIDIA/NemoClaw/issues/397) -- HIGH confidence (official issue tracker)
+- [NemoClaw macOS/Apple Silicon Issue #260](https://github.com/NVIDIA/NemoClaw/issues/260) -- HIGH confidence (official issue tracker)
+- [NemoClaw WSL2 Support Tracking Issue #305](https://github.com/NVIDIA/NemoClaw/issues/305) -- HIGH confidence (official issue tracker)
+- [NVIDIA NemoClaw How It Works](https://docs.nvidia.com/nemoclaw/latest/about/how-it-works.html) -- HIGH confidence (official docs)
+- [OpenShell GitHub Repository](https://github.com/NVIDIA/OpenShell) -- HIGH confidence (official repo)
+- [kubernetes-sigs/agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox) -- HIGH confidence (official Kubernetes SIG)
+- [NVIDIA GPU Device Plugin for Kubernetes](https://github.com/NVIDIA/k8s-device-plugin) -- HIGH confidence (official repo)
+- [nvkind -- KIND with GPU Support](https://github.com/NVIDIA/nvkind) -- HIGH confidence (official NVIDIA repo)
+- [nvidia-kind-deploy Toolkit](https://github.com/SeineAI/nvidia-kind-deploy) -- MEDIUM confidence (community project)
+- [macOS Docker GPU Limitations](https://techxplainator.com/docker-mac-gpu-guide/) -- MEDIUM confidence (technical blog, verified by Apple/Docker docs)
+- [Apple Silicon GPUs and Docker](https://chariotsolutions.com/blog/post/apple-silicon-gpus-docker-and-ollama-pick-two/) -- MEDIUM confidence (technical blog)
+- [KIND GPU Support Hack](https://jacobtomlinson.dev/posts/2022/quick-hack-adding-gpu-support-to-kind/) -- MEDIUM confidence (community blog, author is NVIDIA employee)
+- [SealedSecrets CVE-2026-22728 Advisory](https://advisories.gitlab.com/pkg/golang/github.com/bitnami-labs/sealed-secrets/CVE-2026-22728/) -- HIGH confidence (security advisory)
+- [Bitnami Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) -- HIGH confidence (official repo)
+- [ArgoCD Sync Waves Documentation](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/) -- HIGH confidence (official docs)
+- [ArgoCD Orphaned Resources Monitoring](https://argo-cd.readthedocs.io/en/latest/user-guide/orphaned-resources/) -- HIGH confidence (official docs)
+- [ArgoCD Shared Resources Between Applications](https://oneuptime.com/blog/post/2026-02-26-argocd-shared-resources-between-applications/view) -- MEDIUM confidence (community blog)
+- [ArgoCD Application Pruning and Deletion](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Application-Deletion/) -- HIGH confidence (official docs)
+- [Gateway API Cross-Namespace Routing](https://gateway-api.sigs.k8s.io/guides/multiple-ns/) -- HIGH confidence (official docs)
 
 ---
-*Pitfalls research for: GitOps Kubernetes platform (Pincer Ops -- ArgoCD App of Apps on KIND deploying OpenClaw)*
-*Researched: 2026-02-19*
+*Pitfalls research for: Adding NemoClaw workload support to Pincer Ops*
+*Researched: 2026-03-19*

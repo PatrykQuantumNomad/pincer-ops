@@ -1,218 +1,258 @@
-# Stack Research
+# Stack Research: NemoClaw Workload Support
 
-**Domain:** GitOps Kubernetes platform for single-instance AI agent runtime
-**Researched:** 2026-02-19
-**Confidence:** HIGH (core stack verified via official releases and documentation)
+**Domain:** NemoClaw workload additions to existing GitOps Kubernetes platform
+**Researched:** 2026-03-19
+**Confidence:** MEDIUM (NemoClaw and OpenShell are alpha-stage projects; container tags verified but ecosystem is evolving rapidly)
 
-## Recommended Stack
+## Scope
 
-### Core Platform
+This research covers ONLY the stack additions needed for NemoClaw support. The existing platform stack (ArgoCD v3.3.1, MetalLB v0.15.3, Envoy Gateway, Sealed Secrets v0.35.0, cert-manager v1.19.2, Kustomize) is validated and NOT re-researched here.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| KIND | v0.31.0 | Local Kubernetes clusters in Docker | Only serious option for local multi-node K8s with production-fidelity networking. Defaults to K8s 1.35.0. Supports extraPortMappings for ingress, multi-node topologies, and `kind load` for bypassing registries. |
-| Kubernetes | 1.35.0 | Container orchestration (via KIND) | Current stable, shipped with KIND v0.31.0. Gateway API GA support. cgroup v2 only (v1 dropped). |
-| ArgoCD | v3.3.1 | GitOps continuous delivery | Latest stable (2026-02-18). App of Apps pattern is native. Annotation-based resource tracking is now default. Bundles Kustomize v5.8.0. Self-managing via Application CRD. |
-| Kustomize | v5.8.1 | Manifest customization/overlays | ArgoCD v3.3 bundles v5.8.0; standalone v5.8.1 available for local validation. Native K8s tooling -- no templating language to learn. Preferred over Helm for bespoke manifests per CLAUDE.md conventions. |
+## Critical Architecture Finding
 
-**Confidence: HIGH** -- All versions verified against official GitHub releases pages (2026-02-19).
+**NemoClaw does NOT require OpenShell as separate Kubernetes infrastructure.**
 
-### Networking
+OpenShell runs a self-contained K3s cluster inside a single Docker container. The OpenShell gateway, policy engine, privacy router, and sandbox management all run within that container. When NemoClaw is deployed as a Kubernetes workload in Pincer Ops, the approach is to run the NemoClaw sandbox container image (`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`) directly as a StatefulSet -- the same pattern used for vanilla OpenClaw. The OpenShell security layers (Landlock, seccomp, netns) operate inside the container and do not require host-level K8s operators or CRDs.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| MetalLB | v0.15.3 | LoadBalancer IP allocation for bare-metal/KIND | Only viable LoadBalancer implementation for KIND. L2 mode is sufficient; no BGP complexity needed. Stable release (2024-12-04), mature project. |
-| ingress-nginx | v1.14.3 | Ingress controller | **CAUTION: EOL March 2026.** Still the pragmatic choice for initial bootstrap -- it works, ArgoCD docs assume it, KIND docs reference it. Plan migration to Gateway API for Phase 2+. See "What NOT to Use" section for migration strategy. |
-| Kubernetes Gateway API | v1.2+ (CRDs) | Future-proof traffic routing | The successor to Ingress API. GA since K8s 1.30. Plan to adopt with Envoy Gateway (v1.7.0) as the data plane. Not for Phase 1 -- adds complexity without immediate benefit. |
+This means: **no new CRDs, no new operators, no new controllers.** The NemoClaw workload is a drop-in replacement for the OpenClaw workload, running in the same architectural slot (StatefulSet, replicas: 1, PVC-backed, port 18789).
 
-**Confidence: HIGH** -- MetalLB and ingress-nginx versions verified via GitHub releases. Gateway API timeline verified via kubernetes.io blog.
+## Recommended Stack Additions
 
-### Secrets Management
+### NemoClaw Sandbox Container
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Sealed Secrets (controller) | v0.35.0 | Encrypt secrets for Git storage | Bitnami standard. Asymmetric crypto -- only the cluster can decrypt. SealedSecret CRDs live alongside workloads in Git. Well-understood GitOps pattern. |
-| kubeseal (CLI) | v0.35.0 | Client-side secret encryption | Companion CLI for Sealed Secrets controller. Must match controller version. |
-| Sealed Secrets Helm chart | v2.18.1 | Controller installation | Official bitnami-labs chart. Note: chart version differs from controller version. |
+| NemoClaw sandbox image | `ghcr.io/nvidia/openshell-community/sandboxes/openclaw:latest` | OpenClaw + NemoClaw plugin in OpenShell sandbox | Pre-built image with OpenClaw, NemoClaw TypeScript plugin, and OpenShell security policies pre-installed. Based on `node:22-slim` with Python 3.13. Runs on port 18789 (same as vanilla OpenClaw). |
 
-**Confidence: HIGH** -- Verified via GitHub releases (bitnami-labs/sealed-secrets).
+**Confidence: MEDIUM** -- The image exists on GHCR and is referenced in NemoClaw docs and the OpenShell-Community repository. However, no pinned semantic version tags have been published yet (project is alpha, v0.0.x). The OpenShell-Community repo has zero formal releases with only 44 commits on main. Using `latest` violates Pincer Ops conventions but may be the only available tag.
 
-### TLS / Certificate Management
+**CRITICAL ACTION NEEDED:** Before implementation, verify available tags at `https://github.com/NVIDIA/OpenShell-Community/pkgs/container/openshell-community%2Fsandboxes%2Fopenclaw`. If only `latest` exists, pin by digest (e.g., `ghcr.io/nvidia/openshell-community/sandboxes/openclaw@sha256:abc123...`) to maintain reproducibility.
+
+### NemoClaw Container Runtime Details
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Base image | `node:22-slim` + Python 3.13 | 22-step Dockerfile per community analysis |
+| Compressed size | ~2.4 GB | Significantly larger than vanilla OpenClaw (~500 MB) |
+| Port | 18789 (HTTP) | Same as vanilla OpenClaw -- OpenShell policy proxy on 18789 forwards to OpenClaw on internal 18788 |
+| Data directories | `/sandbox/.openclaw/`, `/sandbox/.nemoclaw/` | Different from vanilla OpenClaw's `/home/node/.openclaw/` |
+| Filesystem isolation | Landlock + seccomp + netns | Read-write: `/sandbox/`, `/tmp/`. System paths: read-only |
+| User | sandbox user (not root) | Different UID from OpenClaw's `1000:1000` -- verify exact UID |
+| Default inference | NVIDIA NIM cloud (`build.nvidia.com`) | Requires `NVIDIA_API_KEY` env var |
+| Default model | `nvidia/nemotron-3-super-120b-a12b` | Cloud-routed through OpenShell privacy router |
+| Health check | `httpGet /health` on port 18789 | Same endpoint as vanilla OpenClaw |
+| Startup command | `openclaw-start` or `openclaw gateway run` | Different from vanilla OpenClaw's `node dist/index.js gateway --bind lan --port 18789` |
+
+**Confidence: MEDIUM** -- Port, data directories, and filesystem layout verified across multiple sources (NemoClaw docs, GitHub issues, community blog posts). Startup command needs verification against actual container entrypoint.
+
+### NVIDIA GPU Device Plugin (Optional)
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| cert-manager | v1.19.3 | Automated TLS certificate lifecycle | CNCF graduated project. Handles Let's Encrypt ACME in production, self-signed for dev. v1.19.3 fixes infinite re-issuance loop bug from earlier 1.19.x. |
+| NVIDIA k8s-device-plugin | v0.17.1 | Expose GPUs as `nvidia.com/gpu` K8s resources | Official NVIDIA DaemonSet for GPU scheduling. Only needed if running local inference (Ollama, vLLM, NIM). Not needed for cloud inference (default NemoClaw mode). |
 
-**Confidence: HIGH** -- Version verified via GitHub releases and cert-manager.io docs.
+**Confidence: HIGH** -- v0.17.1 verified via GitHub releases (2025-03-17). Helm chart at `nvdp/nvidia-device-plugin` v0.17.1. Container image: `nvcr.io/nvidia/k8s-device-plugin:v0.17.1`.
 
-### Workload
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| OpenClaw | v2026.2.19 | AI agent runtime (the workload) | Latest stable as of today. Date-based versioning (YYYY.M.patch). Requires Node >= 22. Single-instance StatefulSet with PVC. Ports: 18789 (Gateway), 18790 (Bridge), 9222 (Chromium). |
-
-**Confidence: HIGH** -- Verified via GitHub releases (openclaw/openclaw).
-
-### MCP Servers (AI-Assisted Operations)
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| containers/kubernetes-mcp-server | v0.0.57 | K8s cluster management via AI | Red Hat-backed, Go-native implementation. Direct API server interaction (not kubectl wrapper). Supports read-only and disable-destructive safety modes. stdio + HTTP/SSE transport. |
-| argoproj-labs/mcp-for-argocd | v0.5.0 | ArgoCD management via AI | Official argoproj-labs project. Full CRUD on Applications, sync operations, resource trees, logs. npm package (`argocd-mcp`). stdio + HTTP stream transport. |
-| alexei-led/k8s-mcp-server | v1.4.0 | Unified K8s CLI bridge for AI | Wraps kubectl + helm + istioctl + argocd in one MCP server. Docker-based. Good for Claude Code integration. MCP Spec 2025-11-25 compliant. |
-
-**Confidence: MEDIUM** -- MCP ecosystem is young and rapidly evolving. These are the current leaders but the landscape shifts frequently. The containers/kubernetes-mcp-server is the most mature (Red Hat backing, 1.2k stars). The alexei-led/k8s-mcp-server is most practical for this project because it bundles argocd CLI access alongside kubectl and helm.
-
-**Recommendation:** Use `alexei-led/k8s-mcp-server` (v1.4.0) as the primary MCP server for `pincer-mcp` because it provides unified kubectl + helm + argocd access in a single container. Supplement with `argoproj-labs/mcp-for-argocd` (v0.5.0) for deeper ArgoCD API integration if needed.
-
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| kubectl | Cluster interaction CLI | Bundled with K8s. Use for debugging, not day-to-day ops (ArgoCD handles that). |
-| argocd CLI | ArgoCD management | Install matching server version (v3.3.1). Used for `argocd app sync`, `argocd app get`. |
-| kubeseal | Secret encryption | Must match controller version (v0.35.0). |
-| kind | Cluster lifecycle | v0.31.0. Commands: `kind create cluster`, `kind load docker-image`, `kind delete cluster`. |
-| docker | Container runtime for KIND | KIND requirement. Must support cgroup v2 (Docker Desktop 4.x+). |
-| kustomize (standalone) | Local manifest validation | v5.8.1 for local `kustomize build` validation before committing. ArgoCD bundles its own copy. |
-
-## Installation
+**Deployment method:** Helm chart via ArgoCD Application.
 
 ```bash
-# KIND (macOS)
-brew install kind
+# Helm repo setup (for reference -- ArgoCD will use this directly)
+helm repo add nvdp https://nvidia.github.io/k8s-device-plugin
+helm repo update
+```
 
-# kubectl
-brew install kubectl
+**Prerequisites on host/worker nodes:**
+- NVIDIA drivers (~= 384.81 or newer)
+- nvidia-container-toolkit >= 1.7.0
+- nvidia-container-runtime configured as default runtime
 
-# ArgoCD CLI (match server version)
-brew install argocd
+**KIND/Kinder caveat:** GPU passthrough to KIND/Kinder containers requires the host to have NVIDIA drivers and nvidia-container-toolkit installed, plus KIND node images built with nvidia-container-runtime. This is NOT default KIND behavior and requires a custom node image. For local development, cloud inference (no GPU plugin needed) is the pragmatic default.
 
-# kubeseal
-brew install kubeseal
+### OpenShell Gateway (NOT Deployed as K8s Infrastructure)
 
-# kustomize (standalone, for local validation)
-brew install kustomize
+| Technology | Version | Status | Notes |
+|------------|---------|--------|-------|
+| OpenShell gateway | v0.0.11 | DO NOT DEPLOY | Runs inside the NemoClaw sandbox container, not as separate K8s infrastructure |
+| OpenShell cluster | v0.0.11 | DO NOT DEPLOY | K3s cluster embedded inside OpenShell gateway container -- not needed when running sandbox image directly |
 
-# cert-manager CLI (optional, for troubleshooting)
-brew install cmctl
+**Confidence: HIGH** -- This is the most important architectural finding. OpenShell is designed as a Docker-native tool where the gateway embeds K3s. In Pincer Ops, we bypass the OpenShell gateway entirely and run the sandbox container image as a standard K8s StatefulSet. The NemoClaw plugin, OpenClaw runtime, and security policies are all baked into the sandbox image.
 
-# MCP servers (for pincer-mcp)
-npm install -g argocd-mcp@0.5.0
-# k8s-mcp-server runs as Docker container:
-# docker pull ghcr.io/alexei-led/k8s-mcp-server:v1.4.0
+### Supporting Infrastructure
+
+| Technology | Version | Purpose | When to Use |
+|------------|---------|---------|-------------|
+| SealedSecret for NVIDIA_API_KEY | (existing v0.35.0) | Encrypt NVIDIA API key for NemoClaw inference | Always -- NemoClaw requires NVIDIA_API_KEY for cloud inference. Must be a SealedSecret, not a ConfigMap. |
+
+**Confidence: HIGH** -- Sealed Secrets v0.35.0 is already deployed. NVIDIA_API_KEY requirement verified in NemoClaw docs.
+
+## Workload Selector Mechanism
+
+**Problem:** Pincer Ops must run either OpenClaw OR NemoClaw, never both simultaneously (single-instance constraint, shared port 18789, shared HTTPRoute).
+
+**Recommended approach: Provider-directory pattern (same as KIND/Kinder).**
+
+The existing platform already solves a similar problem -- KIND vs Kinder use separate `bootstrap/{provider}/` directories with provider-specific Application YAMLs. The workload selector follows the same pattern:
+
+```
+bootstrap/
+  kinder/
+    workload-openclaw.yaml    # Present when OpenClaw selected
+    # OR
+    workload-nemoclaw.yaml    # Present when NemoClaw selected (mutually exclusive)
+  kind/
+    workload-openclaw.yaml    # Same pattern
+    # OR
+    workload-nemoclaw.yaml
+```
+
+**Implementation options evaluated:**
+
+| Option | Mechanism | Pros | Cons | Verdict |
+|--------|-----------|------|------|---------|
+| **A: File swap** | Only one `workload-*.yaml` exists in `bootstrap/{provider}/` at a time | Simple, explicit, no ArgoCD tricks needed. `prune: false` on root-app prevents accidental deletion. | Manual git operation to switch. Requires commit to change workload. | **RECOMMENDED** |
+| B: Kustomize components | Use Kustomize components to conditionally include workload Application | Works with ArgoCD, standard Kustomize pattern | Root app uses `directory.recurse` not Kustomize -- would require restructuring root app source type | Not viable without restructuring |
+| C: ApplicationSet with selector | ApplicationSet with Git generator filtering by directory | Elegant for multiple clusters | Overkill for single-cluster, single-workload switching. Adds ApplicationSet controller dependency. | Over-engineered |
+| D: ArgoCD Application disabled annotation | Set `argocd.argoproj.io/sync-wave: "999"` or manually suspend | No git changes needed | Violates GitOps -- cluster state diverges from git. Suspended app still exists as CRD. | Anti-pattern |
+
+**Why Option A (file swap):** The root-app has `prune: false`, meaning removing a file from `bootstrap/{provider}/` does NOT auto-delete the child Application. This is a safety feature (GOPS-03) but it means switching workloads requires:
+1. Remove old `workload-openclaw.yaml` from git
+2. Add new `workload-nemoclaw.yaml` to git
+3. Commit and push
+4. ArgoCD syncs the new Application
+5. Manually delete the old ArgoCD Application (`argocd app delete workload-openclaw`) since prune is disabled
+
+This is a deliberate, auditable, GitOps-native process. A Makefile target (`make workload-switch WORKLOAD=nemoclaw`) can automate steps 1-3.
+
+## Workload Directory Structure
+
+```
+workloads/
+  openclaw/           # Existing
+    base/
+    overlays/dev/
+  nemoclaw/           # NEW
+    base/
+      kustomization.yaml
+      statefulset.yaml      # ghcr.io/nvidia/openshell-community/sandboxes/openclaw
+      service.yaml          # ClusterIP, port 18789 (same as OpenClaw)
+      configmap.yaml        # nemoclaw-specific config (if needed)
+      sealedsecret.yaml     # NVIDIA_API_KEY (encrypted)
+      httproute.yaml        # Same Gateway API HTTPRoute (PathPrefix /)
+      networkpolicy.yaml    # default-deny + nemoclaw-allow (wider egress for NIM)
+      backup-rbac.yaml
+      backup-cronjob.yaml
+    overlays/dev/
+      kustomization.yaml    # Image tag/digest pinning
 ```
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| ArgoCD | Flux CD | If you need Helm-native GitOps without an Application CRD abstraction. ArgoCD wins here because the App of Apps pattern and web UI are critical for this project's operator experience. |
-| Kustomize | Helm | If deploying off-the-shelf charts (Prometheus, Grafana). For bespoke workload manifests like OpenClaw, Kustomize is simpler and more transparent. Use Helm only for third-party charts. |
-| ingress-nginx | Envoy Gateway + Gateway API | When ingress-nginx reaches EOL (March 2026). Envoy Gateway v1.7.0 is production-ready and implements Gateway API. Plan this migration for Phase 2. |
-| Sealed Secrets | External Secrets Operator (ESO) | If you have an external secret store (Vault, AWS Secrets Manager). Sealed Secrets is simpler for a single-cluster KIND setup with no external dependencies. |
-| Sealed Secrets | SOPS + age | If you want to encrypt entire files rather than individual secrets. SOPS integrates with ArgoCD via plugins but adds operational complexity. Sealed Secrets is better for GitOps-native workflow. |
-| App of Apps | ApplicationSet | If managing 10+ similar applications across multiple clusters. For this project (single cluster, <10 apps), App of Apps with explicit YAML is clearer and more debuggable. Consider ApplicationSet if multi-env (staging/prod) scaling is needed later. |
-| containers/kubernetes-mcp-server | Flux159/mcp-server-kubernetes | If you want a simpler Node.js implementation. The containers/ version is more mature with better safety modes. |
-| KIND | k3d (k3s in Docker) | If you want a lighter-weight cluster. KIND provides better Kubernetes API fidelity and is the official K8s testing tool. k3d cuts corners on API compatibility. |
-| KIND | minikube | Never -- minikube is single-node only and lacks the multi-node topology needed for realistic MetalLB + Ingress testing. |
+| Sandbox image as StatefulSet | Full OpenShell gateway deployment | Never for Pincer Ops. OpenShell gateway embeds K3s and manages its own containers -- this conflicts with ArgoCD's declarative model. Use the sandbox image directly. |
+| k8s-device-plugin standalone | NVIDIA GPU Operator | If managing GPU drivers, monitoring (DCGM), and MIG on production clusters. For local dev with optional GPU, the standalone plugin is simpler and lighter. GPU Operator installs drivers, Container Toolkit, and monitoring -- overkill for KIND. |
+| SealedSecret for API key | ConfigMap or env var | Never. API keys are secrets. Always use SealedSecret per Pincer Ops conventions. |
+| File swap workload selector | ApplicationSet | If Pincer Ops grows to manage multiple clusters or 10+ workloads. For two mutually exclusive workloads on one cluster, file swap is clearer. |
+| Cloud inference (default) | Local GPU inference | When NVIDIA GPU hardware is available and local inference latency matters. Cloud inference via NIM requires only NVIDIA_API_KEY, no GPU hardware. |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| ingress-nginx after March 2026 | EOL with no security patches. Actively deprecated by SIG Network. | Envoy Gateway v1.7+ with Gateway API CRDs |
-| ArgoCD v2.x or v3.0 | v3.0 EOL as of 2026-02-02. v2.x is deeply EOL. Major breaking changes in resource tracking, RBAC, and repo config. | ArgoCD v3.3.1 (current stable) |
-| Helm for bespoke workloads | Templating language overhead for simple manifests. Go templates are error-prone. CLAUDE.md conventions explicitly prefer Kustomize. | Kustomize overlays |
-| `:latest` image tags | KIND `imagePullPolicy` breaks with `:latest`. Impossible to reproduce state. | Explicit version tags (e.g., `openclaw/openclaw:2026.2.19`) |
-| `kubectl apply` for day-to-day ops | Bypasses GitOps. Causes drift that ArgoCD will auto-correct. | Commit to Git, let ArgoCD sync. |
-| Repository config in argocd-cm ConfigMap | Removed in ArgoCD 3.0. Will silently fail. | Secret-based repository management |
-| Helm 2.x charts | Support dropped in ArgoCD 3.3. `--client` flag removed. | Helm 3.x charts only |
-| minikube | Single-node only. Cannot test MetalLB L2, multi-worker scheduling. | KIND with multi-node config |
-| cgroup v1 hosts | Kubernetes 1.35+ dropped cgroup v1 support. KIND v0.31.0 requires v2. | Ensure Docker Desktop 4.x+ or Linux with cgroup v2 |
+| OpenShell gateway as K8s Deployment | Embeds K3s inside Docker, conflicts with host K8s. Creates cluster-in-cluster anti-pattern. Cannot be managed by ArgoCD. | Run sandbox container image directly as StatefulSet |
+| NVIDIA GPU Operator for KIND | Installs drivers, Container Toolkit, and monitoring. Massive overhead for local dev. Requires specific node OS support. | k8s-device-plugin DaemonSet (optional, only when GPU hardware exists) |
+| `latest` tag for sandbox image | Violates Pincer Ops conventions. Non-reproducible. KIND imagePullPolicy issues. | Pin by digest if no version tags exist: `image@sha256:...` |
+| NemoClaw CLI (`nemoclaw onboard`) for K8s | Designed for single-developer Docker Desktop workflow. Creates its own gateway, manages its own containers. Incompatible with GitOps. | Declarative K8s manifests (StatefulSet + Service + NetworkPolicy) managed by ArgoCD |
+| Running both OpenClaw and NemoClaw simultaneously | Same port (18789), same HTTPRoute, same namespace resources. Would conflict. Single-instance constraint. | Workload selector -- only one active at a time |
 
-## Critical: ingress-nginx EOL Migration Strategy
+## NemoClaw vs OpenClaw Container Differences
 
-The Kubernetes community ingress-nginx controller (kubernetes/ingress-nginx) enters EOL in **March 2026** -- one month from now. This is the single most impactful stack decision for this project.
+| Property | OpenClaw (current) | NemoClaw sandbox | Impact on Manifests |
+|----------|-------------------|------------------|---------------------|
+| Image | `ghcr.io/openclaw/openclaw` | `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` | Different image reference in StatefulSet |
+| Tag format | `2026.3.13-1` (date-based) | TBD (alpha, may be `latest` only) | Must pin by digest if no tags |
+| Image size | ~500 MB | ~2.4 GB compressed | Larger pull time, more disk in KIND |
+| Port | 18789 | 18789 (same) | No service change needed |
+| Data dir | `/home/node/.openclaw/` | `/sandbox/.openclaw/` + `/sandbox/.nemoclaw/` | Different PVC mount paths |
+| Run user | 1000:1000 (node) | TBD (sandbox user) | May need different securityContext |
+| Startup cmd | `node dist/index.js gateway --bind lan --port 18789` | `openclaw-start` or `openclaw gateway run` | Different command in StatefulSet |
+| Env vars | `NODE_ENV=production` | `NODE_ENV=production` + `NVIDIA_API_KEY` | Additional SealedSecret needed |
+| Config seed | ConfigMap -> initContainer copies to PVC | May use same pattern or built-in onboarding | initContainer logic may differ |
+| Egress needs | HTTPS 443 (LLM APIs) | HTTPS 443 + NIM endpoints (build.nvidia.com) | NetworkPolicy may need additional egress rules for NVIDIA NIM |
+| Health check | `GET /health` on 18789 | `GET /health` on 18789 (same) | No probe change needed |
+| Security layers | None (standard container) | Landlock + seccomp + netns | May need privileged securityContext or specific capabilities |
 
-**Phase 1 strategy (now):** Use ingress-nginx v1.14.3. It works, it is well-documented, ArgoCD and KIND docs reference it. The bootstrap scripts and manifests should use it.
+## Sync Wave Integration
 
-**Phase 2 strategy (before March 2026 or shortly after):** Migrate to Envoy Gateway v1.7.0 with Kubernetes Gateway API. The migration path:
-1. Install Gateway API CRDs (`gateway.networking.k8s.io`)
-2. Deploy Envoy Gateway as an ArgoCD Application (new sync wave, e.g., wave -4)
-3. Create `Gateway` and `HTTPRoute` resources alongside existing Ingress resources
-4. Use `ingress2gateway` CLI tool to convert existing Ingress manifests
-5. Test parallel routing, then remove ingress-nginx Application
-6. Update MetalLB to serve the Envoy Gateway service
+NemoClaw workload uses the same sync wave as OpenClaw (wave +10) since it occupies the same architectural slot.
 
-This is a straightforward migration for a single-workload cluster but requires a dedicated phase.
+| Wave | Component | Change |
+|------|-----------|--------|
+| -10 | ArgoCD self-management + AppProjects | No change |
+| -5 | MetalLB | No change |
+| -4 | Envoy Gateway controller | No change |
+| -3 | Sealed Secrets | No change (needed for NVIDIA_API_KEY SealedSecret) |
+| -2 | cert-manager | No change |
+| -1 | Envoy Gateway config | No change |
+| +5 | NVIDIA GPU device plugin (NEW, optional) | New wave between infra and workload. Only deployed if GPU nodes exist. |
+| +10 | NemoClaw Gateway OR OpenClaw Gateway | Same wave, mutually exclusive. Only one Application YAML present in bootstrap dir. |
 
-## Critical: ArgoCD 3.x Migration Notes
+## Installation (New Components Only)
 
-If starting fresh (greenfield), install ArgoCD v3.3.1 directly. Key configuration requirements:
+```bash
+# No new CLI tools required for NemoClaw workload deployment
+# ArgoCD handles everything declaratively
 
-1. **Resource tracking:** Default is now annotation-based (was label-based in 2.x). This is better -- set `annotation+label` in argocd-cm as CLAUDE.md specifies for backward compatibility.
-2. **ServerSideApply:** Required for self-managing ArgoCD Application. Set `ServerSideApply=true` sync option.
-3. **Kustomize:** ArgoCD 3.3 bundles Kustomize v5.8.0. If using Kustomize locally, use v5.8.1 to match.
-4. **Repository secrets:** Must use Secret-based repo config, not ConfigMap entries (ConfigMap support removed in 3.0).
-5. **RBAC:** `update` and `delete` no longer cascade to sub-resources. Define explicit `update/*` and `delete/*` policies.
+# For NVIDIA GPU device plugin (optional, only if GPU hardware exists):
+# ArgoCD Application pointing to Helm chart:
+#   repo: https://nvidia.github.io/k8s-device-plugin
+#   chart: nvidia-device-plugin
+#   version: 0.17.1
 
-## Stack Patterns by Variant
+# To pre-pull the large NemoClaw image into KIND:
+make load-image IMAGE=ghcr.io/nvidia/openshell-community/sandboxes/openclaw:latest
+# Or by digest:
+# make load-image IMAGE=ghcr.io/nvidia/openshell-community/sandboxes/openclaw@sha256:<digest>
+```
 
-**If single developer, local-only (current state):**
-- KIND + ingress-nginx + MetalLB L2
-- ArgoCD self-managing via App of Apps
-- Sealed Secrets for GitOps-native secret management
-- Single MCP server (k8s-mcp-server) for AI-assisted ops
-- No cert-manager in dev (self-signed or no TLS)
+## Version Compatibility
 
-**If moving to remote/production cluster:**
-- Replace KIND with managed K8s (EKS, GKE, AKS)
-- Replace MetalLB with cloud LoadBalancer
-- Replace ingress-nginx with Envoy Gateway + Gateway API
-- Add cert-manager with Let's Encrypt ClusterIssuer
-- Add External Secrets Operator (ESO) for Vault/cloud secret stores
-- Add ApplicationSets for multi-environment deployment
+| Component | Compatible With | Notes |
+|-----------|-----------------|-------|
+| NemoClaw sandbox image | Node.js 22, Python 3.13 | Bundled in image, no host dependency |
+| NemoClaw sandbox image | Port 18789 | Same as existing OpenClaw Service and HTTPRoute |
+| NVIDIA k8s-device-plugin v0.17.1 | K8s 1.10+ (API), practically 1.26+ | Requires nvidia-container-toolkit on host |
+| NVIDIA k8s-device-plugin v0.17.1 | NVIDIA drivers >= 384.81 | Host requirement, not K8s cluster requirement |
+| OpenShell-Community sandbox | Docker 28.04+ | For local builds; pre-built GHCR image avoids this |
+| NemoClaw + NVIDIA NIM | NVIDIA_API_KEY | Required env var for cloud inference (default mode) |
 
-**If adding monitoring/observability:**
-- Add kube-prometheus-stack (Prometheus + Grafana) as infrastructure component (wave -1)
-- Add Loki for log aggregation
-- OpenClaw health endpoint (`GET /health`) feeds into ServiceMonitor
+## Open Questions (Require Phase-Specific Research)
 
-## Version Compatibility Matrix
-
-| Component A | Compatible With | Notes |
-|-------------|-----------------|-------|
-| KIND v0.31.0 | K8s 1.35.0, 1.34.x, 1.33.x, 1.32.x | Defaults to 1.35.0. Use `kindest/node:v1.35.0` image. |
-| ArgoCD v3.3.1 | K8s 1.29+ | Bundles Kustomize v5.8.0, Helm v3.17.x |
-| MetalLB v0.15.3 | K8s 1.26+ | L2 mode requires no additional dependencies |
-| ingress-nginx v1.14.3 | K8s 1.30-1.35 | Alpine 3.23.2, Go 1.25.6 |
-| cert-manager v1.19.3 | K8s 1.28+ | Use `ServerSideApply=true` with ArgoCD for CRDs |
-| Sealed Secrets v0.35.0 | K8s 1.24+ | kubeseal CLI must match controller version |
-| Kustomize v5.8.1 | ArgoCD v3.3.x | ArgoCD bundles v5.8.0; standalone v5.8.1 has Helm v4 compat fix |
-| OpenClaw v2026.2.x | Node >= 22 | Date-based versioning. Pin to specific version, never `:latest`. |
-| Envoy Gateway v1.7.0 | K8s 1.29+, Gateway API v1.2 | Future replacement for ingress-nginx. RC2 available (2026-02-03). |
+1. **Sandbox image tags:** What pinned tags are available? Only `latest` as of 2026-03-19? Need to check GHCR package registry directly.
+2. **securityContext requirements:** Does the NemoClaw sandbox image require `privileged: true` or specific Linux capabilities for Landlock/seccomp enforcement inside K8s? This could conflict with Pincer Ops security posture.
+3. **Startup command:** Is `openclaw-start` the correct entrypoint, or does the container image have a different default CMD/ENTRYPOINT? Need to inspect image metadata.
+4. **PVC mount path:** Confirm `/sandbox/.openclaw/` vs `/sandbox/` as the correct PVC mount path for state persistence.
+5. **InitContainer pattern:** Does the NemoClaw sandbox need a config seed initContainer like OpenClaw, or does `openclaw-start` handle onboarding automatically?
+6. **GPU passthrough in KIND:** What custom KIND node image configuration is needed for nvidia-container-runtime? Is this documented anywhere?
+7. **NetworkPolicy for NIM:** What specific NVIDIA NIM API endpoints need egress access beyond generic HTTPS 443? Are there IP ranges to allowlist?
 
 ## Sources
 
-- [KIND releases](https://github.com/kubernetes-sigs/kind/releases) -- v0.31.0 verified 2026-02-19 (HIGH confidence)
-- [ArgoCD releases](https://github.com/argoproj/argo-cd/releases) -- v3.3.1 verified 2026-02-19 (HIGH confidence)
-- [ArgoCD 2.14 to 3.0 upgrade guide](https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/2.14-3.0/) -- breaking changes verified (HIGH confidence)
-- [ArgoCD 3.2 to 3.3 upgrade guide](https://argo-cd.readthedocs.io/en/latest/operator-manual/upgrading/3.2-3.3/) -- Kustomize v5.8.0 bundling verified (HIGH confidence)
-- [MetalLB releases](https://github.com/metallb/metallb/releases) -- v0.15.3 verified 2026-02-19 (HIGH confidence)
-- [ingress-nginx releases](https://github.com/kubernetes/ingress-nginx/releases) -- v1.14.3 verified 2026-02-19 (HIGH confidence)
-- [Ingress NGINX Retirement announcement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/) -- EOL March 2026 (HIGH confidence)
-- [cert-manager releases](https://github.com/cert-manager/cert-manager/releases) -- v1.19.3 verified 2026-02-19 (HIGH confidence)
-- [Sealed Secrets releases](https://github.com/bitnami-labs/sealed-secrets/releases) -- v0.35.0 verified 2026-02-19 (HIGH confidence)
-- [Kustomize releases](https://github.com/kubernetes-sigs/kustomize/releases) -- v5.8.1 verified 2026-02-19 (HIGH confidence)
-- [OpenClaw releases](https://github.com/openclaw/openclaw/releases) -- v2026.2.19 verified 2026-02-19 (HIGH confidence)
-- [kubernetes-mcp-server](https://github.com/containers/kubernetes-mcp-server/releases) -- v0.0.57 verified (MEDIUM confidence -- version numbering suggests pre-1.0 stability)
-- [mcp-for-argocd](https://github.com/argoproj-labs/mcp-for-argocd) -- v0.5.0 verified (MEDIUM confidence -- early-stage project)
-- [k8s-mcp-server](https://github.com/alexei-led/k8s-mcp-server/releases) -- v1.4.0 verified (MEDIUM confidence -- community project, 1.x indicates stability)
-- [Envoy Gateway releases](https://github.com/envoyproxy/gateway/releases) -- v1.7.0-rc2 verified (HIGH confidence for future migration)
-- [Kubernetes Gateway API migration guide](https://gateway-api.sigs.k8s.io/guides/getting-started/migrating-from-ingress-nginx/) -- official SIG docs (HIGH confidence)
-- [ArgoCD App of Apps best practices](https://github.com/argoproj/argo-cd/discussions/11892) -- community consensus (MEDIUM confidence)
+- [NemoClaw GitHub](https://github.com/NVIDIA/NemoClaw) -- repository structure, installation, requirements (MEDIUM confidence -- alpha project)
+- [NemoClaw Architecture Docs](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- container image reference, blueprint mechanism, sandbox architecture (MEDIUM confidence)
+- [NemoClaw Quickstart](https://docs.nvidia.com/nemoclaw/latest/get-started/quickstart.html) -- system requirements, CLI commands (MEDIUM confidence)
+- [OpenShell GitHub](https://github.com/NVIDIA/OpenShell) -- releases v0.0.6 through v0.0.11, gateway and cluster images (MEDIUM confidence -- alpha, v0.0.x)
+- [OpenShell Architecture](https://docs.nvidia.com/openshell/latest/about/architecture.html) -- gateway, sandbox, policy engine, privacy router components (MEDIUM confidence)
+- [OpenShell Support Matrix](https://docs.nvidia.com/openshell/latest/reference/support-matrix.html) -- Docker 28.04+, linux/amd64 + linux/arm64 (MEDIUM confidence)
+- [OpenShell-Community GitHub](https://github.com/NVIDIA/OpenShell-Community) -- sandbox Dockerfiles, openclaw sandbox definition (MEDIUM confidence -- 44 commits, no releases)
+- [OpenShell-Community sandboxes/openclaw](https://github.com/NVIDIA/OpenShell-Community/tree/main/sandboxes/openclaw) -- port 18789, config location, startup methods (MEDIUM confidence)
+- [NVIDIA k8s-device-plugin GitHub](https://github.com/NVIDIA/k8s-device-plugin) -- v0.17.1, deployment methods, prerequisites (HIGH confidence -- mature project)
+- [NVIDIA k8s-device-plugin releases](https://github.com/NVIDIA/k8s-device-plugin/releases) -- v0.19.0 latest, v0.17.1 Helm chart (HIGH confidence)
+- [NVIDIA k8s-device-plugin Helm chart](https://nvidia.github.io/k8s-device-plugin) -- nvdp/nvidia-device-plugin repository (HIGH confidence)
+- [NemoClaw Issue #397](https://github.com/NVIDIA/NemoClaw/issues/397) -- port 8080/18789 architecture, gateway lifecycle (MEDIUM confidence)
+- [NemoClaw on Apple Silicon](https://www.ajeetraina.com/can-i-run-nvidia-nemoclaw-on-apple-silicon/) -- container architecture, GPU-less operation, port mappings (LOW confidence -- blog post)
+- [DeepWiki k8s-device-plugin deployment](https://deepwiki.com/NVIDIA/k8s-device-plugin/8-deployment) -- Helm chart configuration options (MEDIUM confidence)
 
 ---
-*Stack research for: Pincer Ops -- GitOps Kubernetes platform*
-*Researched: 2026-02-19*
+*Stack research for: NemoClaw workload support in Pincer Ops*
+*Researched: 2026-03-19*
