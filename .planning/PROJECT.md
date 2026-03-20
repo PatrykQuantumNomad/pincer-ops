@@ -42,7 +42,18 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 
 ### Active
 
-(None — define next milestone with `/gsd:new-milestone`)
+## Current Milestone: v1.2 NemoClaw Support
+
+**Goal:** Add NemoClaw as an alternative workload selectable at bootstrap time, with full OpenShell security stack and optional NVIDIA GPU inference.
+
+**Target features:**
+- Workload selector mechanism (`WORKLOAD=nemoclaw`) mirroring provider selector pattern
+- NemoClaw workload manifests using NVIDIA's upstream container image
+- OpenShell infrastructure as a separate ArgoCD-managed component
+- NVIDIA GPU device plugin for optional local inference
+- NVIDIA_API_KEY SealedSecret management
+- Workload-aware bootstrap/teardown scripts
+- CI validation for NemoClaw manifests
 
 ### Out of Scope
 
@@ -94,4 +105,4 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-19 after v1.1 milestone completion*
+*Last updated: 2026-03-19 after v1.2 milestone started*
