@@ -2,7 +2,8 @@
 #
 # Two NetworkPolicy resources:
 #   1. default-deny-all: Blocks all ingress and egress for every pod in the namespace.
-#   2. openclaw-allow: Permits DNS egress, HTTPS egress, and ingress from Envoy Gateway.
+#   2. openclaw-allow: Permits DNS egress, LiteLLM proxy egress, HTTPS egress,
+#      and ingress from Envoy Gateway.
 #
 # CRITICAL: Both resources must be deployed together. Deploying deny-all without
 # allow rules will break OpenClaw connectivity immediately (no DNS, no API calls,
@@ -50,7 +51,22 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    # Allow HTTPS egress to external LLM APIs (Anthropic, OpenAI, etc.)
+    # Allow egress to LiteLLM governance proxy in nemoclaw namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nemoclaw
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm-proxy
+      ports:
+        - protocol: TCP
+          port: 4000
+    # Allow HTTPS egress for messaging platforms (Telegram, Discord, Slack,
+    # WhatsApp, etc.) and web browsing tools. Note: standard NetworkPolicy
+    # cannot filter by FQDN, so this allows all HTTPS egress. Direct LLM API
+    # access is prevented by credential isolation (no API keys in OpenClaw
+    # pod), not by network filtering.
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
