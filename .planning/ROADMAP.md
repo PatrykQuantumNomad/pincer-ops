@@ -87,11 +87,11 @@ Plans:
   1. OpenClaw StatefulSet runs with `readOnlyRootFilesystem: true` and explicit writable mounts for PVC, /tmp, and /home/node/.cache as emptyDirs
   2. Both OpenClaw and LiteLLM pods have `seccompProfile.type: RuntimeDefault` and `capabilities.drop: ["ALL"]`
   3. `openclaw` namespace has PSS labels `audit` and `warn` at `restricted` level (not `enforce` -- initContainer runs as root)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: Harden OpenClaw SecurityContext and add PSS labels to openclaw namespace
-- [ ] 20-02: Verify security posture across both namespaces and pods
+- [ ] 20-01-PLAN.md -- Harden OpenClaw SecurityContext and add PSS labels to openclaw namespace
+- [ ] 20-02-PLAN.md -- Verify security posture across both namespaces and pods
 
 ### Phase 21: OpenClaw Integration and Network Cutover
 **Goal**: OpenClaw routes all inference through the LiteLLM governance proxy and can no longer directly reach LLM APIs
