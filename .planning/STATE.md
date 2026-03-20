@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: none
-status: milestone_complete
-stopped_at: v1.2 milestone complete
-last_updated: "2026-03-20T17:15:00Z"
-last_activity: 2026-03-20 -- v1.2 NemoClaw Governance Support shipped
+milestone: v2.0
+milestone_name: OpenShell Sandbox
+status: defining_requirements
+stopped_at: Milestone v2.0 started
+last_updated: "2026-03-20T18:00:00Z"
+last_activity: 2026-03-20 -- Milestone v2.0 OpenShell Sandbox started
 progress:
-  total_phases: 22
-  completed_phases: 22
-  total_plans: 41
-  completed_plans: 41
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Planning next milestone
+**Current focus:** Defining v2.0 requirements
 
 ## Current Position
 
-Phase: All 22 phases complete across 3 milestones (v1.0, v1.1, v1.2)
-Plan: Not started
-Status: Ready for next milestone
-Last activity: 2026-03-20 -- v1.2 NemoClaw Governance Support shipped
-
-Progress: [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: --
+Status: Defining requirements
+Last activity: 2026-03-20 -- Milestone v2.0 OpenShell Sandbox started
 
 ## Performance Metrics
 
@@ -45,7 +43,7 @@ Progress: [██████████] 100%
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-All v1.2 decisions resolved -- see .planning/milestones/v1.2-ROADMAP.md for archive.
+v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fresh PVC start.
 
 ### Pending Todos
 
@@ -53,13 +51,16 @@ None.
 
 ### Blockers/Concerns
 
-- LiteLLM stateless operation needs runtime verification (config-file routing without database)
-- LiteLLM image size (500MB+ Python image) -- verify fits KIND resource constraints
-- OpenClaw config reload behavior -- may require pod restart when updating openclaw.json ConfigMap
+- OpenShell gateway image availability -- verify ghcr.io/nvidia/openshell/gateway:latest is pullable
+- agent-sandbox controller v0.2.1 compatibility with Sandbox CR spec
+- Supervisor binary side-loading via DaemonSet -- verify hostPath persistence across pod restarts
+- mTLS certificate lifecycle -- bootstrap generation + SealedSecret storage for Git
+- PSS privileged on openshell namespace -- deliberate tradeoff, supervisor enforces isolation internally
+- Envoy Gateway HTTPRoute target change -- gateway service vs sandbox pod exposed port
 - argocd-self/root circular dependency: Cosmetic Progressing/OutOfSync -- accepted (carried from v1.0)
 
 ## Session Continuity
 
-Last session: 2026-03-20T17:15:00Z
-Stopped at: v1.2 milestone complete
+Last session: 2026-03-20T18:00:00Z
+Stopped at: Defining v2.0 requirements
 Resume file: None
