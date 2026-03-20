@@ -26,5 +26,28 @@ data:
           "mode": "token",
           "token": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
         }
+      },
+      "models": {
+        "providers": {
+          "litellm": {
+            "baseUrl": "http://litellm-proxy.nemoclaw.svc.cluster.local:4000/v1",
+            "apiKey": "no-key-required",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "nvidia-nim/llama-3.1-8b",
+                "name": "Llama 3.1 8B (NVIDIA NIM)"
+              },
+              {
+                "id": "openai/gpt-4o",
+                "name": "GPT-4o (OpenAI)"
+              },
+              {
+                "id": "anthropic/claude-sonnet-4-5",
+                "name": "Claude Sonnet 4.5 (Anthropic)"
+              }
+            ]
+          }
+        }
       }
     }
