@@ -77,30 +77,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GOV-01 | TBD | Pending |
-| GOV-02 | TBD | Pending |
-| GOV-03 | TBD | Pending |
-| GOV-04 | TBD | Pending |
-| GOV-05 | TBD | Pending |
-| GOV-06 | TBD | Pending |
-| INT-01 | TBD | Pending |
-| INT-02 | TBD | Pending |
-| NET-01 | TBD | Pending |
-| NET-02 | TBD | Pending |
-| NET-03 | TBD | Pending |
-| SEC-01 | TBD | Pending |
-| SEC-02 | TBD | Pending |
-| SEC-03 | TBD | Pending |
-| SEC-04 | TBD | Pending |
-| CI-01 | TBD | Pending |
-| CI-02 | TBD | Pending |
-| CI-03 | TBD | Pending |
+| GOV-01 | Phase 19 | Pending |
+| GOV-02 | Phase 19 | Pending |
+| GOV-03 | Phase 19 | Pending |
+| GOV-04 | Phase 19 | Pending |
+| GOV-05 | Phase 18 | Pending |
+| GOV-06 | Phase 18 | Pending |
+| INT-01 | Phase 21 | Pending |
+| INT-02 | Phase 21 | Pending |
+| NET-01 | Phase 21 | Pending |
+| NET-02 | Phase 21 | Pending |
+| NET-03 | Phase 19 | Pending |
+| SEC-01 | Phase 20 | Pending |
+| SEC-02 | Phase 20 | Pending |
+| SEC-03 | Phase 18 | Pending |
+| SEC-04 | Phase 20 | Pending |
+| CI-01 | Phase 22 | Pending |
+| CI-02 | Phase 22 | Pending |
+| CI-03 | Phase 22 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after architectural pivot to governance-only*
+*Last updated: 2026-03-20 after roadmap creation (18/18 mapped)*
