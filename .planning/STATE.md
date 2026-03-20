@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: NemoClaw Governance Support
 status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-03-20T15:03:52.749Z"
-last_activity: 2026-03-20 -- Completed 20-02 (Security posture verification)
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-03-20T15:47:15Z"
+last_activity: 2026-03-20 -- Completed 21-01 (OpenClaw integration and network cutover)
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 4
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 20 -- Security Hardening
+**Current focus:** Phase 21 -- OpenClaw Integration and Network Cutover
 
 ## Current Position
 
-Phase: 20 of 22 (Security Hardening)
-Plan: 2 of 2 in current phase (COMPLETE)
+Phase: 21 of 22 (OpenClaw Integration and Network Cutover)
+Plan: 1 of 1 in current phase (COMPLETE)
 Status: Executing
-Last activity: 2026-03-20 -- Completed 20-02 (Security posture verification)
+Last activity: 2026-03-20 -- Completed 21-01 (OpenClaw integration and network cutover)
 
 Progress: [██████████] 100%
 
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 - [Phase 20]: PSS audit+warn (not enforce) on openclaw namespace -- initContainer runs as root for chown
 - [Phase 20]: emptyDir sizeLimit 100Mi for /tmp and /home/node/.cache -- sufficient for Node.js runtime temp files
 - [Phase 20-security-hardening]: LiteLLM readOnlyRootFilesystem intentionally left false -- not feasible for LiteLLM runtime
+- [Phase 21]: apiKey set to no-key-required (non-empty string for OpenClaw validation, LiteLLM has no master_key)
+- [Phase 21]: openai-completions API type (not openai-responses) -- LiteLLM returns 404 on Responses API
+- [Phase 21]: HTTPS 443 egress retained -- credential isolation prevents direct LLM API access, not network filtering
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T15:03:52.747Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-03-20T15:47:15Z
+Stopped at: Completed 21-01-PLAN.md
 Resume file: None
