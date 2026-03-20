@@ -5,67 +5,71 @@
 
 ## v1.2 Requirements
 
-Requirements for NemoClaw workload support. Each maps to roadmap phases.
+Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the non-existent standalone OpenShell governance images. Each requirement maps to roadmap phases.
 
-### Image Management
+### Governance Infrastructure
 
-- [ ] **IMG-01**: NemoClaw container image pinned by digest in Kustomize overlay (no `:latest`)
-- [ ] **IMG-02**: Image digest documented and verifiable via `make validate`
+- [ ] **GOV-01**: LiteLLM proxy deployed as a Deployment in `nemoclaw` namespace with health probes
+- [ ] **GOV-02**: LiteLLM Service exposes port 4000 as ClusterIP within `nemoclaw` namespace
+- [ ] **GOV-03**: LiteLLM ConfigMap provides model routing configuration (NVIDIA NIM, OpenAI, Anthropic providers)
+- [ ] **GOV-04**: NVIDIA_API_KEY managed as SealedSecret and mounted only in LiteLLM pod
+- [ ] **GOV-05**: ArgoCD Application (`infra-nemoclaw`) at sync wave 0 in both `bootstrap/kind/` and `bootstrap/kinder/`
+- [ ] **GOV-06**: `nemoclaw` namespace created with Kustomize base/overlay structure under `infrastructure/nemoclaw/`
 
-### Workload Manifests
+### OpenClaw Integration
 
-- [ ] **WKL-01**: NemoClaw StatefulSet (replicas: 1) using NVIDIA sandbox image with correct data path (`/sandbox/`)
-- [ ] **WKL-02**: NemoClaw Service (ClusterIP, port 18789)
-- [ ] **WKL-03**: NemoClaw ConfigMap with gateway configuration
-- [ ] **WKL-04**: NemoClaw HTTPRoute (Gateway API, PathPrefix `/`)
-- [ ] **WKL-05**: NemoClaw NetworkPolicy (default-deny + endpoint allowlist for NVIDIA APIs)
-- [ ] **WKL-06**: NemoClaw PVC backup CronJob
-- [ ] **WKL-07**: NVIDIA_API_KEY managed as SealedSecret with env var injection
+- [ ] **INT-01**: OpenClaw `openclaw.json` ConfigMap updated with `models.providers` routing through LiteLLM (`baseUrl` pointing to `http://litellm-proxy.nemoclaw.svc.cluster.local:4000/v1`)
+- [ ] **INT-02**: OpenClaw pod does NOT have NVIDIA_API_KEY environment variable — credential isolation enforced
 
-### Workload Selector
+### Network Security
 
-- [ ] **SEL-01**: `WORKLOAD` Makefile variable (default: `openclaw`, option: `nemoclaw`)
-- [ ] **SEL-02**: Provider-specific bootstrap directories include only the selected workload Application
-- [ ] **SEL-03**: Bootstrap script respects `WORKLOAD` variable for workload deployment
-- [ ] **SEL-04**: Teardown script handles both workload types
-- [ ] **SEL-05**: Workload exclusivity enforced (only one workload Application active at a time)
+- [ ] **NET-01**: OpenClaw NetworkPolicy modified: egress to LiteLLM proxy in nemoclaw namespace allowed
+- [ ] **NET-02**: OpenClaw NetworkPolicy modified: direct HTTPS egress (443) restricted to messaging platforms only (not LLM APIs)
+- [ ] **NET-03**: LiteLLM NetworkPolicy: default-deny + allow ingress from openclaw namespace, DNS egress, HTTPS egress (443) to LLM APIs
 
-### CI/Validation
+### Security Hardening
 
-- [ ] **CI-01**: kubeconform validates NemoClaw manifests alongside OpenClaw
-- [ ] **CI-02**: BATS tests for NemoClaw manifest structure (StatefulSet, Service, NetworkPolicy)
-- [ ] **CI-03**: BATS tests for workload selector mechanism
+- [ ] **SEC-01**: OpenClaw StatefulSet has `readOnlyRootFilesystem: true` with explicit writable mounts (PVC, /tmp, /home/node/.cache as emptyDirs)
+- [ ] **SEC-02**: OpenClaw and LiteLLM pods have `seccompProfile.type: RuntimeDefault` and `capabilities.drop: ["ALL"]`
+- [ ] **SEC-03**: `nemoclaw` namespace has PSS label `pod-security.kubernetes.io/enforce: restricted`
+- [ ] **SEC-04**: `openclaw` namespace has PSS labels `audit` + `warn` (not `enforce` — initContainer runs as root)
 
-### GPU Infrastructure
+### CI and Validation
 
-- [ ] **GPU-01**: NVIDIA k8s-device-plugin DaemonSet deployable as optional ArgoCD Application
-- [ ] **GPU-02**: NemoClaw StatefulSet supports optional GPU resource requests
-- [ ] **GPU-03**: GPU support documented as Linux-only (macOS has zero NVIDIA GPU support)
+- [ ] **CI-01**: `make validate` runs kubeconform against NemoClaw infrastructure manifests
+- [ ] **CI-02**: BATS tests verify LiteLLM manifest structure (Deployment, Service, ConfigMap, NetworkPolicy)
+- [ ] **CI-03**: BATS tests verify OpenClaw NetworkPolicy blocks direct LLM API egress
 
 ## Future Requirements
 
+### Full Sandbox (Production Only)
+
+- **SBX-01**: OpenShell sandbox container deployment for production environments with real GPU hardware
+- **SBX-02**: NVIDIA GPU device plugin for local inference (Linux-only)
+
 ### Operational Tooling
 
-- **OPS-01**: NemoClaw-specific `make logs`, `make status`, `make doctor` targets
-- **OPS-02**: NemoClaw onboarding workflow (`make nemoclaw-onboard`)
-- **OPS-03**: MCP integration for NemoClaw workload queries
-- **OPS-04**: NemoClaw model switching (cloud <-> local inference)
+- **OPS-01**: NemoClaw-specific `make logs`, `make status` targets for LiteLLM proxy
+- **OPS-02**: MCP integration for governance proxy queries
+- **OPS-03**: LiteLLM dashboard/admin UI exposure
 
-### Advanced NemoClaw Features
+### Advanced Governance
 
-- **ADV-01**: Blueprint version management and upgrades
-- **ADV-02**: OpenShell policy customization via ConfigMap
-- **ADV-03**: Multi-agent sandbox support
+- **ADV-01**: Per-model rate limiting in LiteLLM
+- **ADV-02**: Inference cost tracking and budget alerts
+- **ADV-03**: Model fallback chains (NVIDIA NIM → OpenAI → Anthropic)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Full OpenShell gateway as K8s infrastructure | OpenShell embeds K3s-in-Docker; not designed as K8s Deployment. Sandbox image is the deployment unit. |
-| Running both workloads simultaneously | Same port 18789, same HTTPRoute PathPrefix `/` — routing conflicts. One workload at a time. |
-| NemoClaw image building | Using NVIDIA's upstream image directly; no custom builds. |
-| Windows/WSL support | Platform targets macOS and Linux only. |
-| Production cloud deployment | Local-first on KIND/Kinder — consistent with project constraints. |
+| Deploying OpenShell sandbox container | Runs K3s internally — cannot nest K8s in KIND. Deferred to production. |
+| `openshell-gateway` as K8s Deployment | No standalone image exists — component is embedded in K3s container |
+| `privacy-router` as K8s Deployment | No standalone image exists — component is embedded in K3s container |
+| `INFERENCE_GATEWAY_URL` env var | Does not exist in OpenClaw — use `models.providers` baseUrl instead |
+| NVIDIA GPU device plugin | Deferred until governance layer proven; cloud inference is default |
+| Running both OpenClaw + NemoClaw workloads | Same port, same HTTPRoute — routing conflicts. One governance config at a time. |
+| Windows/WSL support | Platform targets macOS and Linux only |
 
 ## Traceability
 
@@ -73,32 +77,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IMG-01 | Phase 18 | Pending |
-| IMG-02 | Phase 18 | Pending |
-| WKL-01 | Phase 19 | Pending |
-| WKL-02 | Phase 19 | Pending |
-| WKL-03 | Phase 19 | Pending |
-| WKL-04 | Phase 19 | Pending |
-| WKL-05 | Phase 20 | Pending |
-| WKL-06 | Phase 20 | Pending |
-| WKL-07 | Phase 20 | Pending |
-| SEL-01 | Phase 21 | Pending |
-| SEL-02 | Phase 21 | Pending |
-| SEL-03 | Phase 21 | Pending |
-| SEL-04 | Phase 21 | Pending |
-| SEL-05 | Phase 21 | Pending |
-| CI-01 | Phase 22 | Pending |
-| CI-02 | Phase 22 | Pending |
-| CI-03 | Phase 22 | Pending |
-| GPU-01 | Phase 23 | Pending |
-| GPU-02 | Phase 23 | Pending |
-| GPU-03 | Phase 23 | Pending |
+| GOV-01 | TBD | Pending |
+| GOV-02 | TBD | Pending |
+| GOV-03 | TBD | Pending |
+| GOV-04 | TBD | Pending |
+| GOV-05 | TBD | Pending |
+| GOV-06 | TBD | Pending |
+| INT-01 | TBD | Pending |
+| INT-02 | TBD | Pending |
+| NET-01 | TBD | Pending |
+| NET-02 | TBD | Pending |
+| NET-03 | TBD | Pending |
+| SEC-01 | TBD | Pending |
+| SEC-02 | TBD | Pending |
+| SEC-03 | TBD | Pending |
+| SEC-04 | TBD | Pending |
+| CI-01 | TBD | Pending |
+| CI-02 | TBD | Pending |
+| CI-03 | TBD | Pending |
 
 **Coverage:**
-- v1.2 requirements: 20 total
-- Mapped to phases: 20
-- Unmapped: 0
+- v1.2 requirements: 18 total
+- Mapped to phases: 0
+- Unmapped: 18
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after roadmap creation*
+*Last updated: 2026-03-20 after architectural pivot to governance-only*
