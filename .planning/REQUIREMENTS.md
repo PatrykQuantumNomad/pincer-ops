@@ -37,8 +37,8 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 ### CI and Validation
 
 - [x] **CI-01**: `make validate` runs kubeconform against NemoClaw infrastructure manifests
-- [ ] **CI-02**: BATS tests verify LiteLLM manifest structure (Deployment, Service, ConfigMap, NetworkPolicy)
-- [ ] **CI-03**: BATS tests verify OpenClaw NetworkPolicy blocks direct LLM API egress
+- [x] **CI-02**: BATS tests verify LiteLLM manifest structure (Deployment, Service, ConfigMap, NetworkPolicy)
+- [x] **CI-03**: BATS tests verify OpenClaw NetworkPolicy blocks direct LLM API egress
 
 ## Future Requirements
 
@@ -93,8 +93,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-03 | Phase 18 | Complete |
 | SEC-04 | Phase 20 | Complete |
 | CI-01 | Phase 22 | Complete |
-| CI-02 | Phase 22 | Pending |
-| CI-03 | Phase 22 | Pending |
+| CI-02 | Phase 22 | Complete |
+| CI-03 | Phase 22 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 18 total

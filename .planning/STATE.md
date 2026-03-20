@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: NemoClaw Governance Support
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-03-20T16:58:24.446Z"
-last_activity: 2026-03-20 -- Completed 22-01 (validate-manifests PASS assertions)
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-03-20T17:00:58.688Z"
+last_activity: 2026-03-20 -- Completed 22-02 (NemoClaw BATS structural tests)
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 22 of 22 (Validation and Testing)
-Plan: 1 of 2 in current phase (COMPLETE)
+Plan: 2 of 2 in current phase (COMPLETE)
 Status: Executing
-Last activity: 2026-03-20 -- Completed 22-01 (validate-manifests PASS assertions)
+Last activity: 2026-03-20 -- Completed 22-02 (NemoClaw BATS structural tests)
 
 Progress: [██████████] 100%
 
@@ -70,6 +70,7 @@ Recent decisions affecting current work:
 - [Phase 21]: apiKey set to no-key-required (non-empty string for OpenClaw validation, LiteLLM has no master_key)
 - [Phase 21]: openai-completions API type (not openai-responses) -- LiteLLM returns 404 on Responses API
 - [Phase 21]: HTTPS 443 egress retained -- credential isolation prevents direct LLM API access, not network filtering
+- [Phase 22]: grep-only BATS assertions for maximum CI portability (no yq/kubectl/cluster dependency)
 
 ### Pending Todos
 
@@ -85,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T16:58:24.443Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-03-20T17:00:58.686Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
