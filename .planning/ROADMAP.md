@@ -115,11 +115,11 @@ Plans:
   1. `make validate` runs kubeconform against all NemoClaw infrastructure manifests and passes
   2. BATS tests verify LiteLLM manifest structure (Deployment, Service, ConfigMap, NetworkPolicy have correct API versions, resource limits, and probe definitions)
   3. BATS tests verify OpenClaw NetworkPolicy blocks direct LLM API egress and allows only proxy egress
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 22-01: Extend kubeconform validation for nemoclaw manifests
-- [ ] 22-02: Write BATS tests for LiteLLM manifests and OpenClaw network isolation
+- [ ] 22-01-PLAN.md -- Add NemoClaw PASS label assertions to validate-manifests unit test
+- [ ] 22-02-PLAN.md -- Create BATS tests for LiteLLM manifest structure and OpenClaw network isolation
 
 ## Progress
 
