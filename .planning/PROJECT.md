@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND (opt-in) for local development with production-fidelity networking.
+A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime — with NemoClaw governance layer providing inference routing, credential isolation, and security hardening. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND (opt-in) for local development with production-fidelity networking.
 
 ## Core Value
 
@@ -39,27 +39,18 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 - ✓ Dual-provider CI validation and documentation — v1.1
 - ✓ Cross-provider sealing key portability — v1.1
 - ✓ SIGPIPE-safe operational scripts — v1.1
+- ✓ NemoClaw namespace with PSS restricted enforcement and ArgoCD App of Apps wiring — v1.2
+- ✓ LiteLLM Proxy as inference gateway with multi-provider model routing — v1.2
+- ✓ Credential isolation: API keys only in LiteLLM pod, OpenClaw routes through proxy — v1.2
+- ✓ Security hardening: readOnlyRootFilesystem, seccomp, capabilities.drop ALL — v1.2
+- ✓ Cross-namespace NetworkPolicy egress (OpenClaw → LiteLLM proxy) — v1.2
+- ✓ Pod Security Standards on openclaw (audit+warn) and nemoclaw (enforce restricted) — v1.2
+- ✓ 31 structural BATS tests for NemoClaw manifests and network isolation — v1.2
+- ✓ kubeconform CI validation for all NemoClaw infrastructure manifests — v1.2
 
 ### Active
 
-## Current Milestone: v1.2 NemoClaw Governance Support
-
-**Goal:** Add NemoClaw governance layer (openshell-gateway + privacy-router) as K8s-native infrastructure, route OpenClaw inference through the gateway, and harden security with K8s primitives replacing sandbox security layers.
-
-**Architecture: Governance-only (no sandbox deployment)**
-The OpenShell sandbox container (`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`) runs K3s internally and CANNOT be deployed inside KIND — nesting Kubernetes clusters is not viable. Instead, deploy the governance components (gateway, privacy router) as standalone K8s Deployments, and use K8s-native security primitives to replace sandbox security layers.
-
-**Target features:**
-- `openshell-gateway` Deployment in `nemoclaw` namespace (port 18789) — inference routing
-- `privacy-router` Deployment in `nemoclaw` namespace (port 8080) — credential isolation
-- OpenClaw routes inference via `INFERENCE_GATEWAY_URL=http://openshell-gateway.nemoclaw:18789`
-- NetworkPolicy replacing sandbox netns: OpenClaw cannot directly reach LLM APIs
-- Filesystem isolation replacing sandbox Landlock: `readOnlyRootFilesystem` + explicit writable mounts
-- Syscall filtering replacing sandbox seccomp-BPF: `seccompProfile`, `capabilities.drop: ["ALL"]`
-- NVIDIA_API_KEY SealedSecret mounted ONLY in privacy-router (not OpenClaw)
-- ArgoCD Application for nemoclaw infrastructure (sync wave 0, before OpenClaw)
-- Pod Security Standards on both namespaces
-- CI validation for nemoclaw manifests
+(No active milestone — run `/gsd:new-milestone` to define next goals)
 
 ### Out of Scope
 
@@ -72,15 +63,15 @@ The OpenShell sandbox container (`ghcr.io/nvidia/openshell-community/sandboxes/o
 - Argo Rollouts / progressive delivery — meaningless with replicas:1
 - Multi-cluster ArgoCD management — premature for single-cluster setup
 - Deploying the OpenShell sandbox container — runs K3s internally, cannot nest K8s in KIND
-- Full sandbox security (Landlock, seccomp-BPF, netns) — replaced by K8s-native equivalents
-- NVIDIA GPU device plugin — deferred until governance layer proven; cloud inference is default
+- Full sandbox security (Landlock, seccomp-BPF, netns) — replaced by K8s-native equivalents in v1.2
+- NVIDIA GPU device plugin — deferred; governance layer shipped, cloud inference is default
 
 ## Context
 
-Shipped v1.1 with 21,933 LOC across YAML/Shell/JSON/BATS.
-Tech stack: Kinder (default), KIND (opt-in), ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, Kustomize.
-Platform: 17 phases, 32 plans, 58 requirements across 2 milestones — all delivered in 3 days total.
-Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic).
+Shipped v1.2 with 22,712 LOC across YAML/Shell/JSON/BATS.
+Tech stack: Kinder (default), KIND (opt-in), ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, LiteLLM Proxy, Kustomize.
+Platform: 22 phases, 41 plans, 76 requirements across 3 milestones — all delivered in 4 days total.
+Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic), LiteLLM readOnlyRootFilesystem left false, SealedSecret placeholder values need real keys.
 
 Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries included: MetalLB, Envoy Gateway, cert-manager, Metrics Server, CoreDNS tuning, Headlamp dashboard, and local registry pre-installed. Kinder uses default Deployment mode for Envoy Gateway — DaemonSet + hostPort config still needed for macOS localhost access. Kinder handles MetalLB IPAddressPool and cert-manager ClusterIssuer automatically.
 
@@ -101,9 +92,11 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 | Provider-specific bootstrap directories | ArgoCD root-app scans correct directory per provider | ✓ Good — clean separation, byte-identical shared files |
 | Shared files duplicated (not symlinked) | ArgoCD directory scanning requires actual files in scanned path | ✓ Good — BATS tests enforce byte-identity |
 | SIGPIPE-safe variable capture | Prevents race conditions in pipefail scripts | ✓ Good — 20/20 consecutive test passes |
-| Governance-only NemoClaw (no sandbox) | OpenShell sandbox runs K3s internally — cannot nest K8s in KIND | — Pending |
-| K8s-native security replacing sandbox layers | NetworkPolicy, readOnlyRootFilesystem, seccomp, capabilities replace Landlock/seccomp-BPF/netns | — Pending |
-| Credential isolation via gateway routing | NVIDIA_API_KEY only in privacy-router; OpenClaw routes through gateway | — Pending |
+| Governance-only NemoClaw (no sandbox) | OpenShell sandbox runs K3s internally — cannot nest K8s in KIND | ✓ Good — LiteLLM Proxy provides governance without sandbox complexity |
+| K8s-native security replacing sandbox layers | NetworkPolicy, readOnlyRootFilesystem, seccomp, capabilities replace Landlock/seccomp-BPF/netns | ✓ Good — PSS restricted on nemoclaw, audit+warn on openclaw, all pods hardened |
+| Credential isolation via proxy routing | NVIDIA_API_KEY only in LiteLLM pod; OpenClaw routes through proxy | ✓ Good — 31 BATS tests prove isolation |
+| LiteLLM Proxy over standalone governance images | No standalone openshell-gateway/privacy-router images exist | ✓ Good — LiteLLM provides model routing, multi-provider support, and API key management |
+| openai-completions API type for LiteLLM | LiteLLM returns 404 on Responses API | ✓ Good — completions API works correctly |
 
 ## Constraints
 
@@ -115,4 +108,4 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-20 after v1.2 architectural pivot to governance-only*
+*Last updated: 2026-03-20 after v1.2 milestone shipped*

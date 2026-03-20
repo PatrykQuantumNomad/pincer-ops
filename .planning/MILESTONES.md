@@ -1,5 +1,33 @@
 # Milestones: Pincer Ops
 
+## v1.2 NemoClaw Governance Support (Shipped: 2026-03-20)
+
+**Delivered:** NemoClaw governance layer with LiteLLM Proxy as inference gateway, OpenClaw credential isolation via proxy routing, K8s-native security hardening (PSS, seccomp, readOnlyRootFilesystem), and 31 structural BATS tests proving manifest correctness and network isolation.
+
+**Phases completed:** 18-22 (9 plans total)
+
+**Key accomplishments:**
+
+- Deployed LiteLLM Proxy as inference gateway with multi-provider model routing (NVIDIA NIM, OpenAI, Anthropic)
+- Enforced credential isolation: API keys only in LiteLLM pod, OpenClaw routes through governance proxy
+- Hardened security: readOnlyRootFilesystem, seccomp RuntimeDefault, capabilities.drop ALL, PSS restricted/audit+warn
+- Built cross-namespace NetworkPolicy egress from OpenClaw to LiteLLM proxy on port 4000
+- Created 31 structural BATS tests covering LiteLLM manifests and OpenClaw network isolation
+- Extended kubeconform CI validation to cover all NemoClaw infrastructure manifests (146 total tests)
+
+**Stats:**
+
+- 54 files created/modified
+- +5,667 / -87 lines (net +5,580 LOC)
+- 5 phases, 9 plans, 18 requirements shipped (18/18)
+- 1 day (~4 hours execution, 2026-03-20)
+
+**Git range:** `feat(18-01)` → `docs(22-02)`
+
+**What's next:** Define next milestone goals with `/gsd:new-milestone`
+
+---
+
 ## v1.1 Kinder Support (Shipped: 2026-03-19)
 
 **Delivered:** Dual-provider Kubernetes platform — Kinder as default with batteries-included infrastructure, KIND as opt-in with full ArgoCD management, both paths proven reproducible from Git.
