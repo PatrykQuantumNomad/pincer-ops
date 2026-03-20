@@ -43,7 +43,7 @@
 
 - [x] **Phase 18: NemoClaw Namespace and ArgoCD Wiring** - Namespace, Kustomize structure, PSS enforcement, ArgoCD Application in both providers (completed 2026-03-20)
 - [x] **Phase 19: LiteLLM Proxy Deployment** - Deployment, Service, ConfigMap, SealedSecret, and NetworkPolicy for inference proxy (completed 2026-03-20)
-- [ ] **Phase 20: Security Hardening** - Pod Security Standards and SecurityContext hardening on OpenClaw and LiteLLM
+- [x] **Phase 20: Security Hardening** - Pod Security Standards and SecurityContext hardening on OpenClaw and LiteLLM (completed 2026-03-20)
 - [ ] **Phase 21: OpenClaw Integration and Network Cutover** - Route OpenClaw inference through LiteLLM and restrict direct LLM API egress
 - [ ] **Phase 22: Validation and Testing** - kubeconform validation and BATS tests for governance manifests and network isolation
 
@@ -148,6 +148,6 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 17. Tech Debt Cleanup | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 18. NemoClaw Namespace and ArgoCD Wiring | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 19. LiteLLM Proxy Deployment | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 20. Security Hardening | 1/2 | In Progress|  | - |
+| 20. Security Hardening | 2/2 | Complete   | 2026-03-20 | - |
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 0/2 | Not started | - |
 | 22. Validation and Testing | v1.2 | 0/2 | Not started | - |
