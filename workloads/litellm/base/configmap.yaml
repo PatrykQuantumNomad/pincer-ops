@@ -1,0 +1,34 @@
+# configmap.yaml -- LiteLLM Proxy model routing configuration.
+#
+# Defines the model_list for NVIDIA NIM, OpenAI, and Anthropic providers.
+# API keys are resolved at runtime via os.environ/ references, which LiteLLM
+# reads from environment variables injected by the Deployment's env spec.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config
+  namespace: nemoclaw
+data:
+  config.yaml: |
+    model_list:
+      - model_name: nvidia-nim/llama-3.1-8b
+        litellm_params:
+          model: nvidia_nim/meta/llama-3.1-8b-instruct
+          api_key: os.environ/NVIDIA_API_KEY
+
+      - model_name: openai/gpt-4o
+        litellm_params:
+          model: openai/gpt-4o
+          api_key: os.environ/OPENAI_API_KEY
+
+      - model_name: anthropic/claude-sonnet-4-5
+        litellm_params:
+          model: anthropic/claude-sonnet-4-5-20250929
+          api_key: os.environ/ANTHROPIC_API_KEY
+
+    litellm_settings:
+      drop_params: true
+      set_verbose: false
+
+    general_settings:
+      json_logs: true
