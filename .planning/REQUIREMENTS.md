@@ -29,10 +29,10 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 
 ### Security Hardening
 
-- [ ] **SEC-01**: OpenClaw StatefulSet has `readOnlyRootFilesystem: true` with explicit writable mounts (PVC, /tmp, /home/node/.cache as emptyDirs)
-- [ ] **SEC-02**: OpenClaw and LiteLLM pods have `seccompProfile.type: RuntimeDefault` and `capabilities.drop: ["ALL"]`
+- [x] **SEC-01**: OpenClaw StatefulSet has `readOnlyRootFilesystem: true` with explicit writable mounts (PVC, /tmp, /home/node/.cache as emptyDirs)
+- [x] **SEC-02**: OpenClaw and LiteLLM pods have `seccompProfile.type: RuntimeDefault` and `capabilities.drop: ["ALL"]`
 - [x] **SEC-03**: `nemoclaw` namespace has PSS label `pod-security.kubernetes.io/enforce: restricted`
-- [ ] **SEC-04**: `openclaw` namespace has PSS labels `audit` + `warn` (not `enforce` — initContainer runs as root)
+- [x] **SEC-04**: `openclaw` namespace has PSS labels `audit` + `warn` (not `enforce` — initContainer runs as root)
 
 ### CI and Validation
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NET-01 | Phase 21 | Pending |
 | NET-02 | Phase 21 | Pending |
 | NET-03 | Phase 19 | Complete |
-| SEC-01 | Phase 20 | Pending |
-| SEC-02 | Phase 20 | Pending |
+| SEC-01 | Phase 20 | Complete |
+| SEC-02 | Phase 20 | Complete |
 | SEC-03 | Phase 18 | Complete |
-| SEC-04 | Phase 20 | Pending |
+| SEC-04 | Phase 20 | Complete |
 | CI-01 | Phase 22 | Pending |
 | CI-02 | Phase 22 | Pending |
 | CI-03 | Phase 22 | Pending |

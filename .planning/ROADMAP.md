@@ -148,6 +148,6 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 17. Tech Debt Cleanup | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 18. NemoClaw Namespace and ArgoCD Wiring | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 19. LiteLLM Proxy Deployment | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 20. Security Hardening | v1.2 | 0/2 | Not started | - |
+| 20. Security Hardening | 1/2 | In Progress|  | - |
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 0/2 | Not started | - |
 | 22. Validation and Testing | v1.2 | 0/2 | Not started | - |
