@@ -57,11 +57,11 @@
   1. `nemoclaw` namespace exists with Kustomize base/overlay structure under `infrastructure/nemoclaw/`
   2. ArgoCD Application `infra-nemoclaw` is present in both `bootstrap/kind/` and `bootstrap/kinder/` at sync wave 0
   3. `nemoclaw` namespace has Pod Security Standards label `pod-security.kubernetes.io/enforce: restricted` and ArgoCD syncs it successfully
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: Create nemoclaw namespace and Kustomize structure with PSS labels
-- [ ] 18-02: Create ArgoCD Application for both providers and verify sync
+- [ ] 18-01-PLAN.md -- Nemoclaw Kustomize infrastructure with PSS namespace and default-deny NetworkPolicy
+- [ ] 18-02-PLAN.md -- ArgoCD Application for both providers and manifest validation
 
 ### Phase 19: LiteLLM Proxy Deployment
 **Goal**: LiteLLM Proxy is running as the inference gateway in the nemoclaw namespace with credential isolation and network security
