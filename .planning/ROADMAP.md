@@ -102,11 +102,10 @@ Plans:
   2. OpenClaw pod does NOT have NVIDIA_API_KEY as an environment variable -- credential isolation is enforced
   3. OpenClaw NetworkPolicy allows egress to LiteLLM proxy in nemoclaw namespace on port 4000
   4. OpenClaw NetworkPolicy restricts direct HTTPS egress (443) to messaging platforms only -- direct LLM API access is blocked
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 21-01: Update OpenClaw ConfigMap with governance proxy routing
-- [ ] 21-02: Modify OpenClaw NetworkPolicy for proxy egress and restricted direct HTTPS
+- [ ] 21-01-PLAN.md -- Update OpenClaw ConfigMap with LiteLLM provider routing and modify NetworkPolicy for proxy egress
 
 ### Phase 22: Validation and Testing
 **Goal**: NemoClaw governance manifests and network isolation are covered by CI validation and automated tests
@@ -149,5 +148,5 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 18. NemoClaw Namespace and ArgoCD Wiring | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 19. LiteLLM Proxy Deployment | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 20. Security Hardening | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 21. OpenClaw Integration and Network Cutover | v1.2 | 0/2 | Not started | - |
+| 21. OpenClaw Integration and Network Cutover | v1.2 | 0/1 | Not started | - |
 | 22. Validation and Testing | v1.2 | 0/2 | Not started | - |
