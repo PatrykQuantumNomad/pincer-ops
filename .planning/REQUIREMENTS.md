@@ -14,7 +14,7 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 - [ ] **GOV-03**: LiteLLM ConfigMap provides model routing configuration (NVIDIA NIM, OpenAI, Anthropic providers)
 - [ ] **GOV-04**: NVIDIA_API_KEY managed as SealedSecret and mounted only in LiteLLM pod
 - [ ] **GOV-05**: ArgoCD Application (`infra-nemoclaw`) at sync wave 0 in both `bootstrap/kind/` and `bootstrap/kinder/`
-- [ ] **GOV-06**: `nemoclaw` namespace created with Kustomize base/overlay structure under `infrastructure/nemoclaw/`
+- [x] **GOV-06**: `nemoclaw` namespace created with Kustomize base/overlay structure under `infrastructure/nemoclaw/`
 
 ### OpenClaw Integration
 
@@ -31,7 +31,7 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 
 - [ ] **SEC-01**: OpenClaw StatefulSet has `readOnlyRootFilesystem: true` with explicit writable mounts (PVC, /tmp, /home/node/.cache as emptyDirs)
 - [ ] **SEC-02**: OpenClaw and LiteLLM pods have `seccompProfile.type: RuntimeDefault` and `capabilities.drop: ["ALL"]`
-- [ ] **SEC-03**: `nemoclaw` namespace has PSS label `pod-security.kubernetes.io/enforce: restricted`
+- [x] **SEC-03**: `nemoclaw` namespace has PSS label `pod-security.kubernetes.io/enforce: restricted`
 - [ ] **SEC-04**: `openclaw` namespace has PSS labels `audit` + `warn` (not `enforce` — initContainer runs as root)
 
 ### CI and Validation
@@ -82,7 +82,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GOV-03 | Phase 19 | Pending |
 | GOV-04 | Phase 19 | Pending |
 | GOV-05 | Phase 18 | Pending |
-| GOV-06 | Phase 18 | Pending |
+| GOV-06 | Phase 18 | Complete |
 | INT-01 | Phase 21 | Pending |
 | INT-02 | Phase 21 | Pending |
 | NET-01 | Phase 21 | Pending |
@@ -90,7 +90,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NET-03 | Phase 19 | Pending |
 | SEC-01 | Phase 20 | Pending |
 | SEC-02 | Phase 20 | Pending |
-| SEC-03 | Phase 18 | Pending |
+| SEC-03 | Phase 18 | Complete |
 | SEC-04 | Phase 20 | Pending |
 | CI-01 | Phase 22 | Pending |
 | CI-02 | Phase 22 | Pending |

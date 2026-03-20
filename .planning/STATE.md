@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: NemoClaw Governance Support
-status: active
-stopped_at: null
-last_updated: "2026-03-20T19:00:00.000Z"
-last_activity: "2026-03-20 -- Roadmap created: 5 phases (18-22), 18 requirements mapped"
+status: executing
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-20T13:11:13.827Z"
+last_activity: 2026-03-20 -- Completed 18-01 (nemoclaw namespace Kustomize tree with PSS + deny-all NetworkPolicy)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 10
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 18 of 22 (NemoClaw Namespace and ArgoCD Wiring)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-20 -- Roadmap created for v1.2 NemoClaw Governance Support (5 phases, 18 requirements)
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-03-20 -- Completed 18-01 (nemoclaw namespace Kustomize tree with PSS + deny-all NetworkPolicy)
 
-Progress: [..........] 0%
+Progress: [|||||.....] 50%
 
 ## Performance Metrics
 
@@ -56,6 +56,8 @@ Recent decisions affecting current work:
 - [v1.2 PIVOT]: NVIDIA_API_KEY only in LiteLLM pod, not in OpenClaw
 - [v1.2]: GPU device plugin deferred -- cloud inference is default mode
 - [v1.2]: openclaw namespace gets PSS audit+warn only (not enforce) -- initContainer runs as root
+- [Phase 18]: Namespace manifest is the creation mechanism (no CreateNamespace=true in ArgoCD Application)
+- [Phase 18]: NetworkPolicy deny-all only -- allow rules deferred to Phase 19 with LiteLLM deployment
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20
-Stopped at: Roadmap created -- ready to plan Phase 18
+Last session: 2026-03-20T13:11:13.825Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None
