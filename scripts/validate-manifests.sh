@@ -97,6 +97,9 @@ validate_kustomize "workloads/openclaw/overlays/dev" "openclaw/dev"
 # envoy-gateway: local resources only (EnvoyProxy, GatewayClass, Gateway)
 validate_kustomize "infrastructure/envoy-gateway/base" "envoy-gateway"
 
+# nemoclaw: local resources only (Namespace, NetworkPolicy)
+validate_kustomize "infrastructure/nemoclaw/overlays/dev" "nemoclaw/dev"
+
 # metallb: remote resource (github.com/metallb/...) -- SKIP kustomize build
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build
