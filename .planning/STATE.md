@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: NemoClaw Governance Support
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-03-20T13:11:13.827Z"
-last_activity: 2026-03-20 -- Completed 18-01 (nemoclaw namespace Kustomize tree with PSS + deny-all NetworkPolicy)
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-03-20T13:15:00Z"
+last_activity: 2026-03-20 -- Completed 18-02 (ArgoCD Application infra-nemoclaw + manifest validation)
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_phases: 1
+  total_plans: 10
+  completed_plans: 2
+  percent: 20
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 18 -- NemoClaw Namespace and ArgoCD Wiring
+**Current focus:** Phase 19 -- LiteLLM Proxy Deployment
 
 ## Current Position
 
-Phase: 18 of 22 (NemoClaw Namespace and ArgoCD Wiring)
-Plan: 1 of 2 in current phase
+Phase: 19 of 22 (LiteLLM Proxy Deployment)
+Plan: 0 of 2 in current phase
 Status: Executing
-Last activity: 2026-03-20 -- Completed 18-01 (nemoclaw namespace Kustomize tree with PSS + deny-all NetworkPolicy)
+Last activity: 2026-03-20 -- Completed 18-02 (ArgoCD Application infra-nemoclaw + manifest validation)
 
-Progress: [|||||.....] 50%
+Progress: [||........] 20%
 
 ## Performance Metrics
 
@@ -58,6 +58,8 @@ Recent decisions affecting current work:
 - [v1.2]: openclaw namespace gets PSS audit+warn only (not enforce) -- initContainer runs as root
 - [Phase 18]: Namespace manifest is the creation mechanism (no CreateNamespace=true in ArgoCD Application)
 - [Phase 18]: NetworkPolicy deny-all only -- allow rules deferred to Phase 19 with LiteLLM deployment
+- [Phase 18]: Sync wave 0 for infra-nemoclaw -- first v1.2 component, after all v1.0/v1.1 infra
+- [Phase 18]: manifest-generate-paths covers infrastructure/nemoclaw (not just overlays/dev) to catch base changes
 
 ### Pending Todos
 
@@ -73,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:11:13.825Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-03-20T13:15:00Z
+Stopped at: Completed 18-02-PLAN.md (Phase 18 complete)
 Resume file: None

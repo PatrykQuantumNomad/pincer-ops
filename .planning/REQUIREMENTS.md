@@ -13,7 +13,7 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 - [ ] **GOV-02**: LiteLLM Service exposes port 4000 as ClusterIP within `nemoclaw` namespace
 - [ ] **GOV-03**: LiteLLM ConfigMap provides model routing configuration (NVIDIA NIM, OpenAI, Anthropic providers)
 - [ ] **GOV-04**: NVIDIA_API_KEY managed as SealedSecret and mounted only in LiteLLM pod
-- [ ] **GOV-05**: ArgoCD Application (`infra-nemoclaw`) at sync wave 0 in both `bootstrap/kind/` and `bootstrap/kinder/`
+- [x] **GOV-05**: ArgoCD Application (`infra-nemoclaw`) at sync wave 0 in both `bootstrap/kind/` and `bootstrap/kinder/`
 - [x] **GOV-06**: `nemoclaw` namespace created with Kustomize base/overlay structure under `infrastructure/nemoclaw/`
 
 ### OpenClaw Integration
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GOV-02 | Phase 19 | Pending |
 | GOV-03 | Phase 19 | Pending |
 | GOV-04 | Phase 19 | Pending |
-| GOV-05 | Phase 18 | Pending |
+| GOV-05 | Phase 18 | Complete |
 | GOV-06 | Phase 18 | Complete |
 | INT-01 | Phase 21 | Pending |
 | INT-02 | Phase 21 | Pending |
