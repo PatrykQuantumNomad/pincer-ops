@@ -175,3 +175,60 @@ load '../test_helper'
     "${PROJECT_ROOT}/workloads/litellm/base/networkpolicy.yaml"
   assert_success
 }
+
+# ===========================================================================
+# OpenClaw NetworkPolicy Egress (CI-03)
+# ===========================================================================
+
+@test "OpenClaw NetworkPolicy allows egress to litellm-proxy in nemoclaw namespace" {
+  run grep 'kubernetes.io/metadata.name: nemoclaw' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "OpenClaw NetworkPolicy targets litellm-proxy pod for egress" {
+  run grep 'app.kubernetes.io/name: litellm-proxy' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "OpenClaw NetworkPolicy allows egress on port 4000 for LiteLLM proxy" {
+  run grep 'port: 4000' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "OpenClaw NetworkPolicy has exactly 3 egress destinations" {
+  local file="${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  run grep -c '    - to:' "$file"
+  assert_success
+  assert_output '3'
+}
+
+@test "OpenClaw NetworkPolicy documents credential isolation for HTTPS egress" {
+  run grep -i 'credential isolation' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# OpenClaw Credential Isolation (CI-03)
+# ===========================================================================
+
+@test "OpenClaw StatefulSet does not have NVIDIA_API_KEY env var" {
+  run grep 'NVIDIA_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+  assert_failure
+}
+
+@test "OpenClaw StatefulSet does not have OPENAI_API_KEY env var" {
+  run grep 'OPENAI_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+  assert_failure
+}
+
+@test "OpenClaw StatefulSet does not have ANTHROPIC_API_KEY env var" {
+  run grep 'ANTHROPIC_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+  assert_failure
+}
