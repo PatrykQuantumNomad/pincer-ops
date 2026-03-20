@@ -137,13 +137,15 @@ fc00:f853:ccd:e793::/64
     infra-envoy-gateway-config.yaml
     infra-cert-manager.yaml
     infra-sealed-secrets.yaml
+    infra-nemoclaw.yaml
     workload-openclaw.yaml
+    workload-litellm.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 11 ]
+  [ "${actual_count}" -eq 13 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -172,13 +174,15 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
+    infra-nemoclaw.yaml
     workload-openclaw.yaml
+    workload-litellm.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 8 ]
+  [ "${actual_count}" -eq 10 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
