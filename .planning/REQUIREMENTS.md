@@ -49,7 +49,7 @@ Requirements for NemoClaw workload support. Each maps to roadmap phases.
 - **OPS-01**: NemoClaw-specific `make logs`, `make status`, `make doctor` targets
 - **OPS-02**: NemoClaw onboarding workflow (`make nemoclaw-onboard`)
 - **OPS-03**: MCP integration for NemoClaw workload queries
-- **OPS-04**: NemoClaw model switching (cloud ↔ local inference)
+- **OPS-04**: NemoClaw model switching (cloud <-> local inference)
 
 ### Advanced NemoClaw Features
 
@@ -73,32 +73,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IMG-01 | — | Pending |
-| IMG-02 | — | Pending |
-| WKL-01 | — | Pending |
-| WKL-02 | — | Pending |
-| WKL-03 | — | Pending |
-| WKL-04 | — | Pending |
-| WKL-05 | — | Pending |
-| WKL-06 | — | Pending |
-| WKL-07 | — | Pending |
-| SEL-01 | — | Pending |
-| SEL-02 | — | Pending |
-| SEL-03 | — | Pending |
-| SEL-04 | — | Pending |
-| SEL-05 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
-| CI-03 | — | Pending |
-| GPU-01 | — | Pending |
-| GPU-02 | — | Pending |
-| GPU-03 | — | Pending |
+| IMG-01 | Phase 18 | Pending |
+| IMG-02 | Phase 18 | Pending |
+| WKL-01 | Phase 19 | Pending |
+| WKL-02 | Phase 19 | Pending |
+| WKL-03 | Phase 19 | Pending |
+| WKL-04 | Phase 19 | Pending |
+| WKL-05 | Phase 20 | Pending |
+| WKL-06 | Phase 20 | Pending |
+| WKL-07 | Phase 20 | Pending |
+| SEL-01 | Phase 21 | Pending |
+| SEL-02 | Phase 21 | Pending |
+| SEL-03 | Phase 21 | Pending |
+| SEL-04 | Phase 21 | Pending |
+| SEL-05 | Phase 21 | Pending |
+| CI-01 | Phase 22 | Pending |
+| CI-02 | Phase 22 | Pending |
+| CI-03 | Phase 22 | Pending |
+| GPU-01 | Phase 23 | Pending |
+| GPU-02 | Phase 23 | Pending |
+| GPU-03 | Phase 23 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 after roadmap creation*
