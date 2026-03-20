@@ -25,7 +25,7 @@ Requirements for NemoClaw governance-only deployment. LiteLLM Proxy replaces the
 
 - [ ] **NET-01**: OpenClaw NetworkPolicy modified: egress to LiteLLM proxy in nemoclaw namespace allowed
 - [ ] **NET-02**: OpenClaw NetworkPolicy modified: direct HTTPS egress (443) restricted to messaging platforms only (not LLM APIs)
-- [ ] **NET-03**: LiteLLM NetworkPolicy: default-deny + allow ingress from openclaw namespace, DNS egress, HTTPS egress (443) to LLM APIs
+- [x] **NET-03**: LiteLLM NetworkPolicy: default-deny + allow ingress from openclaw namespace, DNS egress, HTTPS egress (443) to LLM APIs
 
 ### Security Hardening
 
@@ -87,7 +87,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INT-02 | Phase 21 | Pending |
 | NET-01 | Phase 21 | Pending |
 | NET-02 | Phase 21 | Pending |
-| NET-03 | Phase 19 | Pending |
+| NET-03 | Phase 19 | Complete |
 | SEC-01 | Phase 20 | Pending |
 | SEC-02 | Phase 20 | Pending |
 | SEC-03 | Phase 18 | Complete |

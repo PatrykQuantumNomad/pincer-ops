@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: NemoClaw Governance Support
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-03-20T13:44:00Z"
-last_activity: 2026-03-20 -- Completed 19-01 (LiteLLM workload manifests and ArgoCD wiring)
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-03-20T13:49:29.209Z"
+last_activity: 2026-03-20 -- Completed 19-02 (LiteLLM NetworkPolicy and validation)
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 3
-  percent: 30
+  completed_plans: 4
+  percent: 40
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 19 of 22 (LiteLLM Proxy Deployment)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase (phase complete)
 Status: Executing
-Last activity: 2026-03-20 -- Completed 19-01 (LiteLLM workload manifests and ArgoCD wiring)
+Last activity: 2026-03-20 -- Completed 19-02 (LiteLLM NetworkPolicy and validation)
 
-Progress: [|||.......] 30%
+Progress: [||||......] 40%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Recent decisions affecting current work:
 - [Phase 19]: CreateNamespace=false on workload-litellm -- namespace created by infra-nemoclaw at wave 0
 - [Phase 19]: SealedSecret placeholder values -- real keys sealed after bootstrap via make seal
 - [Phase 19]: readOnlyRootFilesystem=false for LiteLLM -- Phase 20 will harden if feasible
+- [Phase 19]: NetworkPolicy pattern mirrors openclaw-allow -- pod-specific selector, not namespace-wide
 
 ### Pending Todos
 
@@ -78,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:44:00Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-03-20T13:49:29.206Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
