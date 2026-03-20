@@ -1,0 +1,38 @@
+# workload-litellm.yaml -- ArgoCD Application for LiteLLM Proxy.
+#
+# Deploys LiteLLM inference proxy in the nemoclaw namespace at sync wave 5.
+# Namespace is created by infra-nemoclaw at wave 0 (CreateNamespace=false).
+# Uses the workloads AppProject which permits nemoclaw namespace.
+#
+# v1.2 Sync Wave Map:
+#   Wave  0: infra-nemoclaw (namespace + default-deny NetworkPolicy)
+#   Wave  5: workload-litellm (this app)
+#   Wave 10: workload-openclaw (integration updates in Phase 21)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workload-litellm
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/manifest-generate-paths: workloads/litellm
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: workloads
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: workloads/litellm/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nemoclaw
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false

@@ -86,8 +86,9 @@ echo ""
 validate_raw "bootstrap/kind/" "bootstrap/kind"
 validate_raw "bootstrap/kinder/" "bootstrap/kinder"
 
-# --- OpenClaw workload overlay ---
+# --- Workload overlays ---
 validate_kustomize "workloads/openclaw/overlays/dev" "openclaw/dev"
+validate_kustomize "workloads/litellm/overlays/dev" "litellm/dev"
 
 # --- Infrastructure bases ---
 # Only validate bases with LOCAL resources. Bases that reference remote URLs
