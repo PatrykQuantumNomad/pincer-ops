@@ -497,3 +497,276 @@ load '../test_helper'
     "${PROJECT_ROOT}/bootstrap/kinder/workload-openshell-gateway.yaml"
   assert_success
 }
+
+# ===========================================================================
+# OpenClaw Sandbox CR (MIGR-01)
+# ===========================================================================
+
+@test "sandbox CR has correct apiVersion" {
+  run grep 'agents.x-k8s.io/v1alpha1' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has kind Sandbox" {
+  run grep 'kind: Sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has name openclaw-sandbox" {
+  run grep 'name: openclaw-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has openclaw-gateway container image" {
+  run grep 'ghcr.io/openclaw/openclaw' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has gateway port 18789" {
+  run grep 'containerPort: 18789' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has startupProbe" {
+  run grep 'startupProbe:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has livenessProbe" {
+  run grep 'livenessProbe:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has readinessProbe" {
+  run grep 'readinessProbe:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has resource requests" {
+  run grep 'requests:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has resource limits" {
+  run grep 'limits:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has securityContext runAsNonRoot" {
+  run grep 'runAsNonRoot: true' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has readOnlyRootFilesystem" {
+  run grep 'readOnlyRootFilesystem: true' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has bind lan flag" {
+  run grep '\-\-bind' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+  run grep 'lan' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox volumeClaimTemplates (MIGR-02)
+# ===========================================================================
+
+@test "sandbox CR has volumeClaimTemplates" {
+  run grep 'volumeClaimTemplates:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has 20Gi storage" {
+  run grep 'storage: 20Gi' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has ReadWriteOnce access mode" {
+  run grep 'ReadWriteOnce' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox HTTPRoute (MIGR-03, MIGR-06)
+# ===========================================================================
+
+@test "sandbox HTTPRoute targets openclaw-sandbox service" {
+  run grep 'name: openclaw-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
+  assert_success
+}
+
+@test "sandbox HTTPRoute has port 18789" {
+  run grep 'port: 18789' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
+  assert_success
+}
+
+@test "sandbox HTTPRoute has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
+  assert_success
+}
+
+@test "sandbox HTTPRoute references eg gateway" {
+  run grep 'name: eg' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
+  assert_success
+}
+
+@test "sandbox HTTPRoute references envoy-gateway-system" {
+  run grep 'envoy-gateway-system' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox NetworkPolicy (MIGR-07)
+# ===========================================================================
+
+@test "sandbox NetworkPolicy has openclaw-deny-all" {
+  run grep 'name: openclaw-deny-all' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy has openclaw-allow" {
+  run grep 'name: openclaw-allow' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox deny-all targets openclaw-gateway pods" {
+  run grep 'app.kubernetes.io/name: openclaw-gateway' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy allows envoy-gateway ingress" {
+  run grep 'envoy-gateway-system' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy allows DNS egress" {
+  run grep 'port: 53' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy allows HTTPS egress" {
+  run grep 'port: 443' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy allows LiteLLM egress" {
+  run grep 'port: 4000' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox ConfigMap
+# ===========================================================================
+
+@test "sandbox ConfigMap has name openclaw-config" {
+  run grep 'name: openclaw-config' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/configmap.yaml"
+  assert_success
+}
+
+@test "sandbox ConfigMap has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/configmap.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox ArgoCD Application
+# ===========================================================================
+
+@test "workload-openclaw-sandbox has sync-wave 10" {
+  run grep 'sync-wave: "10"' \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+@test "workload-openclaw-sandbox uses project openshell" {
+  run grep 'project: openshell' \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+@test "workload-openclaw-sandbox has ServerSideApply" {
+  run grep 'ServerSideApply=true' \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+@test "workload-openclaw-sandbox has CreateNamespace false" {
+  run grep 'CreateNamespace=false' \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+@test "workload-openclaw-sandbox source path is overlays/dev" {
+  run grep 'path: workloads/openclaw-sandbox/overlays/dev' \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Provider Parity (Phase 26 additions)
+# ===========================================================================
+
+@test "workload-openclaw-sandbox.yaml byte-identical across providers" {
+  run diff \
+    "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml" \
+    "${PROJECT_ROOT}/bootstrap/kinder/workload-openclaw-sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Removal Verification (MIGR-04, MIGR-05)
+# ===========================================================================
+
+@test "workloads/openclaw directory does not exist" {
+  run test ! -d "${PROJECT_ROOT}/workloads/openclaw"
+  assert_success
+}
+
+@test "workload-openclaw.yaml removed from kind" {
+  run test ! -f "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw.yaml"
+  assert_success
+}
+
+@test "workload-openclaw.yaml removed from kinder" {
+  run test ! -f "${PROJECT_ROOT}/bootstrap/kinder/workload-openclaw.yaml"
+  assert_success
+}
