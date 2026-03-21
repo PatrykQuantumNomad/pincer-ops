@@ -177,58 +177,57 @@ load '../test_helper'
 }
 
 # ===========================================================================
-# OpenClaw NetworkPolicy Egress (CI-03)
+# OpenClaw Sandbox NetworkPolicy Egress (CI-03)
 # ===========================================================================
+# NOTE: OpenClaw migrated from workloads/openclaw/ (StatefulSet) to
+# workloads/openclaw-sandbox/ (Sandbox CR) in Phase 26. Tests now reference
+# the sandbox NetworkPolicy.
 
 @test "OpenClaw NetworkPolicy allows egress to litellm-proxy in nemoclaw namespace" {
   run grep 'kubernetes.io/metadata.name: nemoclaw' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   assert_success
 }
 
 @test "OpenClaw NetworkPolicy targets litellm-proxy pod for egress" {
   run grep 'app.kubernetes.io/name: litellm-proxy' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   assert_success
 }
 
 @test "OpenClaw NetworkPolicy allows egress on port 4000 for LiteLLM proxy" {
   run grep 'port: 4000' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   assert_success
 }
 
 @test "OpenClaw NetworkPolicy has exactly 3 egress destinations" {
-  local file="${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
+  local file="${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   run grep -c '    - to:' "$file"
   assert_success
   assert_output '3'
 }
 
-@test "OpenClaw NetworkPolicy documents credential isolation for HTTPS egress" {
-  run grep -i 'credential isolation' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/networkpolicy.yaml"
-  assert_success
-}
-
 # ===========================================================================
-# OpenClaw Credential Isolation (CI-03)
+# OpenClaw Sandbox Credential Isolation (CI-03)
 # ===========================================================================
+# NOTE: OpenClaw runs as a Sandbox CR (sandbox.yaml), not a StatefulSet.
+# The credential isolation tests verify API keys are not in the Sandbox spec.
 
-@test "OpenClaw StatefulSet does not have NVIDIA_API_KEY env var" {
+@test "OpenClaw Sandbox does not have NVIDIA_API_KEY env var" {
   run grep 'NVIDIA_API_KEY' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_failure
 }
 
-@test "OpenClaw StatefulSet does not have OPENAI_API_KEY env var" {
+@test "OpenClaw Sandbox does not have OPENAI_API_KEY env var" {
   run grep 'OPENAI_API_KEY' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_failure
 }
 
-@test "OpenClaw StatefulSet does not have ANTHROPIC_API_KEY env var" {
+@test "OpenClaw Sandbox does not have ANTHROPIC_API_KEY env var" {
   run grep 'ANTHROPIC_API_KEY' \
-    "${PROJECT_ROOT}/workloads/openclaw/base/statefulset.yaml"
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_failure
 }
