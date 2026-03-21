@@ -1,5 +1,35 @@
 # Milestones: Pincer Ops
 
+## v2.0 OpenShell Sandbox (Shipped: 2026-03-21)
+
+**Delivered:** Real OpenShell/NemoClaw deployment with agent-sandbox CRD controller, OpenClaw as Sandbox CR with kernel-level isolation (Landlock, seccomp-BPF, network namespaces), privacy router inference routing replacing LiteLLM, mTLS between gateway and sandbox, and 319 BATS tests.
+
+**Phases completed:** 23-29 (17 plans total)
+
+**Key accomplishments:**
+
+- Deployed OpenShell gateway as StatefulSet with mTLS, RBAC, and SQLite PVC for sandbox lifecycle management
+- Registered agent-sandbox CRD and controller, migrated OpenClaw from StatefulSet to Sandbox CR with stable hostname
+- Side-loaded supervisor binary via DaemonSet, enabling Landlock filesystem restrictions and seccomp-BPF syscall filtering
+- Transitioned inference routing from LiteLLM Proxy to OpenShell privacy router via supervisor HTTP CONNECT proxy
+- Removed all v1.2 LiteLLM/nemoclaw resources (18 files deleted, 2 directory trees removed)
+- Enabled mTLS with cert-manager CA chain (self-signed CA → CA issuer → server/client certs)
+- Added kubeconform CRD schema for Sandbox v1alpha1 enabling CI validation of custom resources
+- Built 319 BATS tests (186 for OpenShell manifests alone) covering all 39 requirements
+
+**Stats:**
+
+- 120 files created/modified
+- +18,864 / -1,244 lines (net +17,620 LOC)
+- 7 phases, 17 plans, 39 requirements shipped (39/39)
+- 1 day (2026-03-21)
+
+**Git range:** `feat(23-01)` → `docs(phase-29)`
+
+**What's next:** Define next milestone goals with `/gsd:new-milestone`
+
+---
+
 ## v1.2 NemoClaw Governance Support (Shipped: 2026-03-20)
 
 **Delivered:** NemoClaw governance layer with LiteLLM Proxy as inference gateway, OpenClaw credential isolation via proxy routing, K8s-native security hardening (PSS, seccomp, readOnlyRootFilesystem), and 31 structural BATS tests proving manifest correctness and network isolation.
