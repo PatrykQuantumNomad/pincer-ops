@@ -201,11 +201,11 @@ load '../test_helper'
   assert_success
 }
 
-@test "OpenClaw NetworkPolicy has exactly 3 egress destinations" {
+@test "OpenClaw NetworkPolicy has exactly 4 egress destinations" {
   local file="${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   run grep -c '    - to:' "$file"
   assert_success
-  assert_output '3'
+  assert_output '4'
 }
 
 # ===========================================================================
