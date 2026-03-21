@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: completed
-stopped_at: Completed 27-03-PLAN.md
+status: phase_complete
+stopped_at: Phase 27 verified and complete
 last_updated: "2026-03-21T12:55:21.278Z"
 last_activity: 2026-03-21 -- Plan 27-03 complete (BATS structural tests for supervisor)
 progress:
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 27 complete -- supervisor DaemonSet, sandbox CR integration, and BATS structural tests all done
+**Current focus:** Phase 27 verified -- supervisor binary side-loading complete, ready for Phase 28
 
 ## Current Position
 
 Phase: 27 of 29 (supervisor-binary-side-loading)
 Plan: 3/3 complete
-Status: Phase 27 complete
-Last activity: 2026-03-21 -- Plan 27-03 complete (BATS structural tests for supervisor)
+Status: Phase 27 verified and complete, ready to plan Phase 28
+Last activity: 2026-03-21 -- Phase 27 verified (5/5 must-haves, 6 runtime items need live cluster)
 
 Progress: [██████████] 100%
 
