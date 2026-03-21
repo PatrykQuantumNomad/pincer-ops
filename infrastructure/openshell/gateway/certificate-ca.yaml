@@ -1,0 +1,23 @@
+# certificate-ca.yaml -- Root CA Certificate for OpenShell mTLS.
+#
+# Self-signed CA issued by the cluster-wide selfsigned-issuer. Lives in the
+# cert-manager namespace because ClusterIssuers look for CA secrets there.
+# The resulting openshell-ca-tls secret is consumed by openshell-ca-issuer.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openshell-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: openshell-ca
+  secretName: openshell-ca-tls
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  duration: 87600h    # 10 years
+  renewBefore: 720h   # 30 days
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

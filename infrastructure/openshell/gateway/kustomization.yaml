@@ -3,7 +3,7 @@
 # Pre-rendered from the upstream NVIDIA/OpenShell Helm chart:
 #   Chart: deploy/helm/openshell v0.1.0
 #   Image: ghcr.io/nvidia/openshell/gateway:0.0.12
-#   Values: TLS-disabled dev configuration
+#   Values: mTLS-enabled configuration (Phase 29)
 #
 # These are static YAML files extracted from Helm template output.
 # ArgoCD applies them via Kustomize -- no Helm runtime in the cluster.
@@ -20,3 +20,8 @@ resources:
   - rolebinding.yaml
   - service.yaml
   - statefulset.yaml
+  - certificate-ca.yaml
+  - clusterissuer-ca.yaml
+  - certificate-server.yaml
+  - certificate-client.yaml
+  - sealedsecret-ssh.yaml

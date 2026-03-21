@@ -1,0 +1,12 @@
+# clusterissuer-ca.yaml -- CA ClusterIssuer for OpenShell mTLS.
+#
+# Signs server and client certificates using the openshell-ca-tls secret
+# created by certificate-ca.yaml. Used by certificate-server.yaml and
+# certificate-client.yaml to issue leaf certificates in the openshell namespace.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: openshell-ca-issuer
+spec:
+  ca:
+    secretName: openshell-ca-tls
