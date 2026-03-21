@@ -5,7 +5,7 @@
 # The gateway is the control plane API server that coordinates sandbox
 # lifecycle via gRPC/HTTP on port 8080.
 #
-# TLS is disabled via OPENSHELL_DISABLE_TLS for dev; Phase 29 enables mTLS.
+# mTLS enabled: server cert from openshell-server-tls, client CA from openshell-client-tls.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -54,13 +54,20 @@ spec:
             - name: OPENSHELL_SANDBOX_IMAGE
               value: "ghcr.io/nvidia/openshell-community/sandboxes/base:latest"
             - name: OPENSHELL_GRPC_ENDPOINT
-              value: "http://openshell.openshell.svc.cluster.local:8080"
+              value: "https://openshell.openshell.svc.cluster.local:8080"
             - name: OPENSHELL_SSH_HANDSHAKE_SECRET
-              value: "dev-placeholder-not-a-real-secret"
-            - name: OPENSHELL_DISABLE_TLS
-              value: "true"
-            - name: OPENSHELL_DISABLE_GATEWAY_AUTH
-              value: "true"
+              valueFrom:
+                secretKeyRef:
+                  name: openshell-ssh-handshake
+                  key: secret
+            - name: OPENSHELL_TLS_CERT
+              value: "/etc/openshell-tls/server/tls.crt"
+            - name: OPENSHELL_TLS_KEY
+              value: "/etc/openshell-tls/server/tls.key"
+            - name: OPENSHELL_TLS_CLIENT_CA
+              value: "/etc/openshell-tls/client-ca/ca.crt"
+            - name: OPENSHELL_CLIENT_TLS_SECRET_NAME
+              value: "openshell-client-tls"
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -94,6 +101,22 @@ spec:
           volumeMounts:
             - name: openshell-data
               mountPath: /var/openshell
+            - name: tls-cert
+              mountPath: /etc/openshell-tls/server
+              readOnly: true
+            - name: tls-client-ca
+              mountPath: /etc/openshell-tls/client-ca
+              readOnly: true
+      volumes:
+        - name: tls-cert
+          secret:
+            secretName: openshell-server-tls
+        - name: tls-client-ca
+          secret:
+            secretName: openshell-client-tls
+            items:
+              - key: ca.crt
+                path: ca.crt
   volumeClaimTemplates:
     - metadata:
         name: openshell-data

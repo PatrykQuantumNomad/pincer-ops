@@ -35,11 +35,38 @@ trap 'echo ""; log_warn "Bootstrap interrupted by signal"; exit 130' INT TERM
 # ---------------------------------------------------------------------------
 # TLS artifact generation (Phase 29: mTLS between gateway and sandbox)
 # ---------------------------------------------------------------------------
-# Placeholder: generates no certificates. Phase 29 activates real cert
-# generation with cert-manager self-signed CA. The function exists now so
-# that bootstrap step ordering is established and tested.
+# Creates the cert-manager CA chain for gateway-to-sandbox mTLS:
+#   1. Root CA Certificate (selfsigned-issuer -> openshell-ca-tls secret)
+#   2. CA ClusterIssuer (openshell-ca-issuer, references openshell-ca-tls)
+#   3. Server + client leaf certificates in openshell namespace
+# Depends on selfsigned-issuer ClusterIssuer (both Kinder addon and KIND
+# ArgoCD-managed cert-manager provide it).
 generate_tls_artifacts() {
-  log_info "TLS artifact generation: skipped (Phase 29 activates this)"
+  log_step "Generating TLS artifacts for OpenShell mTLS..."
+
+  local TLS_DIR="${SCRIPT_DIR}/../infrastructure/openshell/gateway"
+
+  # Apply root CA Certificate (issued by selfsigned-issuer)
+  run_cmd kubectl apply -f "${TLS_DIR}/certificate-ca.yaml"
+
+  # Wait for CA certificate to be issued before creating the ClusterIssuer
+  run_cmd kubectl wait --for=condition=Ready certificate/openshell-ca \
+    -n cert-manager --timeout=120s
+
+  # Apply CA ClusterIssuer (needs CA secret to exist)
+  run_cmd kubectl apply -f "${TLS_DIR}/clusterissuer-ca.yaml"
+
+  # Apply server and client certificates
+  run_cmd kubectl apply -f "${TLS_DIR}/certificate-server.yaml"
+  run_cmd kubectl apply -f "${TLS_DIR}/certificate-client.yaml"
+
+  # Wait for both certificates to be issued
+  run_cmd kubectl wait --for=condition=Ready certificate/openshell-server-tls \
+    -n openshell --timeout=120s
+  run_cmd kubectl wait --for=condition=Ready certificate/openshell-client-tls \
+    -n openshell --timeout=120s
+
+  log_info "TLS artifacts generated -- mTLS certificates issued by cert-manager"
 }
 
 # ---------------------------------------------------------------------------
@@ -210,7 +237,7 @@ else
 fi
 log_info "OpenShell namespaces created"
 
-# Step 8c: Generate TLS artifacts (placeholder -- Phase 29 activates)
+# Step 8c: Generate TLS artifacts (mTLS certificates for OpenShell)
 generate_tls_artifacts
 
 # Step 9: Apply root Application
