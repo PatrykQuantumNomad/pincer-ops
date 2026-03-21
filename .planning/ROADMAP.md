@@ -88,11 +88,11 @@ Plans:
   2. Agent-sandbox controller pod is Running in agent-sandbox-system namespace
   3. ArgoCD shows `infra-agent-sandbox` Application as Healthy and Synced (wave 2)
   4. Custom Lua health check in argocd-cm correctly assesses Sandbox resource health state
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 24-01: TBD
-- [ ] 24-02: TBD
+- [ ] 24-01-PLAN.md — CRD controller Kustomize manifests, ArgoCD Application sync wave update, Sandbox Lua health check
+- [ ] 24-02-PLAN.md — BATS structural tests and validate-manifests.sh update for remote resource skip
 
 ### Phase 25: OpenShell Gateway
 **Goal**: OpenShell gateway is running as a StatefulSet with RBAC, Service, and SQLite storage, ready to manage sandbox lifecycle
