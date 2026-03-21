@@ -57,7 +57,7 @@
 - [x] **Phase 24: Agent-Sandbox CRD Controller** - CRD registration, controller deployment, custom Lua health check for Sandbox resources (completed 2026-03-21)
 - [x] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests (completed 2026-03-21)
 - [x] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup (completed 2026-03-21)
-- [ ] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active
+- [x] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active (completed 2026-03-21)
 - [ ] **Phase 28: Privacy Router and Network Transition** - Gateway inference routing replaces LiteLLM, nemoclaw namespace cleaned up
 - [ ] **Phase 29: mTLS, Hardening, and Testing** - mTLS enabled, BATS structural tests, kubeconform CRD schemas, dual-provider verification
 
@@ -142,7 +142,7 @@ Plans:
 Plans:
 - [x] 27-01-PLAN.md — Supervisor DaemonSet Kustomize root, ArgoCD Applications (wave 3), bootstrap.sh image loading, validate-manifests.sh
 - [x] 27-02-PLAN.md — Sandbox CR supervisor as PID 1, hostPath mount, elevated capabilities, NetworkPolicy gRPC egress
-- [ ] 27-03-PLAN.md — BATS structural tests for SUPV-01 through SUPV-06 and bootstrap.bats file count updates
+- [x] 27-03-PLAN.md — BATS structural tests for SUPV-01 through SUPV-06 and bootstrap.bats file count updates
 
 ### Phase 28: Privacy Router and Network Transition
 **Goal**: OpenShell privacy router handles all inference routing, LiteLLM Proxy is removed, and the nemoclaw namespace is fully cleaned up
@@ -209,6 +209,6 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
-| 27. Supervisor Binary Side-Loading | v2.0 | 2/3 | In Progress|  |
+| 27. Supervisor Binary Side-Loading | v2.0 | 3/3 | Complete   | 2026-03-21 |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |
 | 29. mTLS, Hardening, and Testing | v2.0 | 0/? | Not started | - |

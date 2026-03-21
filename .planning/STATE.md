@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: executing
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-03-21T12:46:13.315Z"
-last_activity: 2026-03-21 -- Plan 27-02 complete (Sandbox CR supervisor integration)
+status: completed
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-03-21T12:55:21.278Z"
+last_activity: 2026-03-21 -- Plan 27-03 complete (BATS structural tests for supervisor)
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
-  percent: 92
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 27 in progress -- supervisor DaemonSet deployed, Sandbox CR integrated with supervisor PID 1, BATS tests next
+**Current focus:** Phase 27 complete -- supervisor DaemonSet, sandbox CR integration, and BATS structural tests all done
 
 ## Current Position
 
 Phase: 27 of 29 (supervisor-binary-side-loading)
-Plan: 2/3 complete
-Status: Executing Phase 27
-Last activity: 2026-03-21 -- Plan 27-02 complete (Sandbox CR supervisor integration)
+Plan: 3/3 complete
+Status: Phase 27 complete
+Last activity: 2026-03-21 -- Plan 27-03 complete (BATS structural tests for supervisor)
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [█████████░] 92%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03), 1 plan in ~2 min (27-01), 1 plan in ~2 min (27-02)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03), 1 plan in ~2 min (27-01), 1 plan in ~2 min (27-02), 1 plan in ~5 min (27-03)
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 27]: 27-01: No SSA on supervisor DaemonSet Application. DirectoryOrCreate hostPath for fresh nodes. Pause:3.10 as main container with minimal resources.
 - [Phase 27]: 27-02: hostPath type Directory (not DirectoryOrCreate) on sandbox -- DaemonSet wave 3 guarantees existence before sandbox wave 10. RuntimeDefault seccomp stays -- supervisor applies seccomp-BPF internally.
 - [Phase 27]: 27-02: hostPath type Directory on sandbox (DaemonSet wave 3 guarantees existence). RuntimeDefault seccomp stays (supervisor applies seccomp-BPF internally).
+- [Phase 27]: 27-03: Updated runAsNonRoot test to runAsUser 0 (supervisor requires root). Fixed stale egress count (3->4) in nemoclaw-manifests.bats.
 
 ### Pending Todos
 
@@ -78,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T12:46:06.740Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-03-21T12:55:21.275Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None
