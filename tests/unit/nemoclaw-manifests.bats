@@ -183,29 +183,11 @@ load '../test_helper'
 # workloads/openclaw-sandbox/ (Sandbox CR) in Phase 26. Tests now reference
 # the sandbox NetworkPolicy.
 
-@test "OpenClaw NetworkPolicy allows egress to litellm-proxy in nemoclaw namespace" {
-  run grep 'kubernetes.io/metadata.name: nemoclaw' \
-    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
-  assert_success
-}
-
-@test "OpenClaw NetworkPolicy targets litellm-proxy pod for egress" {
-  run grep 'app.kubernetes.io/name: litellm-proxy' \
-    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
-  assert_success
-}
-
-@test "OpenClaw NetworkPolicy allows egress on port 4000 for LiteLLM proxy" {
-  run grep 'port: 4000' \
-    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
-  assert_success
-}
-
-@test "OpenClaw NetworkPolicy has exactly 4 egress destinations" {
+@test "OpenClaw NetworkPolicy has exactly 3 egress destinations" {
   local file="${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   run grep -c '    - to:' "$file"
   assert_success
-  assert_output '4'
+  assert_output '3'
 }
 
 # ===========================================================================

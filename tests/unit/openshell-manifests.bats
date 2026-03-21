@@ -685,12 +685,6 @@ load '../test_helper'
   assert_success
 }
 
-@test "sandbox NetworkPolicy allows LiteLLM egress" {
-  run grep 'port: 4000' \
-    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
-  assert_success
-}
-
 # ===========================================================================
 # Sandbox ConfigMap
 # ===========================================================================
@@ -982,4 +976,67 @@ load '../test_helper'
   run grep 'kubernetes.io/metadata.name: openshell' \
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   assert_success
+}
+
+# ===========================================================================
+# Inference Routing (INFER-01)
+# ===========================================================================
+
+@test "sandbox ConfigMap has inference.local baseUrl" {
+  run grep 'inference.local' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/configmap.yaml"
+  assert_success
+}
+
+@test "sandbox ConfigMap uses openshell provider key" {
+  run grep '"openshell"' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/configmap.yaml"
+  assert_success
+}
+
+@test "sandbox ConfigMap does not reference litellm" {
+  run grep 'litellm' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/configmap.yaml"
+  assert_failure
+}
+
+@test "sandbox NetworkPolicy does not allow LiteLLM egress" {
+  run grep 'port: 4000' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_failure
+}
+
+@test "sandbox NetworkPolicy does not reference nemoclaw namespace" {
+  run grep 'nemoclaw' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_failure
+}
+
+@test "sandbox NetworkPolicy has exactly 3 egress destinations" {
+  local count
+  count=$(grep -c '^\s*- to:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml")
+  [ "${count}" -eq 3 ]
+}
+
+# ===========================================================================
+# Credential Isolation (INFER-02)
+# ===========================================================================
+
+@test "sandbox CR does not have NVIDIA_API_KEY env var" {
+  run grep 'NVIDIA_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_failure
+}
+
+@test "sandbox CR does not have OPENAI_API_KEY env var" {
+  run grep 'OPENAI_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_failure
+}
+
+@test "sandbox CR does not have ANTHROPIC_API_KEY env var" {
+  run grep 'ANTHROPIC_API_KEY' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_failure
 }
