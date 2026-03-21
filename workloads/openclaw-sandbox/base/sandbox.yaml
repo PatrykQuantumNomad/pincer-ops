@@ -110,8 +110,10 @@ spec:
               value: "production"
             - name: HOME
               value: "/home/node"
-            - name: OPENSHELL_GRPC_ENDPOINT
+            - name: OPENSHELL_ENDPOINT
               value: "openshell.openshell.svc.cluster.local:8080"
+            - name: OPENSHELL_SANDBOX_ID
+              value: "openclaw-sandbox"
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
