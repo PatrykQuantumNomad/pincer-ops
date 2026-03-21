@@ -138,6 +138,8 @@ fc00:f853:ccd:e793::/64
     infra-cert-manager.yaml
     infra-sealed-secrets.yaml
     infra-nemoclaw.yaml
+    infra-openshell.yaml
+    infra-agent-sandbox.yaml
     workload-openclaw.yaml
     workload-litellm.yaml
   )
@@ -145,7 +147,7 @@ fc00:f853:ccd:e793::/64
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 13 ]
+  [ "${actual_count}" -eq 15 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -153,9 +155,10 @@ fc00:f853:ccd:e793::/64
   done
 }
 
-@test "kind bootstrap directory contains both project files" {
+@test "kind bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/infrastructure.yaml"
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/workloads.yaml"
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/openshell-project.yaml"
 }
 
 @test "kinder bootstrap directory excludes KIND-only Applications" {
@@ -175,6 +178,8 @@ fc00:f853:ccd:e793::/64
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
     infra-nemoclaw.yaml
+    infra-openshell.yaml
+    infra-agent-sandbox.yaml
     workload-openclaw.yaml
     workload-litellm.yaml
   )
@@ -182,7 +187,7 @@ fc00:f853:ccd:e793::/64
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 10 ]
+  [ "${actual_count}" -eq 12 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -190,9 +195,10 @@ fc00:f853:ccd:e793::/64
   done
 }
 
-@test "kinder bootstrap directory contains both project files" {
+@test "kinder bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/infrastructure.yaml"
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/workloads.yaml"
+  assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/openshell-project.yaml"
 }
 
 @test "shared files are identical across provider directories" {
@@ -205,6 +211,7 @@ fc00:f853:ccd:e793::/64
     workload-openclaw.yaml
     projects/infrastructure.yaml
     projects/workloads.yaml
+    projects/openshell-project.yaml
   )
 
   for f in "${shared_files[@]}"; do
@@ -327,4 +334,33 @@ fc00:f853:ccd:e793::/64
   # KIND shows MetalLB range in summary
   assert_output --partial "L2 pool"
   assert_output --partial "Provider: kind"
+}
+
+# ===========================================================================
+# OpenShell bootstrap: TLS placeholder and namespace ordering (Phase 23)
+# ===========================================================================
+
+@test "bootstrap.sh defines generate_tls_artifacts function" {
+  run grep -q 'generate_tls_artifacts()' "${SCRIPTS_DIR}/bootstrap.sh"
+  assert_success
+}
+
+@test "bootstrap.sh calls generate_tls_artifacts" {
+  run grep -q 'generate_tls_artifacts$' "${SCRIPTS_DIR}/bootstrap.sh"
+  assert_success
+}
+
+@test "bootstrap.sh creates openshell namespace before root-app" {
+  # Verify Step 8b (namespace creation) appears before Step 9 (root-app)
+  local ns_line root_line
+  ns_line=$(grep -n 'namespace openshell' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
+  root_line=$(grep -n 'Apply root Application' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
+  [ -n "$ns_line" ] && [ -n "$root_line" ] && [ "$ns_line" -lt "$root_line" ]
+}
+
+@test "bootstrap.sh creates agent-sandbox-system namespace before root-app" {
+  local ns_line root_line
+  ns_line=$(grep -n 'namespace agent-sandbox-system' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
+  root_line=$(grep -n 'Apply root Application' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
+  [ -n "$ns_line" ] && [ -n "$root_line" ] && [ "$ns_line" -lt "$root_line" ]
 }

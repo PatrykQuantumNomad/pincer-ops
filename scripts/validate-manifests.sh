@@ -101,6 +101,12 @@ validate_kustomize "infrastructure/envoy-gateway/base" "envoy-gateway"
 # nemoclaw: local resources only (Namespace, NetworkPolicy)
 validate_kustomize "infrastructure/nemoclaw/overlays/dev" "nemoclaw/dev"
 
+# openshell: namespace only
+validate_kustomize "infrastructure/openshell/base" "openshell"
+
+# agent-sandbox: namespace only
+validate_kustomize "infrastructure/agent-sandbox/base" "agent-sandbox"
+
 # metallb: remote resource (github.com/metallb/...) -- SKIP kustomize build
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build
