@@ -4,5 +4,6 @@ namespace: openshell
 resources:
   - sandbox.yaml
   - configmap.yaml
+  - service.yaml
   - httproute.yaml
   - networkpolicy.yaml
