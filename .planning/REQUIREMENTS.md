@@ -17,9 +17,9 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### Sandbox Runtime
 
-- [ ] **SAND-01**: Agent-sandbox CRD controller deployed as ArgoCD Application (wave 2, SSA=true)
-- [ ] **SAND-02**: Sandbox CRD (`sandboxes.agents.x-k8s.io/v1alpha1`) registered and operational
-- [ ] **SAND-03**: Custom Lua health check for Sandbox resource type added to argocd-cm
+- [x] **SAND-01**: Agent-sandbox CRD controller deployed as ArgoCD Application (wave 2, SSA=true)
+- [x] **SAND-02**: Sandbox CRD (`sandboxes.agents.x-k8s.io/v1alpha1`) registered and operational
+- [x] **SAND-03**: Custom Lua health check for Sandbox resource type added to argocd-cm
 - [ ] **SAND-04**: OpenShell gateway deployed as StatefulSet (wave 5) with SQLite PVC
 - [ ] **SAND-05**: Gateway RBAC: Role (Sandbox CRUD in openshell ns) + ClusterRole (nodes, runtimeclasses)
 - [ ] **SAND-06**: Gateway Service (ClusterIP:8080) exposed for sandbox gRPC communication
@@ -106,9 +106,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-03 | Phase 23 | Complete |
 | INFRA-04 | Phase 23 | Complete |
 | INFRA-05 | Phase 23 | Complete |
-| SAND-01 | Phase 24 | Pending |
-| SAND-02 | Phase 24 | Pending |
-| SAND-03 | Phase 24 | Pending |
+| SAND-01 | Phase 24 | Complete |
+| SAND-02 | Phase 24 | Complete |
+| SAND-03 | Phase 24 | Complete |
 | SAND-04 | Phase 25 | Pending |
 | SAND-05 | Phase 25 | Pending |
 | SAND-06 | Phase 25 | Pending |

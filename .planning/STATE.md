@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: phase_complete
-stopped_at: Phase 23 verified and complete
-last_updated: "2026-03-21T01:00:00Z"
-last_activity: 2026-03-21 -- Phase 23 complete (2 plans, verified 13/13 must-haves)
+status: executing
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-03-21T01:36:52.098Z"
+last_activity: 2026-03-21 -- Phase 24 plan 01 complete (CRD controller manifests)
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 14
+  total_plans: 4
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 
 ## Current Position
 
-Phase: 23 of 29 complete, ready for Phase 24
-Plan: 2/2 complete (verified)
-Status: Phase 23 complete, ready to plan Phase 24
-Last activity: 2026-03-21 -- Phase 23 verified (13/13 must-haves)
+Phase: 24 in progress
+Plan: 1/2 complete
+Status: Executing Phase 24 -- plan 01 complete, plan 02 pending
+Last activity: 2026-03-21 -- Phase 24 plan 01 complete (CRD controller manifests)
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [█░░░░░░░░░] 14%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01)
 
 ## Accumulated Context
 
@@ -48,9 +48,12 @@ Progress: [█░░░░░░░░░] 14%
 Decisions logged in PROJECT.md Key Decisions table.
 v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fresh PVC start.
 23-01: openshell AppProject groups both namespaces as single security boundary. Sync wave 0. No overlay structure for namespace-only bases.
+24-01: Namespace PSS labels applied via patch (not resource) to avoid Kustomize duplicate with upstream manifest. Sync wave 2 for CRD controller.
 
 - [Phase 23]: generate_tls_artifacts() placeholder for Phase 29 mTLS activation
 - [Phase 23]: Landlock absence on macOS treated as warning (pass) in doctor target
+- [Phase 24]: Upstream manifest.yaml includes bare Namespace -- PSS labels injected via patch-namespace.yaml
+- [Phase 24]: Namespace PSS labels applied via patch (not resource) to avoid Kustomize duplicate with upstream manifest
 
 ### Pending Todos
 
@@ -66,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T01:00:00Z
-Stopped at: Phase 23 verified and complete, ready to plan Phase 24
+Last session: 2026-03-21T01:36:52.096Z
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None

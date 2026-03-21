@@ -91,7 +91,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 24-01-PLAN.md — CRD controller Kustomize manifests, ArgoCD Application sync wave update, Sandbox Lua health check
+- [x] 24-01-PLAN.md — CRD controller Kustomize manifests, ArgoCD Application sync wave update, Sandbox Lua health check
 - [ ] 24-02-PLAN.md — BATS structural tests and validate-manifests.sh update for remote resource skip
 
 ### Phase 25: OpenShell Gateway
@@ -206,7 +206,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 1/1 | Complete | 2026-03-20 |
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 24. Agent-Sandbox CRD Controller | v2.0 | 0/? | Not started | - |
+| 24. Agent-Sandbox CRD Controller | v2.0 | 1/2 | In Progress|  |
 | 25. OpenShell Gateway | v2.0 | 0/? | Not started | - |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
