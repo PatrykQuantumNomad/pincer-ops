@@ -45,6 +45,17 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    # OpenShell gateway gRPC: policy delivery (GetSandboxConfig, UpdateConfig RPCs)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshell
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: openshell
+      ports:
+        - protocol: TCP
+          port: 8080
     - to:
         - namespaceSelector:
             matchLabels:
