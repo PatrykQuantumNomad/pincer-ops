@@ -451,6 +451,24 @@ else
   log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon)"
 fi
 
+# Step 15b: Load OpenShell cluster image (supervisor binary source)
+# The DaemonSet init container copies the supervisor binary from this image.
+# Must be loaded BEFORE ArgoCD syncs the DaemonSet (sync wave 3).
+log_step "Loading OpenShell cluster image..."
+OPENSHELL_CLUSTER_IMAGE="ghcr.io/nvidia/openshell/cluster:0.0.12"
+if docker image inspect "${OPENSHELL_CLUSTER_IMAGE}" >/dev/null 2>&1; then
+  run_cmd ${CLUSTER_PROVIDER} load docker-image "${OPENSHELL_CLUSTER_IMAGE}" --name "${CLUSTER_NAME}"
+  log_info "OpenShell cluster image loaded"
+else
+  log_warn "OpenShell cluster image not found locally -- DaemonSet will pull from registry"
+  log_warn "Pre-pull with: docker pull ${OPENSHELL_CLUSTER_IMAGE}"
+fi
+
+PAUSE_IMAGE="registry.k8s.io/pause:3.10"
+if docker image inspect "${PAUSE_IMAGE}" >/dev/null 2>&1; then
+  run_cmd ${CLUSTER_PROVIDER} load docker-image "${PAUSE_IMAGE}" --name "${CLUSTER_NAME}"
+fi
+
 # Step 16: Deploy OpenClaw Sandbox
 # Strategy: Apply ArgoCD Application directly, poll for Sandbox CR creation,
 # kustomize direct-apply fallback on ComparisonError timeout, then wait for Ready.

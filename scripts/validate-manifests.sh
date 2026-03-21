@@ -107,6 +107,9 @@ validate_kustomize "infrastructure/openshell/base" "openshell"
 # openshell gateway: local resources only (pre-rendered from Helm chart)
 validate_kustomize "infrastructure/openshell/gateway" "openshell-gateway"
 
+# openshell supervisor: DaemonSet for binary distribution
+validate_kustomize "infrastructure/openshell/supervisor" "openshell-supervisor"
+
 # metallb: remote resource (github.com/metallb/...) -- SKIP kustomize build
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build
