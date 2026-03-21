@@ -133,3 +133,12 @@ _mock_kubectl_kustomize() {
   assert_output --partial "PASS: envoy-gateway"
   assert_output --partial "All validations passed"
 }
+
+# ===========================================================================
+# Local schema integration (TEST-02 -- Phase 29)
+# ===========================================================================
+
+@test "validate-manifests.sh includes local schema location" {
+  run grep 'SCHEMA_LOCATION_LOCAL' "${SCRIPTS_DIR}/validate-manifests.sh"
+  assert_success
+}

@@ -206,8 +206,11 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
+    infra-openshell.yaml
+    infra-agent-sandbox.yaml
     infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
+    workload-openshell-gateway.yaml
     projects/infrastructure.yaml
     projects/openshell-project.yaml
   )
@@ -361,4 +364,28 @@ fc00:f853:ccd:e793::/64
   ns_line=$(grep -n 'namespace agent-sandbox-system' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
   root_line=$(grep -n 'Apply root Application' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
   [ -n "$ns_line" ] && [ -n "$root_line" ] && [ "$ns_line" -lt "$root_line" ]
+}
+
+# ===========================================================================
+# TLS Activation (TEST-04 -- Phase 29)
+# ===========================================================================
+
+@test "bootstrap.sh generate_tls_artifacts is active" {
+  run grep 'kubectl wait.*certificate' "${SCRIPTS_DIR}/bootstrap.sh"
+  assert_success
+}
+
+@test "bootstrap.sh generate_tls_artifacts is not placeholder" {
+  run grep 'Phase 29 activates this' "${SCRIPTS_DIR}/bootstrap.sh"
+  assert_failure
+}
+
+# ===========================================================================
+# Dual-provider cert-manager compatibility (TEST-03)
+# ===========================================================================
+
+@test "selfsigned-clusterissuer.yaml exists and contains selfsigned-issuer" {
+  run grep 'name: selfsigned-issuer' \
+    "${PROJECT_ROOT}/infrastructure/cert-manager/base/selfsigned-clusterissuer.yaml"
+  assert_success
 }
