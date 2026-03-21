@@ -45,11 +45,10 @@ const steps = [
     step: '06',
     label: 'NemoClaw CLI (optional)',
     commands: [
-      'pip install nemoclaw',
-      'kubectl port-forward svc/openshell -n openshell 8080:8080 &',
-      'nemoclaw status',
+      'curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/install.sh | bash',
+      'nemoclaw --help',
     ],
-    note: 'Interactive sandbox management via OpenShell gateway API — monitor activity, view logs, manage inference',
+    note: 'Interactive sandbox management — launch, connect, status, log streaming. Installs Node.js via nvm if needed.',
   },
 ];
 

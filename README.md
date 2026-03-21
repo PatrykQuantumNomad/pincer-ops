@@ -104,16 +104,17 @@ LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and
 
 #### NemoClaw CLI (Optional)
 
-The NemoClaw CLI provides interactive sandbox management commands (`launch`, `connect`, `status`, log streaming) via the OpenShell gateway API:
+The NemoClaw CLI provides interactive sandbox management commands (`launch`, `connect`, `status`, log streaming). Install on your host machine:
 
 ```bash
-# Install on your host machine (not inside the pod)
-pip install nemoclaw
+# One-line installer (installs Node.js via nvm if needed)
+curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/install.sh | bash
 
-# Point at the OpenShell gateway (requires port-forward)
-kubectl port-forward svc/openshell -n openshell 8080:8080 &
-nemoclaw status
-nemoclaw logs openclaw-sandbox
+# Or manual install from source
+git clone https://github.com/NVIDIA/NemoClaw.git && cd NemoClaw && npm install
+
+# Verify
+nemoclaw --help
 ```
 
 In this GitOps deployment, sandbox lifecycle is managed by ArgoCD and the agent-sandbox controller. The NemoClaw CLI provides an optional interactive layer — useful for monitoring sandbox activity, viewing logs, and managing inference providers through the OpenShell gateway.
