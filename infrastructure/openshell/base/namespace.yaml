@@ -1,0 +1,24 @@
+# namespace.yaml -- OpenShell gateway namespace with Pod Security Standards enforcement.
+#
+# PSS privileged profile is required because the OpenShell gateway manages
+# sandbox lifecycle including supervisor injection, hostPath volume mounts for
+# the supervisor binary, and privileged DaemonSet operations. The supervisor
+# enforces kernel-level isolation (Landlock, seccomp-BPF) internally -- PSS
+# privileged is a deliberate tradeoff documented in STATE.md blockers.
+#
+# Labels set all three modes (enforce, audit, warn) to privileged with
+# version: latest to track the newest PSS definitions automatically.
+#
+# This namespace is created by ArgoCD applying this manifest directly.
+# Do NOT use CreateNamespace=true in the ArgoCD Application.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshell
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/warn-version: latest

@@ -1,0 +1,24 @@
+# namespace.yaml -- Agent sandbox controller namespace with Pod Security Standards enforcement.
+#
+# PSS restricted profile enforced from day one. The agent-sandbox controller
+# and all resources in this namespace must comply with the restricted security
+# standard:
+#   - No privileged containers
+#   - No host namespaces or host ports
+#   - Non-root UID required (runAsNonRoot: true)
+#   - Seccomp profile required (RuntimeDefault or Localhost)
+#   - Capabilities dropped (no NET_RAW, SYS_ADMIN, etc.)
+#
+# This namespace is created by ArgoCD applying this manifest directly.
+# Do NOT use CreateNamespace=true in the ArgoCD Application.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-sandbox-system
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest

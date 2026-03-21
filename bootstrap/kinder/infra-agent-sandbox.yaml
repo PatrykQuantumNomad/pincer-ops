@@ -1,0 +1,47 @@
+# infra-agent-sandbox.yaml -- ArgoCD Application for the agent-sandbox-system namespace.
+#
+# Manages the agent-sandbox-system namespace with Pod Security Standards (PSS)
+# enforcement at the restricted level. The CRD controller running here must
+# comply with restricted PSS -- no privileged access, non-root, seccomp required.
+#
+# v2.0 Sync Wave Map:
+#   Wave -10: ArgoCD self-management + AppProjects
+#   Wave  -5: MetalLB (KIND only)
+#   Wave  -4: Envoy Gateway controller (KIND only)
+#   Wave  -3: Sealed Secrets
+#   Wave  -2: cert-manager (KIND only)
+#   Wave  -1: Envoy Gateway config
+#   Wave   0: infra-nemoclaw, infra-openshell, infra-agent-sandbox [this app]
+#   Wave  +5: workload-litellm
+#   Wave +10: workload-openclaw
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-agent-sandbox
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/agent-sandbox
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: openshell
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/agent-sandbox/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agent-sandbox-system
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
