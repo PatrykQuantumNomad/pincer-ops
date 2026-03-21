@@ -114,6 +114,12 @@ spec:
               value: "https://openshell.openshell.svc.cluster.local:8080"
             - name: OPENSHELL_SANDBOX_ID
               value: "openclaw-sandbox"
+            - name: OPENSHELL_TLS_CA
+              value: "/etc/openshell-tls/ca/ca.crt"
+            - name: OPENSHELL_TLS_CERT
+              value: "/etc/openshell-tls/client/tls.crt"
+            - name: OPENSHELL_TLS_KEY
+              value: "/etc/openshell-tls/client/tls.key"
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
@@ -123,6 +129,12 @@ spec:
               mountPath: /home/node/.cache
             - name: supervisor-bin
               mountPath: /opt/openshell/bin
+              readOnly: true
+            - name: tls-client
+              mountPath: /etc/openshell-tls/client
+              readOnly: true
+            - name: tls-ca
+              mountPath: /etc/openshell-tls/ca
               readOnly: true
           resources:
             requests:
@@ -163,6 +175,15 @@ spec:
           hostPath:
             path: /opt/openshell/bin
             type: Directory
+        - name: tls-client
+          secret:
+            secretName: openshell-client-tls
+        - name: tls-ca
+          secret:
+            secretName: openshell-client-tls
+            items:
+              - key: ca.crt
+                path: ca.crt
   volumeClaimTemplates:
     - metadata:
         name: data
