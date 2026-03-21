@@ -1,0 +1,22 @@
+# kustomization.yaml -- Kustomize root for OpenShell gateway manifests.
+#
+# Pre-rendered from the upstream NVIDIA/OpenShell Helm chart:
+#   Chart: deploy/helm/openshell v0.1.0
+#   Image: ghcr.io/nvidia/openshell/gateway:0.0.12
+#   Values: TLS-disabled dev configuration
+#
+# These are static YAML files extracted from Helm template output.
+# ArgoCD applies them via Kustomize -- no Helm runtime in the cluster.
+#
+# WARNING: Do NOT add a namespace: field here. ClusterRole and
+# ClusterRoleBinding are cluster-scoped and must not be namespaced.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
+  - role.yaml
+  - rolebinding.yaml
+  - service.yaml
+  - statefulset.yaml

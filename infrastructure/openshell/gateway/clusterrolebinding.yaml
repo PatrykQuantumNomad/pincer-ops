@@ -1,0 +1,20 @@
+# clusterrolebinding.yaml -- Binds cluster-scoped permissions to gateway SA.
+#
+# Pre-rendered from deploy/helm/openshell v0.1.0, image tag 0.0.12.
+# Links the openshell-sandbox-runtimeclass ClusterRole to the openshell
+# ServiceAccount in the openshell namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openshell-sandbox-runtimeclass
+  labels:
+    app.kubernetes.io/name: openshell
+    app.kubernetes.io/instance: openshell
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openshell-sandbox-runtimeclass
+subjects:
+  - kind: ServiceAccount
+    name: openshell
+    namespace: openshell

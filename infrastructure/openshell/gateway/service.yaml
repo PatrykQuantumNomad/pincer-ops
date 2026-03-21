@@ -1,0 +1,24 @@
+# service.yaml -- ClusterIP Service for the OpenShell gateway.
+#
+# Pre-rendered from deploy/helm/openshell v0.1.0, image tag 0.0.12.
+# Exposes the gateway gRPC/HTTP API on port 8080 for sandbox lifecycle
+# communication. Uses appProtocol: grpc to signal HTTP/2 to load balancers.
+apiVersion: v1
+kind: Service
+metadata:
+  name: openshell
+  namespace: openshell
+  labels:
+    app.kubernetes.io/name: openshell
+    app.kubernetes.io/instance: openshell
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+      appProtocol: grpc
+  selector:
+    app.kubernetes.io/name: openshell
+    app.kubernetes.io/instance: openshell

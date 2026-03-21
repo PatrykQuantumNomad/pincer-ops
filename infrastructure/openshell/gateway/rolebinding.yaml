@@ -1,0 +1,20 @@
+# rolebinding.yaml -- Binds namespace-scoped Sandbox permissions to gateway SA.
+#
+# Pre-rendered from deploy/helm/openshell v0.1.0, image tag 0.0.12.
+# Links the openshell-sandbox Role to the openshell ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshell-sandbox
+  namespace: openshell
+  labels:
+    app.kubernetes.io/name: openshell
+    app.kubernetes.io/instance: openshell
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openshell-sandbox
+subjects:
+  - kind: ServiceAccount
+    name: openshell
+    namespace: openshell
