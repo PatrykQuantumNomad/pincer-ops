@@ -53,7 +53,7 @@
 
 **Milestone Goal:** Replace LiteLLM-based governance approximation with real OpenShell/NemoClaw deployment -- OpenShell gateway, agent-sandbox CRD controller, OpenClaw as Sandbox CR with kernel-level isolation and privacy router inference routing.
 
-- [ ] **Phase 23: Namespace Architecture and Infrastructure Foundation** - New namespace topology, AppProject updates, Landlock checks, bootstrap TLS prep
+- [x] **Phase 23: Namespace Architecture and Infrastructure Foundation** - New namespace topology, AppProject updates, Landlock checks, bootstrap TLS prep (completed 2026-03-21)
 - [ ] **Phase 24: Agent-Sandbox CRD Controller** - CRD registration, controller deployment, custom Lua health check for Sandbox resources
 - [ ] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests
 - [ ] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup
@@ -77,7 +77,7 @@
 
 Plans:
 - [x] 23-01-PLAN.md — Namespace manifests, ArgoCD Applications, AppProject, BATS tests, kubeconform
-- [ ] 23-02-PLAN.md — Bootstrap namespace creation, TLS placeholder, doctor Landlock and PSS checks
+- [x] 23-02-PLAN.md — Bootstrap namespace creation, TLS placeholder, doctor Landlock and PSS checks
 
 ### Phase 24: Agent-Sandbox CRD Controller
 **Goal**: Sandbox CRD is registered and the agent-sandbox controller is running, ready to reconcile Sandbox CRs into pods
@@ -205,7 +205,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 20. Security Hardening | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 1/1 | Complete | 2026-03-20 |
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 1/2 | In Progress|  |
+| 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 0/? | Not started | - |
 | 25. OpenShell Gateway | v2.0 | 0/? | Not started | - |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
