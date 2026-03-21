@@ -54,7 +54,7 @@
 **Milestone Goal:** Replace LiteLLM-based governance approximation with real OpenShell/NemoClaw deployment -- OpenShell gateway, agent-sandbox CRD controller, OpenClaw as Sandbox CR with kernel-level isolation and privacy router inference routing.
 
 - [x] **Phase 23: Namespace Architecture and Infrastructure Foundation** - New namespace topology, AppProject updates, Landlock checks, bootstrap TLS prep (completed 2026-03-21)
-- [ ] **Phase 24: Agent-Sandbox CRD Controller** - CRD registration, controller deployment, custom Lua health check for Sandbox resources
+- [x] **Phase 24: Agent-Sandbox CRD Controller** - CRD registration, controller deployment, custom Lua health check for Sandbox resources (completed 2026-03-21)
 - [ ] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests
 - [ ] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup
 - [ ] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active
@@ -92,7 +92,7 @@ Plans:
 
 Plans:
 - [x] 24-01-PLAN.md — CRD controller Kustomize manifests, ArgoCD Application sync wave update, Sandbox Lua health check
-- [ ] 24-02-PLAN.md — BATS structural tests and validate-manifests.sh update for remote resource skip
+- [x] 24-02-PLAN.md — BATS structural tests and validate-manifests.sh update for remote resource skip
 
 ### Phase 25: OpenShell Gateway
 **Goal**: OpenShell gateway is running as a StatefulSet with RBAC, Service, and SQLite storage, ready to manage sandbox lifecycle
@@ -206,7 +206,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 1/1 | Complete | 2026-03-20 |
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 24. Agent-Sandbox CRD Controller | v2.0 | 1/2 | In Progress|  |
+| 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 25. OpenShell Gateway | v2.0 | 0/? | Not started | - |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
