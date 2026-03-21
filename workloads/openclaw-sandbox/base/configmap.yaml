@@ -4,6 +4,11 @@
 # Once on the PVC, the onboarding wizard and UI manage this file directly.
 # To re-seed, delete the file from the PVC and restart the pod.
 #
+# Inference routing: OpenClaw connects to https://inference.local/v1 which is
+# the OpenShell privacy router running inside the supervisor binary. The
+# privacy router strips sandbox-provided credentials and injects the real
+# API key before forwarding to the upstream LLM provider.
+#
 # OPENCLAW_GATEWAY_TOKEN is also set as an env var on the gateway container.
 # The gateway uses it to auto-pair CLI WebSocket connections (same pattern as
 # the upstream docker-compose). The token in openclaw.json and the env var
@@ -29,22 +34,14 @@ data:
       },
       "models": {
         "providers": {
-          "litellm": {
-            "baseUrl": "http://litellm-proxy.nemoclaw.svc.cluster.local:4000/v1",
+          "openshell": {
+            "baseUrl": "https://inference.local/v1",
             "apiKey": "no-key-required",
             "api": "openai-completions",
             "models": [
               {
-                "id": "nvidia-nim/llama-3.1-8b",
-                "name": "Llama 3.1 8B (NVIDIA NIM)"
-              },
-              {
-                "id": "openai/gpt-4o",
-                "name": "GPT-4o (OpenAI)"
-              },
-              {
-                "id": "anthropic/claude-sonnet-4-5",
-                "name": "Claude Sonnet 4.5 (Anthropic)"
+                "id": "gpt-4o",
+                "name": "GPT-4o (via OpenShell)"
               }
             ]
           }
