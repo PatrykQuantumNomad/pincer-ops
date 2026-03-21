@@ -1,0 +1,49 @@
+# workload-openshell-gateway.yaml -- ArgoCD Application for the OpenShell gateway.
+#
+# Deploys the OpenShell gateway StatefulSet, RBAC, and Service from
+# pre-rendered Helm chart manifests. The gateway is the control plane
+# API server that coordinates sandbox lifecycle via gRPC on port 8080.
+#
+# v2.0 Sync Wave Map:
+#   Wave -10: ArgoCD self-management + AppProjects
+#   Wave  -5: MetalLB (KIND only)
+#   Wave  -4: Envoy Gateway controller (KIND only)
+#   Wave  -3: Sealed Secrets
+#   Wave  -2: cert-manager (KIND only)
+#   Wave  -1: Envoy Gateway config
+#   Wave   0: infra-nemoclaw, infra-openshell, infra-agent-sandbox
+#   Wave   2: infra-agent-sandbox (CRD controller)
+#   Wave   5: workload-openshell-gateway [this app]
+#   Wave  +5: workload-litellm
+#   Wave +10: workload-openclaw
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workload-openshell-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/openshell/gateway
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: openshell
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/openshell/gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshell
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
