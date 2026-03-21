@@ -172,8 +172,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 29-01-PLAN.md — cert-manager CA chain, SealedSecret, gateway mTLS StatefulSet, SSH NetworkPolicy, bootstrap TLS activation
-- [ ] 29-02-PLAN.md — kubeconform CRD schema for Sandbox v1alpha1 and validate-manifests.sh local schema integration
+- [x] 29-01-PLAN.md — cert-manager CA chain, SealedSecret, gateway mTLS StatefulSet, SSH NetworkPolicy, bootstrap TLS activation
+- [x] 29-02-PLAN.md — kubeconform CRD schema for Sandbox v1alpha1 and validate-manifests.sh local schema integration
 - [ ] 29-03-PLAN.md — BATS structural tests for SEC-01 through SEC-04 and dual-provider parity verification
 
 ## Progress
@@ -211,4 +211,4 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
 | 27. Supervisor Binary Side-Loading | v2.0 | 3/3 | Complete   | 2026-03-21 |
 | 28. Privacy Router and Network Transition | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 29. mTLS, Hardening, and Testing | v2.0 | 0/3 | Not started | - |
+| 29. mTLS, Hardening, and Testing | v2.0 | 2/3 | In Progress|  |
