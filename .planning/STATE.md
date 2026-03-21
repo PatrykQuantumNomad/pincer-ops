@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: executing
-stopped_at: Completed 29-01-PLAN.md
-last_updated: "2026-03-21T15:26:48.542Z"
-last_activity: 2026-03-21 -- Phase 29 plan 01 complete (mTLS cert chain + gateway hardening)
+stopped_at: Completed 29-03-PLAN.md
+last_updated: "2026-03-21T15:35:35Z"
+last_activity: 2026-03-21 -- Phase 29 plan 03 complete (BATS structural tests for SEC-01 through SEC-04)
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 17
-  completed_plans: 16
-  percent: 88
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 29 of 29 (mtls-hardening-and-testing)
-Plan: 1/3 complete
-Status: Executing Phase 29 -- mTLS hardening and testing
-Last activity: 2026-03-21 -- Phase 29 plan 01 complete (mTLS cert chain + gateway hardening)
+Plan: 3/3 complete
+Status: Phase 29 complete -- all mTLS hardening and testing plans done
+Last activity: 2026-03-21 -- Phase 29 plan 03 complete (BATS structural tests for SEC-01 through SEC-04)
 
-Progress: [████████░░] 88%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [████████░░] 88%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03), 1 plan in ~2 min (27-01), 1 plan in ~2 min (27-02), 1 plan in ~5 min (27-03), 1 plan in ~4 min (28-02), 1 plan in ~3 min (29-01), 1 plan in ~3 min (29-02)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03), 1 plan in ~2 min (27-01), 1 plan in ~2 min (27-02), 1 plan in ~5 min (27-03), 1 plan in ~4 min (28-02), 1 plan in ~3 min (29-01), 1 plan in ~3 min (29-02), 1 plan in ~7 min (29-03)
 
 ## Accumulated Context
 
@@ -70,6 +70,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 28]: 28-02: Cleaned stale nemoclaw/litellm sync wave map comments from 10 bootstrap YAML files for zero-reference cleanup
 - [Phase 29]: 29-01: openshell-client-tls ca.crt for client CA volume (avoids separate secret). Root CA in cert-manager ns (ClusterIssuer requirement). SealedSecret placeholder with re-seal instructions.
 - [Phase 29]: 29-02: Full CRD schema extraction for local kubeconform validation. SCHEMA_LOCATION_LOCAL as lowest-priority fallback. Pattern: schemas/{group}/{kind}_{version}.json
+- [Phase 29]: 29-03: Replaced SAND-07 TLS-disabled tests with SEC-01 mTLS-enabled assertions. Added 3 missing files to shared_files parity array. 41 new BATS tests covering SEC-01 through SEC-04.
 
 ### Pending Todos
 
@@ -82,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:26:48.539Z
-Stopped at: Completed 29-01-PLAN.md
+Last session: 2026-03-21T15:35:35Z
+Stopped at: Completed 29-03-PLAN.md
 Resume file: None

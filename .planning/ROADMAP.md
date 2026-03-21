@@ -59,7 +59,7 @@
 - [x] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup (completed 2026-03-21)
 - [x] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active (completed 2026-03-21)
 - [x] **Phase 28: Privacy Router and Network Transition** - Gateway inference routing replaces LiteLLM, nemoclaw namespace cleaned up (completed 2026-03-21)
-- [ ] **Phase 29: mTLS, Hardening, and Testing** - mTLS enabled, BATS structural tests, kubeconform CRD schemas, dual-provider verification
+- [x] **Phase 29: mTLS, Hardening, and Testing** - mTLS enabled, BATS structural tests, kubeconform CRD schemas, dual-provider verification (completed 2026-03-21)
 
 ## Phase Details
 
@@ -174,7 +174,7 @@ Plans:
 Plans:
 - [x] 29-01-PLAN.md — cert-manager CA chain, SealedSecret, gateway mTLS StatefulSet, SSH NetworkPolicy, bootstrap TLS activation
 - [x] 29-02-PLAN.md — kubeconform CRD schema for Sandbox v1alpha1 and validate-manifests.sh local schema integration
-- [ ] 29-03-PLAN.md — BATS structural tests for SEC-01 through SEC-04 and dual-provider parity verification
+- [x] 29-03-PLAN.md — BATS structural tests for SEC-01 through SEC-04 and dual-provider parity verification
 
 ## Progress
 
@@ -211,4 +211,4 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
 | 27. Supervisor Binary Side-Loading | v2.0 | 3/3 | Complete   | 2026-03-21 |
 | 28. Privacy Router and Network Transition | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 29. mTLS, Hardening, and Testing | v2.0 | 2/3 | In Progress|  |
+| 29. mTLS, Hardening, and Testing | v2.0 | 3/3 | Complete   | 2026-03-21 |

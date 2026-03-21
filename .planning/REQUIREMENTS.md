@@ -61,11 +61,11 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### Testing & Validation
 
-- [ ] **TEST-01**: BATS structural tests for all new OpenShell/agent-sandbox manifests
+- [x] **TEST-01**: BATS structural tests for all new OpenShell/agent-sandbox manifests
 - [x] **TEST-02**: kubeconform CI validation with CRD schema for `agents.x-k8s.io/v1alpha1`
-- [ ] **TEST-03**: Both Kinder and KIND providers pass full `make check`
-- [ ] **TEST-04**: Bootstrap/teardown cycle produces operational state with OpenShell stack
-- [ ] **TEST-05**: Dual-provider bootstrap directory pattern (byte-identical shared files)
+- [x] **TEST-03**: Both Kinder and KIND providers pass full `make check`
+- [x] **TEST-04**: Bootstrap/teardown cycle produces operational state with OpenShell stack
+- [x] **TEST-05**: Dual-provider bootstrap directory pattern (byte-identical shared files)
 
 ## Future Requirements
 
@@ -135,11 +135,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-02 | Phase 29 | Complete |
 | SEC-03 | Phase 29 | Complete |
 | SEC-04 | Phase 29 | Complete |
-| TEST-01 | Phase 29 | Pending |
+| TEST-01 | Phase 29 | Complete |
 | TEST-02 | Phase 29 | Complete |
-| TEST-03 | Phase 29 | Pending |
-| TEST-04 | Phase 29 | Pending |
-| TEST-05 | Phase 29 | Pending |
+| TEST-03 | Phase 29 | Complete |
+| TEST-04 | Phase 29 | Complete |
+| TEST-05 | Phase 29 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 39 total
