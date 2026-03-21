@@ -102,22 +102,17 @@ make openclaw-cli CMD="devices approve <requestId>"
 
 LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and routed through the OpenShell privacy router — they are **not** set in deployment manifests or K8s Secrets.
 
-#### NemoClaw CLI (Optional)
+#### Validate NemoClaw Stack
 
-The NemoClaw CLI provides interactive sandbox management commands (`launch`, `connect`, `status`, log streaming). Install on your host machine:
+The NemoClaw architecture is the combination of OpenShell gateway, agent-sandbox CRD controller, supervisor binary, and OpenClaw as a Sandbox CR. Validate all components are running:
 
 ```bash
-# One-line installer (installs Node.js via nvm if needed)
-curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/install.sh | bash
-
-# Or manual install from source
-git clone https://github.com/NVIDIA/NemoClaw.git && cd NemoClaw && npm install
-
-# Verify
-nemoclaw --help
+kubectl get sandbox -n openshell              # Sandbox CR exists
+kubectl get pods -n openshell                 # Gateway, supervisor, sandbox pods running
+kubectl get pods -n agent-sandbox-system      # CRD controller running
+kubectl get certificates -n openshell         # mTLS certs issued
+kubectl get certificates -n cert-manager      # CA cert issued
 ```
-
-In this GitOps deployment, sandbox lifecycle is managed by ArgoCD and the agent-sandbox controller. The NemoClaw CLI provides an optional interactive layer — useful for monitoring sandbox activity, viewing logs, and managing inference providers through the OpenShell gateway.
 
 #### Managing Channels and Devices
 

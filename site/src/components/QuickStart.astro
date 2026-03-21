@@ -43,12 +43,13 @@ const steps = [
   },
   {
     step: '06',
-    label: 'NemoClaw CLI (optional)',
+    label: 'Validate NemoClaw stack',
     commands: [
-      'curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/install.sh | bash',
-      'nemoclaw --help',
+      'kubectl get sandbox -n openshell',
+      'kubectl get pods -n openshell',
+      'kubectl get certificates -n openshell',
     ],
-    note: 'Interactive sandbox management — launch, connect, status, log streaming. Installs Node.js via nvm if needed.',
+    note: 'Confirms OpenShell gateway, supervisor DaemonSet, Sandbox CR, and mTLS certs are all running',
   },
 ];
 
