@@ -15,13 +15,13 @@ const steps = [
     step: '02',
     label: 'Bootstrap the cluster',
     commands: ['make up'],
-    note: 'Creates Kinder cluster + deploys full stack (~3 min). Use CLUSTER_PROVIDER=kind for KIND.',
+    note: 'Creates Kinder cluster, installs ArgoCD, issues mTLS certs, deploys OpenShell + OpenClaw (~4 min). Use CLUSTER_PROVIDER=kind for KIND.',
   },
   {
     step: '03',
     label: 'Check status',
     commands: ['make status'],
-    note: 'All apps should show Synced / Healthy',
+    note: '9 ArgoCD apps: gateway, CRD controller, supervisor, sandbox, sealed secrets, and more',
   },
   {
     step: '04',
@@ -30,7 +30,7 @@ const steps = [
       'make openclaw-onboard',
       'make openclaw-dashboard',
     ],
-    note: 'Onboard configures your LLM provider, dashboard opens the authenticated UI',
+    note: 'Onboard configures your LLM provider via the privacy router. Dashboard opens the authenticated UI.',
   },
   {
     step: '05',
