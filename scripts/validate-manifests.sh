@@ -87,7 +87,7 @@ validate_raw "bootstrap/kind/" "bootstrap/kind"
 validate_raw "bootstrap/kinder/" "bootstrap/kinder"
 
 # --- Workload overlays ---
-validate_kustomize "workloads/openclaw/overlays/dev" "openclaw/dev"
+validate_kustomize "workloads/openclaw-sandbox/overlays/dev" "openclaw-sandbox/dev"
 validate_kustomize "workloads/litellm/overlays/dev" "litellm/dev"
 
 # --- Infrastructure bases ---

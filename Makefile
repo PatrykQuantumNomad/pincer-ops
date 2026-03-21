@@ -151,7 +151,7 @@ doctor: ## Check cluster health for current provider
 	    echo "  Sealed Secrets:  NOT FOUND"; \
 	  fi; \
 	  TOTAL=$$((TOTAL + 1)); \
-	  REPLICAS=$$(kubectl get statefulset openclaw-gateway -n openclaw -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	  REPLICAS=$$(kubectl get sandbox openclaw-sandbox -n openshell -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
 	  if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
 	    echo "  OpenClaw:        $$REPLICAS ready"; PASS=$$((PASS + 1)); \
 	  else \
@@ -238,7 +238,7 @@ endif
 
 .PHONY: logs
 logs: ## Tail OpenClaw gateway logs
-	@kubectl logs -n openclaw statefulset/openclaw-gateway -f --tail=50
+	@kubectl logs -n openshell -l app.kubernetes.io/name=openclaw-gateway -f --tail=50
 
 .PHONY: pods
 pods: ## List all pods across namespaces
@@ -248,8 +248,8 @@ pods: ## List all pods across namespaces
 # OpenClaw CLI
 # ---------------------------------------------------------------------------
 
-OPENCLAW_POD := openclaw-gateway-0
-OPENCLAW_NS  := openclaw
+OPENCLAW_POD := openclaw-sandbox
+OPENCLAW_NS  := openshell
 OPENCLAW_CLI := kubectl exec -it $(OPENCLAW_POD) -n $(OPENCLAW_NS) -- node dist/index.js
 
 .PHONY: openclaw-cli

@@ -451,41 +451,34 @@ else
   log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon)"
 fi
 
-# Step 16: Deploy OpenClaw
-# Strategy: Apply ArgoCD Application directly, poll for StatefulSet creation,
-# kustomize direct-apply fallback on ComparisonError timeout, then wait for rollout.
-OC_OVERLAY_DIR="${SCRIPT_DIR}/../workloads/openclaw/overlays/dev"
-log_step "Deploying OpenClaw..."
+# Step 16: Deploy OpenClaw Sandbox
+# Strategy: Apply ArgoCD Application directly, poll for Sandbox CR creation,
+# kustomize direct-apply fallback on ComparisonError timeout, then wait for Ready.
+OC_OVERLAY_DIR="${SCRIPT_DIR}/../workloads/openclaw-sandbox/overlays/dev"
+log_step "Deploying OpenClaw sandbox..."
 
-# Apply the workload-openclaw Application directly
-run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/workload-openclaw.yaml"
+# Apply the workload-openclaw-sandbox Application directly
+run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/workload-openclaw-sandbox.yaml"
 
-# Wait for StatefulSet to be created (ArgoCD sync or fallback)
+# Wait for Sandbox CR to be created (ArgoCD sync or fallback)
 OC_WAIT=0
 OC_TIMEOUT=180
-until kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; do
+until kubectl get sandbox openclaw-sandbox -n openshell >/dev/null 2>&1; do
   if [ ${OC_WAIT} -ge ${OC_TIMEOUT} ]; then
     ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
     if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo -- applying OpenClaw directly"
-      # Variable capture avoids SIGPIPE under set -euo pipefail
-      OC_NS_YAML=$(kubectl create namespace openclaw --dry-run=client -o yaml)
-      if [ "${VERBOSE}" = true ]; then
-        echo "${OC_NS_YAML}" | kubectl apply -f -
-      else
-        echo "${OC_NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
-      fi
+      log_warn "ArgoCD cannot sync from repo -- applying OpenClaw sandbox directly"
       run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${OC_OVERLAY_DIR}")
       break
     fi
-    log_error "Timed out waiting for OpenClaw StatefulSet (${OC_TIMEOUT}s)"
+    log_error "Timed out waiting for OpenClaw Sandbox CR (${OC_TIMEOUT}s)"
     exit 1
   fi
   sleep 5
   OC_WAIT=$((OC_WAIT + 5))
 done
-run_cmd kubectl rollout status statefulset/openclaw-gateway -n openclaw --timeout=300s
-log_info "OpenClaw gateway is running"
+run_cmd kubectl wait --for=condition=Ready sandbox/openclaw-sandbox -n openshell --timeout=300s
+log_info "OpenClaw sandbox is running"
 
 # ---------------------------------------------------------------------------
 # Done
@@ -507,7 +500,7 @@ else
   echo "  Headlamp Token: kubectl get secret kinder-dashboard-token -n kube-system -o jsonpath=\"{.data.token}\" | base64 -d"
 fi
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
-echo "  OpenClaw:   openclaw-gateway in openclaw namespace (port 18789)"
+echo "  OpenClaw:   openclaw-sandbox in openshell namespace (port 18789)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
