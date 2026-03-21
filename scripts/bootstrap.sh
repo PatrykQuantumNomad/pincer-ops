@@ -245,13 +245,17 @@ log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
 log_info "Root Application created -- ArgoCD will now manage all child Applications"
 
-# Step 9b: Apply AppProjects and argocd-self (idempotent)
-# When ArgoCD can sync from Git, root-app discovers these automatically.
-# When the repo is unreachable (local dev), they must be applied directly.
-# Applying unconditionally is safe (kubectl apply is idempotent) and avoids
-# race conditions where child apps reference missing projects.
+# Step 9b: Apply all child Applications directly (idempotent)
+# The root-app and argocd-self both scan bootstrap/{provider}/ which creates
+# a sync deadlock: root waits for argocd-self healthy, argocd-self waits for
+# itself. Applying all Applications directly breaks the deadlock — ArgoCD
+# detects them as already synced and proceeds with individual app sync.
+# This is safe because kubectl apply is idempotent.
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/projects/"
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/argocd-self.yaml"
+for APP_FILE in "${BOOTSTRAP_DIR}"/infra-*.yaml "${BOOTSTRAP_DIR}"/workload-*.yaml; do
+  [ -f "$APP_FILE" ] && run_cmd kubectl apply -f "$APP_FILE"
+done
 
 if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
   # Step 10: Deploy MetalLB
@@ -497,10 +501,25 @@ if docker image inspect "${PAUSE_IMAGE}" >/dev/null 2>&1; then
 fi
 
 # Step 16: Deploy OpenClaw Sandbox
-# Strategy: Apply ArgoCD Application directly, poll for Sandbox CR creation,
-# kustomize direct-apply fallback on ComparisonError timeout, then wait for Ready.
+# Strategy: Wait for Sandbox CRD, apply ArgoCD Application directly, poll for
+# Sandbox CR creation, kustomize direct-apply fallback on ComparisonError
+# timeout, then wait for Ready.
 OC_OVERLAY_DIR="${SCRIPT_DIR}/../workloads/openclaw-sandbox/overlays/dev"
 log_step "Deploying OpenClaw sandbox..."
+
+# Wait for Sandbox CRD to be registered (infra-agent-sandbox must sync first)
+log_info "Waiting for Sandbox CRD registration..."
+CRD_WAIT=0
+CRD_TIMEOUT=120
+until kubectl get crd sandboxes.agents.x-k8s.io >/dev/null 2>&1; do
+  if [ ${CRD_WAIT} -ge ${CRD_TIMEOUT} ]; then
+    log_error "Timed out waiting for Sandbox CRD (${CRD_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  CRD_WAIT=$((CRD_WAIT + 5))
+done
+log_info "Sandbox CRD registered"
 
 # Apply the workload-openclaw-sandbox Application directly
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/workload-openclaw-sandbox.yaml"
