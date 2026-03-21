@@ -59,6 +59,8 @@ spec:
               value: "dev-placeholder-not-a-real-secret"
             - name: OPENSHELL_DISABLE_TLS
               value: "true"
+            - name: OPENSHELL_DISABLE_GATEWAY_AUTH
+              value: "true"
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

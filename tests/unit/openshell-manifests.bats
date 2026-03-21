@@ -391,6 +391,12 @@ load '../test_helper'
   assert_success
 }
 
+@test "gateway StatefulSet has OPENSHELL_DISABLE_GATEWAY_AUTH env" {
+  run grep 'OPENSHELL_DISABLE_GATEWAY_AUTH' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
 # ===========================================================================
 # Gateway RBAC (SAND-05)
 # ===========================================================================
