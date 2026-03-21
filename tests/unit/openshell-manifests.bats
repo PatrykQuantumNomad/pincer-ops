@@ -376,11 +376,153 @@ load '../test_helper'
 }
 
 # ===========================================================================
-# Gateway TLS Disabled (SAND-07)
+# mTLS Certificate Chain (SEC-01)
 # ===========================================================================
 
-@test "gateway StatefulSet has OPENSHELL_DISABLE_TLS env" {
+@test "CA Certificate has isCA true" {
+  run grep 'isCA: true' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-ca.yaml"
+  assert_success
+}
+
+@test "CA Certificate is in cert-manager namespace" {
+  run grep 'namespace: cert-manager' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-ca.yaml"
+  assert_success
+}
+
+@test "CA Certificate references selfsigned-issuer" {
+  run grep 'selfsigned-issuer' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-ca.yaml"
+  assert_success
+}
+
+@test "CA Certificate has secretName openshell-ca-tls" {
+  run grep 'secretName: openshell-ca-tls' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-ca.yaml"
+  assert_success
+}
+
+@test "CA ClusterIssuer references openshell-ca-tls" {
+  run grep 'openshell-ca-tls' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/clusterissuer-ca.yaml"
+  assert_success
+}
+
+@test "CA ClusterIssuer has name openshell-ca-issuer" {
+  run grep 'openshell-ca-issuer' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/clusterissuer-ca.yaml"
+  assert_success
+}
+
+@test "server Certificate has secretName openshell-server-tls" {
+  run grep 'secretName: openshell-server-tls' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-server.yaml"
+  assert_success
+}
+
+@test "server Certificate is in openshell namespace" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-server.yaml"
+  assert_success
+}
+
+@test "server Certificate references openshell-ca-issuer" {
+  run grep 'openshell-ca-issuer' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-server.yaml"
+  assert_success
+}
+
+@test "server Certificate has server auth usage" {
+  run grep 'server auth' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-server.yaml"
+  assert_success
+}
+
+@test "client Certificate has secretName openshell-client-tls" {
+  run grep 'secretName: openshell-client-tls' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-client.yaml"
+  assert_success
+}
+
+@test "client Certificate references openshell-ca-issuer" {
+  run grep 'openshell-ca-issuer' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-client.yaml"
+  assert_success
+}
+
+@test "client Certificate has client auth usage" {
+  run grep 'client auth' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/certificate-client.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Gateway mTLS Configuration (SEC-01)
+# ===========================================================================
+
+@test "gateway StatefulSet does NOT have OPENSHELL_DISABLE_TLS" {
   run grep 'OPENSHELL_DISABLE_TLS' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_failure
+}
+
+@test "gateway StatefulSet does NOT have OPENSHELL_DISABLE_GATEWAY_AUTH" {
+  run grep 'OPENSHELL_DISABLE_GATEWAY_AUTH' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_failure
+}
+
+@test "gateway StatefulSet has OPENSHELL_TLS_CERT env" {
+  run grep 'OPENSHELL_TLS_CERT' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet has OPENSHELL_TLS_KEY env" {
+  run grep 'OPENSHELL_TLS_KEY' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet has OPENSHELL_TLS_CLIENT_CA env" {
+  run grep 'OPENSHELL_TLS_CLIENT_CA' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet has OPENSHELL_CLIENT_TLS_SECRET_NAME env" {
+  run grep 'OPENSHELL_CLIENT_TLS_SECRET_NAME' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet has tls-cert volume mount" {
+  run grep 'name: tls-cert' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet has tls-client-ca volume mount" {
+  run grep 'name: tls-client-ca' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet mounts TLS server cert at /etc/openshell-tls/server" {
+  run grep '/etc/openshell-tls/server' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet mounts TLS client CA at /etc/openshell-tls/client-ca" {
+  run grep '/etc/openshell-tls/client-ca' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet uses https endpoint" {
+  run grep 'https://openshell' \
     "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
   assert_success
 }
@@ -391,9 +533,98 @@ load '../test_helper'
   assert_success
 }
 
-@test "gateway StatefulSet has OPENSHELL_DISABLE_GATEWAY_AUTH env" {
-  run grep 'OPENSHELL_DISABLE_GATEWAY_AUTH' \
+# ===========================================================================
+# SSH Handshake SealedSecret (SEC-02)
+# ===========================================================================
+
+@test "SSH handshake SealedSecret exists" {
+  run test -f "${PROJECT_ROOT}/infrastructure/openshell/gateway/sealedsecret-ssh.yaml"
+  assert_success
+}
+
+@test "SSH handshake SealedSecret has correct kind" {
+  run grep 'kind: SealedSecret' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/sealedsecret-ssh.yaml"
+  assert_success
+}
+
+@test "SSH handshake SealedSecret has correct name" {
+  run grep 'name: openshell-ssh-handshake' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/sealedsecret-ssh.yaml"
+  assert_success
+}
+
+@test "SSH handshake SealedSecret is in openshell namespace" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/sealedsecret-ssh.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet references SSH handshake via secretKeyRef" {
+  run grep 'secretKeyRef' \
     "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_success
+}
+
+@test "gateway StatefulSet does NOT have hardcoded SSH placeholder" {
+  run grep 'dev-placeholder' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/statefulset.yaml"
+  assert_failure
+}
+
+# ===========================================================================
+# SSH NetworkPolicy (SEC-04)
+# ===========================================================================
+
+@test "sandbox NetworkPolicy has openclaw-ssh-only" {
+  run grep 'name: openclaw-ssh-only' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox SSH NetworkPolicy allows port 2222" {
+  run grep 'port: 2222' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox SSH NetworkPolicy restricts to openshell gateway pod" {
+  run grep 'app.kubernetes.io/name: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Gateway Kustomization (SEC-01 additions)
+# ===========================================================================
+
+@test "gateway kustomization lists certificate-ca.yaml" {
+  run grep 'certificate-ca.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/kustomization.yaml"
+  assert_success
+}
+
+@test "gateway kustomization lists clusterissuer-ca.yaml" {
+  run grep 'clusterissuer-ca.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/kustomization.yaml"
+  assert_success
+}
+
+@test "gateway kustomization lists certificate-server.yaml" {
+  run grep 'certificate-server.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/kustomization.yaml"
+  assert_success
+}
+
+@test "gateway kustomization lists certificate-client.yaml" {
+  run grep 'certificate-client.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/kustomization.yaml"
+  assert_success
+}
+
+@test "gateway kustomization lists sealedsecret-ssh.yaml" {
+  run grep 'sealedsecret-ssh.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/gateway/kustomization.yaml"
   assert_success
 }
 
