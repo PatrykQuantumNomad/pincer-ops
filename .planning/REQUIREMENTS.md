@@ -38,12 +38,12 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### Supervisor + Isolation
 
-- [ ] **SUPV-01**: Supervisor binary DaemonSet deploys `openshell-sandbox` to `/opt/openshell/bin/` on all nodes
-- [ ] **SUPV-02**: Sandbox CR podTemplate mounts hostPath volume for supervisor binary
-- [ ] **SUPV-03**: Supervisor runs as PID 1 inside sandbox pod enforcing Landlock filesystem restrictions
-- [ ] **SUPV-04**: Supervisor enforces seccomp-BPF custom syscall filtering
-- [ ] **SUPV-05**: Supervisor creates network namespace with veth pair and HTTP CONNECT proxy
-- [ ] **SUPV-06**: OpenShell network policy YAML (per-binary, per-endpoint) delivered via gateway gRPC
+- [x] **SUPV-01**: Supervisor binary DaemonSet deploys `openshell-sandbox` to `/opt/openshell/bin/` on all nodes
+- [x] **SUPV-02**: Sandbox CR podTemplate mounts hostPath volume for supervisor binary
+- [x] **SUPV-03**: Supervisor runs as PID 1 inside sandbox pod enforcing Landlock filesystem restrictions
+- [x] **SUPV-04**: Supervisor enforces seccomp-BPF custom syscall filtering
+- [x] **SUPV-05**: Supervisor creates network namespace with veth pair and HTTP CONNECT proxy
+- [x] **SUPV-06**: OpenShell network policy YAML (per-binary, per-endpoint) delivered via gateway gRPC
 
 ### Inference Routing
 
@@ -121,12 +121,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MIGR-05 | Phase 26 | Complete |
 | MIGR-06 | Phase 26 | Complete |
 | MIGR-07 | Phase 26 | Complete |
-| SUPV-01 | Phase 27 | Pending |
-| SUPV-02 | Phase 27 | Pending |
-| SUPV-03 | Phase 27 | Pending |
-| SUPV-04 | Phase 27 | Pending |
-| SUPV-05 | Phase 27 | Pending |
-| SUPV-06 | Phase 27 | Pending |
+| SUPV-01 | Phase 27 | Complete |
+| SUPV-02 | Phase 27 | Complete |
+| SUPV-03 | Phase 27 | Complete |
+| SUPV-04 | Phase 27 | Complete |
+| SUPV-05 | Phase 27 | Complete |
+| SUPV-06 | Phase 27 | Complete |
 | INFER-01 | Phase 28 | Pending |
 | INFER-02 | Phase 28 | Pending |
 | INFER-03 | Phase 28 | Pending |

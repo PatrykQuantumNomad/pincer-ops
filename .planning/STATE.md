@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: phase_complete
-stopped_at: Phase 26 verified and complete
-last_updated: "2026-03-21T11:49:00Z"
-last_activity: 2026-03-21 -- Phase 26 complete (all 3 plans executed, BATS structural tests for MIGR-01 through MIGR-07)
+status: executing
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-03-21T12:44:08Z"
+last_activity: 2026-03-21 -- Plan 27-02 complete (Sandbox CR supervisor integration)
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
-  percent: 57
+  total_plans: 12
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 26 complete -- Sandbox CR migration fully tested, ready for Phase 27
+**Current focus:** Phase 27 in progress -- supervisor DaemonSet deployed, Sandbox CR integrated with supervisor PID 1, BATS tests next
 
 ## Current Position
 
-Phase: 26 of 29 (openclaw-sandbox-cr-migration)
-Plan: 3/3 complete
-Status: Phase 26 verified and complete, ready to plan Phase 27
-Last activity: 2026-03-21 -- Phase 26 verified (5/5 must-haves)
+Phase: 27 of 29 (supervisor-binary-side-loading)
+Plan: 2/3 complete
+Status: Executing Phase 27
+Last activity: 2026-03-21 -- Plan 27-02 complete (Sandbox CR supervisor integration)
 
-Progress: [██████░░░░] 57%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [██████░░░░] 57%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02), 1 plan in ~6 min (26-03), 1 plan in ~2 min (27-01), 1 plan in ~2 min (27-02)
 
 ## Accumulated Context
 
@@ -62,6 +62,8 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 24, 24-02]: validate-manifests.sh update pre-completed by 24-01 executor -- no duplicate changes in 24-02
 - [Phase 25, 25-01]: Gateway manifests as separate Kustomize root -- no namespace: field because ClusterRole/ClusterRoleBinding are cluster-scoped
 - [Phase 25-openshell-gateway]: Gateway manifests in separate Kustomize root (infrastructure/openshell/gateway/) with no namespace field due to cluster-scoped RBAC
+- [Phase 27]: 27-01: No SSA on supervisor DaemonSet Application. DirectoryOrCreate hostPath for fresh nodes. Pause:3.10 as main container with minimal resources.
+- [Phase 27]: 27-02: hostPath type Directory (not DirectoryOrCreate) on sandbox -- DaemonSet wave 3 guarantees existence before sandbox wave 10. RuntimeDefault seccomp stays -- supervisor applies seccomp-BPF internally.
 
 ### Pending Todos
 
@@ -75,6 +77,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T11:49:00Z
-Stopped at: Completed 26-03-PLAN.md (Phase 26 complete)
+Last session: 2026-03-21T12:44:08Z
+Stopped at: Completed 27-02-PLAN.md
 Resume file: None
