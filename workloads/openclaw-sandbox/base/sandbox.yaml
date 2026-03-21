@@ -12,6 +12,9 @@ kind: Sandbox
 metadata:
   name: openclaw-sandbox
   namespace: openshell
+  labels:
+    openshell.ai/managed-by: openshell
+    openshell.ai/sandbox-id: openclaw-sandbox
 spec:
   podTemplate:
     metadata:
