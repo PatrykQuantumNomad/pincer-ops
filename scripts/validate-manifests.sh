@@ -24,9 +24,11 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 EXIT_CODE=0
 
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCHEMA_LOCATION="https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+readonly SCHEMA_LOCATION_LOCAL="${SCRIPT_DIR}/../schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
 readonly K8S_VERSION="1.32.0"
-readonly KUBECONFORM_FLAGS="-summary -output text -kubernetes-version ${K8S_VERSION} -schema-location default -schema-location ${SCHEMA_LOCATION}"
+readonly KUBECONFORM_FLAGS="-summary -output text -kubernetes-version ${K8S_VERSION} -schema-location default -schema-location ${SCHEMA_LOCATION} -schema-location ${SCHEMA_LOCATION_LOCAL}"
 
 # ---------------------------------------------------------------------------
 # validate_raw - Validate raw YAML files in a directory
@@ -109,11 +111,15 @@ validate_kustomize "infrastructure/openshell/supervisor" "openshell-supervisor"
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build
 # agent-sandbox: remote resource (github.com/kubernetes-sigs/agent-sandbox/...) -- SKIP kustomize build
+#   NOTE: Sandbox CR validation is handled via local schema (schemas/agents.x-k8s.io/sandbox_v1alpha1.json)
+#   The kustomize build is still skipped (remote upstream manifest), but rendered Sandbox CRs in
+#   workloads/openclaw-sandbox/ are validated against the local schema via SCHEMA_LOCATION_LOCAL.
 echo "=== Skipped infrastructure bases with remote resources ==="
 echo "  - infrastructure/metallb/base (remote: github.com/metallb/metallb)"
 echo "  - infrastructure/sealed-secrets/base (remote: github.com/bitnami-labs/sealed-secrets)"
 echo "  - infrastructure/cert-manager/base (remote: github.com/cert-manager/cert-manager)"
 echo "  - infrastructure/agent-sandbox/base (remote: github.com/kubernetes-sigs/agent-sandbox)"
+echo "    NOTE: Sandbox CR validation uses local schema (schemas/agents.x-k8s.io/sandbox_v1alpha1.json)"
 echo ""
 
 # --- Summary ---
