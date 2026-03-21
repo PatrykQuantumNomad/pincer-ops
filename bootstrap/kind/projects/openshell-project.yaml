@@ -8,6 +8,7 @@
 #   - Namespace: namespace manifests are managed by ArgoCD Applications
 #   - CustomResourceDefinition: Sandbox CRD registration (Phase 24)
 #   - ClusterRole / ClusterRoleBinding: gateway RBAC for sandbox lifecycle (Phase 25)
+#   - ClusterIssuer: cert-manager CA issuer for mTLS (Phase 29)
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -24,6 +25,8 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: 'agent-sandbox-system'
       server: https://kubernetes.default.svc
+    - namespace: 'cert-manager'
+      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
@@ -33,4 +36,6 @@ spec:
       kind: ClusterRole
     - group: 'rbac.authorization.k8s.io'
       kind: ClusterRoleBinding
+    - group: 'cert-manager.io'
+      kind: ClusterIssuer
   namespaceResourceBlacklist: []
