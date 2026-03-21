@@ -20,11 +20,11 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 - [x] **SAND-01**: Agent-sandbox CRD controller deployed as ArgoCD Application (wave 2, SSA=true)
 - [x] **SAND-02**: Sandbox CRD (`sandboxes.agents.x-k8s.io/v1alpha1`) registered and operational
 - [x] **SAND-03**: Custom Lua health check for Sandbox resource type added to argocd-cm
-- [ ] **SAND-04**: OpenShell gateway deployed as StatefulSet (wave 5) with SQLite PVC
-- [ ] **SAND-05**: Gateway RBAC: Role (Sandbox CRUD in openshell ns) + ClusterRole (nodes, runtimeclasses)
-- [ ] **SAND-06**: Gateway Service (ClusterIP:8080) exposed for sandbox gRPC communication
-- [ ] **SAND-07**: Gateway TLS disabled via env vars for dev (OPENSHELL_DISABLE_TLS, OPENSHELL_DISABLE_GATEWAY_AUTH)
-- [ ] **SAND-08**: Gateway manifests pre-rendered from Helm chart as static Kustomize YAML
+- [x] **SAND-04**: OpenShell gateway deployed as StatefulSet (wave 5) with SQLite PVC
+- [x] **SAND-05**: Gateway RBAC: Role (Sandbox CRUD in openshell ns) + ClusterRole (nodes, runtimeclasses)
+- [x] **SAND-06**: Gateway Service (ClusterIP:8080) exposed for sandbox gRPC communication
+- [x] **SAND-07**: Gateway TLS disabled via env vars for dev (OPENSHELL_DISABLE_TLS, OPENSHELL_DISABLE_GATEWAY_AUTH)
+- [x] **SAND-08**: Gateway manifests pre-rendered from Helm chart as static Kustomize YAML
 
 ### OpenClaw Migration
 
@@ -109,11 +109,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SAND-01 | Phase 24 | Complete |
 | SAND-02 | Phase 24 | Complete |
 | SAND-03 | Phase 24 | Complete |
-| SAND-04 | Phase 25 | Pending |
-| SAND-05 | Phase 25 | Pending |
-| SAND-06 | Phase 25 | Pending |
-| SAND-07 | Phase 25 | Pending |
-| SAND-08 | Phase 25 | Pending |
+| SAND-04 | Phase 25 | Complete |
+| SAND-05 | Phase 25 | Complete |
+| SAND-06 | Phase 25 | Complete |
+| SAND-07 | Phase 25 | Complete |
+| SAND-08 | Phase 25 | Complete |
 | MIGR-01 | Phase 26 | Pending |
 | MIGR-02 | Phase 26 | Pending |
 | MIGR-03 | Phase 26 | Pending |

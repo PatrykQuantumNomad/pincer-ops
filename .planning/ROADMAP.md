@@ -107,7 +107,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 25-01-PLAN.md — Pre-rendered gateway manifests (StatefulSet, RBAC, Service) and ArgoCD Application at wave 5
+- [x] 25-01-PLAN.md — Pre-rendered gateway manifests (StatefulSet, RBAC, Service) and ArgoCD Application at wave 5
 - [ ] 25-02-PLAN.md — BATS structural tests for gateway artifacts and validate-manifests.sh update
 
 ### Phase 26: OpenClaw Sandbox CR Migration
@@ -207,7 +207,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 25. OpenShell Gateway | v2.0 | 0/2 | Not started | - |
+| 25. OpenShell Gateway | v2.0 | 1/2 | In Progress|  |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |
