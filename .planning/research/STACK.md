@@ -1,445 +1,464 @@
-# Stack Research: OpenShell + agent-sandbox Deployment
+# Stack Research: Supervisor-to-Gateway Runtime Integration Fix
 
-**Domain:** AI agent sandbox runtime (OpenShell gateway + agent-sandbox CRD + OpenClaw as Sandbox CR) on GitOps Kubernetes
-**Researched:** 2026-03-20
-**Confidence:** MEDIUM (see assessment below)
+**Domain:** Closing the gRPC policy delivery gap between supervisor and gateway in an existing OpenShell deployment
+**Researched:** 2026-03-21
+**Confidence:** MEDIUM (gateway source code details from DeepWiki, not direct Rust source inspection; proto files verified from GitHub)
+**Research Mode:** Feasibility/Ecosystem hybrid -- "Why does the gateway say 'sandbox has no spec' and how do we fix it?"
 
-## Critical Context: What Already Exists (v1.2)
+## Critical Context: What Already Exists (v2.0 SHIPPED)
 
-The v1.2 governance-only milestone is deployed:
-- `nemoclaw` namespace with PSS `restricted` enforcement
-- LiteLLM Proxy (Deployment in `nemoclaw`) for inference routing
-- OpenClaw NetworkPolicy with LiteLLM egress at port 4000
-- SealedSecret for LLM API keys (mounted only on LiteLLM pod)
-- ArgoCD Applications: `infra-nemoclaw` (wave 0), `workload-litellm` (wave 5), `workload-openclaw` (wave 10)
+These components are deployed and validated (DO NOT re-research or re-deploy):
 
-**This research covers what NEW components are needed on top of v1.2 to deploy the real OpenShell sandbox runtime using the kubernetes-sigs agent-sandbox CRD.**
+- **OpenShell gateway v0.0.12** -- StatefulSet in `openshell` namespace, mTLS enabled, port 8080 gRPC
+- **Agent-sandbox CRD controller v0.2.1** -- Deployed in `agent-sandbox-system`, reconciles Sandbox CRs into Pods
+- **Supervisor DaemonSet** -- Binary at `/opt/openshell/bin/openshell-sandbox` on all nodes
+- **Sandbox CR (ArgoCD-managed)** -- `workloads/openclaw-sandbox/base/sandbox.yaml` with OpenClaw running directly (supervisor DISABLED)
+- **cert-manager CA chain** -- Self-signed CA, server cert for gateway, client cert for sandbox
+- **NetworkPolicy** -- Egress to gateway on port 8080 already configured
 
-## Architecture Decision: Why agent-sandbox CRD
+### The Exact Problem
 
-The v1.2 research confirmed that OpenShell's gateway image (`ghcr.io/nvidia/openshell/gateway`) boots an embedded K3s cluster -- deploying it directly inside KIND nests Kubernetes clusters, which is not viable. However, NemoClaw issue #407 demonstrates a proven path: use the **kubernetes-sigs agent-sandbox CRD** as the sandbox runtime instead of OpenShell's built-in K3s. A community contributor deployed NemoClaw on OpenShift 4.21 using exactly this approach, replacing the K3s-in-Docker architecture with a standard Kubernetes Sandbox CR.
+The supervisor was enabled as PID 1 (commit `3bd1a7f`), but after several debugging iterations:
+1. `e14c899` -- Fixed env vars from `OPENSHELL_GRPC_ENDPOINT` to `OPENSHELL_ENDPOINT` + `OPENSHELL_SANDBOX_ID`
+2. `5e38f6f` -- Added `https://` scheme to OPENSHELL_ENDPOINT for mTLS
+3. `f0f3c77` -- Added mTLS client cert/CA volumes to sandbox pod
+4. `0f613b3` -- Added `openshell.ai/sandbox-id` label for gateway discovery
 
-The agent-sandbox CRD provides a declarative API for managing singleton, stateful pods with stable identity and persistent storage -- exactly what OpenClaw needs. OpenClaw running as a `Sandbox` CR instead of a `StatefulSet` gains lifecycle management (pause/resume, scheduled shutdown), warm pooling, and template-based NetworkPolicy -- all managed by the agent-sandbox controller.
+The gateway still responds **"sandbox has no spec"** (commit `dd30221`). The supervisor was reverted to commented-out state.
 
-## Recommended Stack
+## Root Cause Analysis
 
-### Core Technologies (NEW for v2.0)
+**Confidence: HIGH** (proto files verified, architecture confirmed via DeepWiki and official docs)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **agent-sandbox controller** | v0.2.1 | Sandbox CRD controller -- manages singleton stateful pods with stable identity, persistent storage, and template-based NetworkPolicy | Only Kubernetes-native Sandbox abstraction that replaces the need for OpenShell's K3s. Provides `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool` CRDs. Proven with NemoClaw on OpenShift (issue #407). CNCF/SIG Apps project. |
-| **agent-sandbox extensions** | v0.2.1 | `SandboxTemplate` + `SandboxClaim` + `SandboxWarmPool` CRDs | Templates enable shared NetworkPolicy per template (single policy for all sandboxes from a template). Claims provide lifecycle management (shutdownTime, shutdownPolicy). Required for the OpenClaw-as-Sandbox-CR pattern. |
-| **OpenShell gateway** | v0.0.12 | Control plane for sandbox lifecycle, inference routing, and policy enforcement | The gateway is the entry point for all OpenShell operations. Even without K3s, the gateway binary manages sandbox state, credential injection, and privacy routing. See feasibility analysis below. |
+### How OpenShell Normally Works (Not Our Deployment)
 
-### Container Images (VERIFIED)
+In the standard OpenShell flow:
 
-| Image | Registry | Tag | Architecture | Purpose | Confidence |
-|-------|----------|-----|-------------|---------|------------|
-| `registry.k8s.io/agent-sandbox/agent-sandbox-controller` | registry.k8s.io | `v0.2.1` | amd64/arm64 | Sandbox CRD controller | **HIGH** -- verified from release manifest.yaml |
-| `ghcr.io/nvidia/openshell/gateway` | GHCR | `0.0.12` | amd64/arm64 | OpenShell gateway (control plane) | **MEDIUM** -- v0.0.12 is latest release but image publication for this tag is unconfirmed; v0.0.8 and v0.0.7 have confirmed published images |
-| `ghcr.io/nvidia/openshell/cluster` | GHCR | `0.0.12` | amd64/arm64 | Helm charts + openshell-sandbox supervisor | **MEDIUM** -- same version concern as gateway |
-| `ghcr.io/berriai/litellm` | GHCR | `main-v1.82.3` | amd64/arm64 | LiteLLM proxy (already deployed in v1.2) | **HIGH** -- verified latest stable from GHCR package listing |
+1. User runs `openshell sandbox create --policy ./policy.yaml -- claude`
+2. CLI sends `CreateSandboxRequest` to gateway gRPC with a `SandboxSpec` containing:
+   - `policy` (SandboxPolicy proto message)
+   - `template` (image, labels, environment)
+   - `providers` (credential bundle names)
+   - `environment` (key-value pairs)
+3. Gateway stores the SandboxSpec in its SQLite database
+4. Gateway creates a Sandbox CR in Kubernetes
+5. agent-sandbox controller reconciles CR into Pod
+6. Supervisor starts as PID 1, calls `GetSandboxConfig(sandbox_id)` via gRPC
+7. Gateway looks up the SandboxSpec from its database, returns policy + settings
 
-### Container Images (NOT VERIFIED -- Require Build)
+### Why Our Deployment Breaks
 
-| Image | Registry | Tag | Purpose | Confidence |
-|-------|----------|-----|---------|------------|
-| `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` | GHCR | `latest` (no versioned tags found) | Pre-built OpenClaw sandbox with NemoClaw plugin | **LOW** -- no versioned tags confirmed; README only shows `docker build -t openshell-openclaw .`; may need to be built locally |
-| `ghcr.io/nvidia/openshell-community/sandboxes/openclaw-nvidia` | GHCR | unknown | NVIDIA-specific variant with NIM integration | **LOW** -- referenced in project context but no evidence this image exists in any registry |
+We created the Sandbox CR directly via ArgoCD (GitOps). The gateway never received a `CreateSandboxRequest` and therefore has no `SandboxSpec` stored in its SQLite database. When the supervisor calls `GetSandboxConfig`, the gateway finds the sandbox by Kubernetes watch (it sees the CR via the `openshell.ai/sandbox-id` label), but has no associated spec. Hence: "sandbox has no spec."
 
-### CRD Specifications (VERIFIED)
+**The fundamental mismatch:** The gateway is both a Kubernetes controller (watches Sandbox CRs) and a stateful application (stores specs in SQLite). Our GitOps approach satisfies the K8s side but not the SQLite side.
 
-| CRD | API Group | API Version | Kind | Plural | Scope | Source |
-|-----|-----------|-------------|------|--------|-------|--------|
-| Sandbox | `agents.x-k8s.io` | `v1alpha1` | `Sandbox` | `sandboxes` | Namespaced | Core manifest |
-| SandboxTemplate | `extensions.agents.x-k8s.io` | `v1alpha1` | `SandboxTemplate` | `sandboxtemplates` | Namespaced | Extensions manifest |
-| SandboxClaim | `extensions.agents.x-k8s.io` | `v1alpha1` | `SandboxClaim` | `sandboxclaims` | Namespaced | Extensions manifest |
-| SandboxWarmPool | `extensions.agents.x-k8s.io` | `v1alpha1` | `SandboxWarmPool` | `sandboxwarmpools` | Namespaced | Extensions manifest |
+## Research Findings
 
-**Confidence: HIGH** -- verified from the actual v0.2.1 manifest.yaml and Go package documentation.
+### Question 1: What does the OpenShell gateway source code expect from Sandbox CR specs?
 
-### Existing Stack (RETAINED from v1.2)
+**Confidence: HIGH** (proto files from `github.com/NVIDIA/OpenShell/proto/`)
 
-| Technology | Version | Purpose | Status |
-|------------|---------|---------|--------|
-| LiteLLM Proxy | v1.82.3 (upgrade from v1.65.4) | Inference routing + credential injection | Already deployed, version update recommended |
-| ArgoCD | 2.14.x | GitOps deployment | Already deployed |
-| Sealed Secrets | v0.35.0 | Encrypted secrets | Already deployed |
-| cert-manager | v1.19.2 | TLS certificates | Already deployed |
-| Envoy Gateway | v1.3.x | External ingress | Already deployed |
-| MetalLB | v0.15.3 | LoadBalancer IPs | Already deployed |
-| Kustomize | v5.x | Manifest management | Platform standard |
+The gateway does NOT read spec from the Sandbox CR itself. The Sandbox CR (`agents.x-k8s.io/v1alpha1`) has a `podTemplate` field (basically a PodSpec wrapper). The gateway's concept of "spec" is its own `SandboxSpec` proto message stored in SQLite:
 
-## agent-sandbox Controller Details
+```protobuf
+// From datamodel.proto
+message SandboxSpec {
+  string log_level = 1;
+  map<string, string> environment = 5;
+  SandboxTemplate template = 6;
+  openshell.sandbox.v1.SandboxPolicy policy = 7;  // REQUIRED for GetSandboxConfig
+  repeated string providers = 8;
+  repeated string providers = 8;
+  bool gpu = 9;
+}
+```
 
-### Installation
+The `GetSandboxConfigResponse` returns:
+```protobuf
+message GetSandboxConfigResponse {
+  SandboxPolicy policy = 1;      // The policy the supervisor enforces
+  uint32 version = 2;            // Monotonically increasing
+  string policy_hash = 3;        // SHA-256 of serialized policy
+  map<string, EffectiveSetting> settings = 4;
+  uint64 config_revision = 5;    // Changes when any input changes
+  PolicySource policy_source = 6;
+  uint32 global_policy_version = 7;
+}
+```
 
-The controller installs via a single manifest:
+**Key insight:** The gateway's `SandboxSpec.policy` field (type `SandboxPolicy`) is the source of truth for what the supervisor enforces. Without it, the gateway cannot respond to `GetSandboxConfig`.
 
+### Question 2: What `openshell` CLI commands register a sandbox with the gateway?
+
+**Confidence: HIGH** (official docs + NemoClaw issue analysis)
+
+There are two relevant paths:
+
+**Path A: CLI-driven creation (standard flow)**
 ```bash
-# Core CRD + controller
-export VERSION="v0.2.1"
-kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${VERSION}/manifest.yaml
+# Create sandbox with policy
+openshell sandbox create --policy ./my-policy.yaml --from openclaw -- node dist/index.js gateway
 
-# Extensions (SandboxTemplate, SandboxClaim, SandboxWarmPool)
-kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${VERSION}/extensions.yaml
+# Hot-reload network policies on running sandbox
+openshell policy set <sandbox-name> --policy ./updated-policy.yaml --wait
 ```
 
-For Kustomize/ArgoCD integration, download these manifests and reference them as remote bases:
+`openshell sandbox create` sends `CreateSandboxRequest{spec: SandboxSpec{...}, name: "my-sandbox"}` to the gateway. The gateway stores the spec and creates the K8s Sandbox CR.
+
+**Path B: Gateway API direct call**
+The `openshell` CLI is a thin wrapper over gRPC. The relevant RPCs from `openshell.proto`:
+- `CreateSandbox(CreateSandboxRequest)` -- registers spec + creates CR
+- `UpdateConfig(UpdateConfigRequest)` -- updates policy/settings on existing sandbox
+- `GetSandboxConfig(GetSandboxConfigRequest)` -- supervisor polls this
+
+**NemoClaw's 7-step onboard does:**
+1. NVIDIA API key
+2. Preflight (Docker, OpenShell)
+3. Gateway start (`openshell gateway start`)
+4. Sandbox creation (`openshell sandbox create --from ...`)
+5. Inference provider registration
+6. Inference routing
+7. Policy preset application (`openshell policy set --policy /tmp/nemoclaw-policy-*.yaml --wait <name>`)
+
+### Question 3: Can the supervisor accept static policies via env vars/files instead of gRPC?
+
+**Confidence: MEDIUM** (inferred from policy docs and architecture, not confirmed from Rust source)
+
+**Short answer: No, not directly.** The supervisor is designed to poll `GetSandboxConfig` via gRPC. However, there are alternative approaches:
+
+1. **`OPENSHELL_SANDBOX_POLICY` env var** -- This is a CLI-level env var that sets a default policy file path. It is NOT read by the supervisor binary. It is read by the `openshell` CLI when `--policy` is omitted.
+
+2. **Policy is delivered via gRPC only** -- The supervisor calls `GetSandboxConfig(sandbox_id)` on startup. The response includes the full `SandboxPolicy` proto message. The supervisor then applies Landlock, seccomp-BPF, and network namespace rules from this response.
+
+3. **No file-based fallback observed** -- The supervisor binary (`openshell-sandbox` crate) does not appear to accept a `--policy-file` flag or read policy from a mounted ConfigMap. Its design assumes the gateway is always available.
+
+**Important nuance:** The supervisor's *static* policies (filesystem, process, Landlock) are applied at startup from the initial `GetSandboxConfig` response. The *dynamic* policies (network) can be hot-reloaded via subsequent `GetSandboxConfig` calls or `UpdateSandboxPolicy` RPCs.
+
+### Question 4: What does the NemoClaw blueprint's Apply phase actually execute?
+
+**Confidence: MEDIUM** (docs + issue analysis, not blueprint source code inspection)
+
+The NemoClaw blueprint lifecycle has 5 phases:
+
+1. **Resolve** -- Locate blueprint artifact, check `min_openshell_version` and `min_openclaw_version`
+2. **Verify** -- Validate cryptographic digest
+3. **Plan** -- Determine which OpenShell resources to create/update (gateway, providers, sandbox, inference route, policy)
+4. **Apply** -- Execute via OpenShell CLI commands:
+   - `openshell gateway start` (if not running)
+   - `openshell sandbox create --from ghcr.io/nvidia/openshell-community/sandboxes/openclaw --policy <blueprint-policy.yaml> -- <agent-command>`
+   - Provider registration
+   - `openshell policy set <name> --policy <preset-policy.yaml> --wait` (for preset policies)
+5. **Status** -- Report deployment state
+
+The Apply phase calls `openshell sandbox create` which sends `CreateSandboxRequest` to the gateway with a fully populated `SandboxSpec` including the policy. This is the step our GitOps deployment skips.
+
+## Recommended Stack for the Fix
+
+### Core Problem: Bridge the GitOps-to-Gateway Registration Gap
+
+The fix must register the sandbox with the gateway's SQLite database by sending a `CreateSandboxRequest` or equivalent that populates the `SandboxSpec` with our policy. Three approaches, evaluated below:
+
+### Approach A: Init Job with `openshell` CLI (RECOMMENDED)
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `openshell` CLI | >= 0.0.12 | Register sandbox with gateway via CLI | Uses the same path NemoClaw uses; officially supported contract |
+| Kubernetes Job | batch/v1 | One-shot registration after gateway starts | ArgoCD sync wave ordering guarantees gateway readiness |
+| Policy YAML ConfigMap | v1 | Mount our custom policy file into the Job | Static policy matching our security requirements |
+
+**How it works:**
+1. Create a Kubernetes Job at sync wave 7 (after gateway at wave 5, before sandbox at wave 10)
+2. Job mounts the `openshell` CLI (from the cluster image) and our policy YAML
+3. Job runs: `openshell gateway add <gateway-endpoint>` then `openshell sandbox create --policy /config/policy.yaml --name openclaw-sandbox -- node dist/index.js gateway --bind lan --port 18789`
+4. Gateway stores the SandboxSpec in SQLite
+5. Sandbox CR at wave 10 starts, supervisor calls `GetSandboxConfig`, gets the policy
+
+**Advantages:**
+- Uses the official contract (same as NemoClaw onboard)
+- Policy changes go through `openshell policy set` (hot-reloadable)
+- No custom gRPC client needed
+
+**Disadvantages:**
+- Requires the `openshell` CLI binary (available in the cluster image `ghcr.io/nvidia/openshell/cluster:0.0.12`)
+- The Job creates a Sandbox CR, but we already have one from ArgoCD -- potential conflict
+- Need to handle idempotency (Job re-runs on ArgoCD sync)
+
+### Approach B: Direct gRPC Registration via Script
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `grpcurl` or custom script | latest | Call `CreateSandbox` RPC directly | Bypasses CLI, sends exact proto message |
+| Kubernetes Job | batch/v1 | One-shot registration | Same wave ordering as Approach A |
+
+**How it works:**
+1. Job uses `grpcurl` to send `CreateSandboxRequest` to `openshell.openshell.svc.cluster.local:8080`
+2. Request includes full `SandboxSpec` with policy, template, and environment
+3. Must handle mTLS (client cert from `openshell-client-tls` secret)
+
+**Advantages:**
+- No dependency on `openshell` CLI
+- Full control over the exact proto message
+
+**Disadvantages:**
+- Building the proto message manually is error-prone
+- Still creates a Sandbox CR (same conflict issue)
+- Not the supported integration path
+
+### Approach C: UpdateConfig to Inject Policy Into Existing Sandbox (MOST PROMISING)
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `openshell` CLI or `grpcurl` | >= 0.0.12 | Call `UpdateConfig` RPC to set policy on existing sandbox | Avoids duplicate Sandbox CR issue |
+| Kubernetes Job | batch/v1 | One-shot policy injection after gateway discovers our CR | Runs after both gateway and sandbox are up |
+
+**How it works:**
+1. ArgoCD creates the Sandbox CR at wave 10 (as today)
+2. Gateway watches and discovers the CR via `openshell.ai/sandbox-id` label
+3. Gateway creates a database entry for the sandbox (without spec/policy)
+4. A Job at wave 11 or post-sync hook calls `UpdateConfig` to set the policy:
+   ```
+   openshell policy set openclaw-sandbox --policy /config/policy.yaml --wait
+   ```
+5. Gateway stores the policy in its database
+6. Next `GetSandboxConfig` call from supervisor returns the policy
+7. Supervisor applies Landlock/seccomp/netns enforcement
+
+**Advantages:**
+- Does not create a duplicate Sandbox CR (ArgoCD manages the CR)
+- Uses the official hot-reload mechanism (`openshell policy set`)
+- Maintains GitOps invariant for the CR itself
+- Idempotent (re-running `openshell policy set` updates the existing policy)
+
+**Disadvantages:**
+- Requires the sandbox to exist before policy is set (supervisor starts without policy briefly)
+- The supervisor may fail its initial `GetSandboxConfig` call (before Job runs)
+- Need supervisor to retry `GetSandboxConfig` on failure (it likely does, since it's designed for hot-reload)
+
+### Approach D: Modify Gateway Startup to Accept Default Policy
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Gateway env vars/ConfigMap | N/A | Configure a default policy for discovered sandboxes | Gateway applies policy to any sandbox it discovers without one |
+
+**How it works:**
+1. Set a gateway environment variable or mount a ConfigMap with a default policy
+2. When gateway discovers a Sandbox CR without a stored spec, it applies the default policy
+3. Supervisor calls `GetSandboxConfig` and gets the default policy
+
+**Assessment:** This would be ideal, but there is **no evidence** that the gateway supports a default policy for externally-created sandboxes. The `GetGatewayConfig` RPC returns gateway-global settings but not a default sandbox policy. The gateway's behavior when it finds a Sandbox CR without a stored spec is to return "sandbox has no spec."
+
+**Verdict: NOT VIABLE without gateway source modification.**
+
+## Stack Decision Matrix
+
+| Approach | Avoids Duplicate CR | Idempotent | GitOps Compatible | Officially Supported | Complexity |
+|----------|---------------------|------------|--------------------|-----------------------|------------|
+| A: Init Job + CLI Create | NO | Needs handling | Partial (Job creates CR) | YES | Medium |
+| B: Direct gRPC | NO | Needs handling | Partial | NO | High |
+| C: UpdateConfig/policy set | YES | YES | YES | YES | Low |
+| D: Default policy | YES | YES | YES | NO (not supported) | N/A |
+
+**Recommendation: Approach C** -- Use `openshell policy set` to inject the policy into the gateway's database after the sandbox CR is discovered. This preserves the GitOps invariant (ArgoCD manages the CR), avoids duplicate CRs, and uses the officially supported hot-reload mechanism.
+
+## Recommended Stack (Approach C)
+
+### Core Components
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `openshell` CLI | 0.0.12 (from cluster image) | `openshell policy set` command | Official contract for policy injection |
+| Kubernetes Job | batch/v1 | Post-sandbox policy registration | Sync wave 11, after sandbox exists |
+| Policy YAML ConfigMap | v1 | Mount our OpenShell policy into Job | Declarative, GitOps-managed policy |
+| `ghcr.io/nvidia/openshell/cluster:0.0.12` | 0.0.12 | Job image containing openshell CLI | Already loaded into cluster nodes |
+
+### Policy File (NEW -- to create)
+
+Based on the OpenShell policy schema (version 1), our policy should be:
 
 ```yaml
-# infrastructure/agent-sandbox/base/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/manifest.yaml
-  - https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/extensions.yaml
+version: 1
+filesystem_policy:
+  include_workdir: false
+  read_only:
+    - /usr
+    - /lib
+    - /etc
+    - /opt/openshell/bin
+  read_write:
+    - /home/node/.openclaw
+    - /tmp
+    - /home/node/.cache
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: "1000"
+  run_as_group: "1000"
+network_policies:
+  llm_providers:
+    name: llm-api-access
+    endpoints:
+      - host: "*.anthropic.com"
+        port: 443
+        tls: terminate
+        enforcement: enforce
+      - host: "*.openai.com"
+        port: 443
+        tls: terminate
+        enforcement: enforce
+      - host: "*.googleapis.com"
+        port: 443
+        tls: terminate
+        enforcement: enforce
+    binaries:
+      - path: /usr/local/bin/node
+  gateway_grpc:
+    name: openshell-gateway
+    endpoints:
+      - host: "openshell.openshell.svc.cluster.local"
+        port: 8080
+        tls: passthrough
+        enforcement: enforce
+    binaries:
+      - path: /opt/openshell/bin/openshell-sandbox
 ```
 
-### Controller Deployment Specification
+### Job Manifest (NEW -- to create)
 
-| Field | Value |
-|-------|-------|
-| Deployment name | `agent-sandbox-controller` |
-| Namespace | `agent-sandbox-system` |
-| Image | `registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.2.1` |
-| Replicas | 1 |
-| Leader election | `--leader-elect=true` |
-| Metrics port | 8080 |
-| Health port | 8081 |
-| ServiceAccount | `agent-sandbox-controller` |
+A Kubernetes Job in `infrastructure/openshell/registration/` with:
+- Image: `ghcr.io/nvidia/openshell/cluster:0.0.12`
+- Mounts: policy ConfigMap, mTLS client cert + CA
+- Command: `openshell policy set openclaw-sandbox --policy /config/policy.yaml --wait`
+- Gateway endpoint: `--gateway-endpoint https://openshell.openshell.svc.cluster.local:8080`
 
-### Secure by Default Networking (v0.2.1)
+### Sandbox CR Changes (MODIFY -- uncomment existing)
 
-The agent-sandbox controller in v0.2.1 creates a **shared NetworkPolicy per SandboxTemplate**:
-- When `NetworkPolicyManagement: "Managed"` (default) and `NetworkPolicy` field is nil, the controller applies a **Secure Default** policy:
-  - Ingress: Only from Sandbox Router
-  - Egress: Public internet only (blocks RFC1918 IPs and metadata servers)
-- When `NetworkPolicy` is explicitly set, those rules are used instead
-- When `NetworkPolicyManagement: "Unmanaged"`, no NetworkPolicy is created (for external tools like Cilium)
+Re-enable the commented-out sections in `workloads/openclaw-sandbox/base/sandbox.yaml`:
+- Supervisor binary as command (`/opt/openshell/bin/openshell-sandbox`)
+- `OPENSHELL_ENDPOINT` and `OPENSHELL_SANDBOX_ID` env vars
+- hostPath volume for supervisor binary
+- mTLS client cert + CA volumes
+- Elevated securityContext (runAsUser: 0, NET_ADMIN, SYS_ADMIN)
 
-**Implication for our stack:** We will set `NetworkPolicyManagement: "Unmanaged"` and manage NetworkPolicies ourselves, since we already have a working NetworkPolicy architecture from v1.2. The controller's default policy blocks RFC1918 which would break in-cluster communication to the LiteLLM proxy.
+### ArgoCD Application (NEW -- to create)
 
-### Sandbox CR for OpenClaw
+A new ArgoCD Application at sync wave 11 for the registration Job:
+- `infra-openshell-registration.yaml` in `bootstrap/kind/` and `bootstrap/kinder/`
+- Points to `infrastructure/openshell/registration/`
 
-The Sandbox CR replaces the existing OpenClaw StatefulSet:
+### Sync Wave Update
 
-```yaml
-apiVersion: agents.x-k8s.io/v1alpha1
-kind: Sandbox
-metadata:
-  name: openclaw-gateway
-  namespace: openclaw
-spec:
-  replicas: 1
-  podTemplate:
-    metadata:
-      labels:
-        app.kubernetes.io/name: openclaw-gateway
-    spec:
-      securityContext:
-        fsGroup: 1000
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: openclaw-gateway
-          image: ghcr.io/openclaw/openclaw:2026.2.19
-          imagePullPolicy: IfNotPresent
-          # ... same spec as current StatefulSet
-      volumes:
-        # ... same volume configuration
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 20Gi
-```
+| Wave | Component | Status |
+|------|-----------|--------|
+| 0 | infra-openshell (namespace) | EXISTS |
+| 2 | infra-agent-sandbox (CRD controller) | EXISTS |
+| 3 | infra-openshell-supervisor (DaemonSet) | EXISTS |
+| 5 | workload-openshell-gateway | EXISTS |
+| 10 | workload-openclaw-sandbox | EXISTS (modify) |
+| **11** | **infra-openshell-registration (NEW)** | **CREATE** |
 
-The Sandbox CRD supports:
-- `replicas`: 0 (paused) or 1 (active) -- matches OpenClaw's singleton constraint
-- `volumeClaimTemplates`: Persistent storage that survives pod restarts
-- `podTemplate`: Full PodSpec -- initContainers, securityContext, probes, etc.
-- `shutdownPolicy`: `Delete` or `Retain` (keep PVC on sandbox deletion)
-- Stable hostname and FQDN via headless Service
+### Environment Variables for Sandbox Pod
 
-## OpenShell Gateway: Feasibility Assessment
+When supervisor is re-enabled, the pod needs:
 
-### Can It Run Without K3s?
+| Env Var | Value | Purpose |
+|---------|-------|---------|
+| `OPENSHELL_ENDPOINT` | `https://openshell.openshell.svc.cluster.local:8080` | Gateway gRPC endpoint (with scheme) |
+| `OPENSHELL_SANDBOX_ID` | `openclaw-sandbox` | Sandbox name for GetSandboxConfig |
 
-**Verdict: UNCERTAIN -- needs hands-on validation.**
+These were previously validated (commits `e14c899`, `5e38f6f`) and are currently commented out in sandbox.yaml.
 
-The OpenShell gateway (`ghcr.io/nvidia/openshell/gateway`) is documented as running a K3s cluster internally. The gateway binary manages sandbox lifecycle through K3s API calls. Running it standalone (without K3s) would require:
+## Supporting Libraries / Dependencies
 
-1. The gateway binary to support a "native Kubernetes" backend that talks to the host cluster's API server instead of an embedded K3s
-2. The gateway to recognize agent-sandbox CRD `Sandbox` resources instead of its internal sandbox model
+### Already Available (no new additions)
 
-**Evidence for feasibility:**
-- NemoClaw #407 achieved this on OpenShift 4.21, proving the concept works
-- OpenShell docs mention "in the future, a Kubernetes cluster will have the gateway and required control software, with one pod/container per sandbox"
-- The DeepWiki analysis describes a CLI auto-detect for credentials from environment variables
+| Library | Version | Purpose | Status |
+|---------|---------|---------|--------|
+| cert-manager | v1.19.2 | mTLS certificate chain | Deployed |
+| agent-sandbox controller | v0.2.1 | Sandbox CR reconciliation | Deployed |
+| OpenShell cluster image | 0.0.12 | Contains supervisor + CLI | Loaded into nodes |
 
-**Evidence against:**
-- No official documentation for native K8s deployment
-- The gateway image boots K3s as its entrypoint
-- The `cluster` image bundles Helm charts for deploying gateway inside K3s
-- OpenShell is alpha software ("single-player mode")
+### New Dependencies
 
-**Recommendation: Deploy OpenShell gateway as a Docker-in-Docker pod (privileged) OR skip the OpenShell gateway entirely and use agent-sandbox + LiteLLM as the governance plane.**
-
-### Two Architecture Options
-
-**Option A: agent-sandbox + LiteLLM (No OpenShell gateway)**
-- Use agent-sandbox CRD to manage OpenClaw as a Sandbox CR
-- Keep LiteLLM as the inference proxy (credential injection, model routing)
-- Manage NetworkPolicy ourselves (already working from v1.2)
-- Skip OpenShell gateway entirely -- its value-add (sandbox lifecycle, policy engine) is replaced by agent-sandbox controller + K8s-native security primitives
-
-**Option B: Full OpenShell gateway + agent-sandbox**
-- Deploy OpenShell gateway as a pod (needs privileged or DinD for K3s)
-- Use agent-sandbox for the sandbox runtime (replacing OpenShell's internal K3s sandboxes)
-- Gateway handles inference routing (replacing LiteLLM)
-- Requires significant R&D to configure gateway to use external K8s API
-
-**Recommendation: Option A** because:
-1. v1.2 governance layer (LiteLLM + NetworkPolicy + PSS) already provides the security plane
-2. agent-sandbox CRD provides the sandbox lifecycle management
-3. No privileged containers needed
-4. No K3s-in-KIND nesting risk
-5. Full GitOps compatibility (all resources are standard K8s manifests)
-
-The OpenShell gateway adds value primarily when you need its policy engine (Landlock, seccomp-BPF, OPA) and privacy router (inference.local interception). For a KIND dev cluster, K8s-native security primitives provide equivalent protection.
-
-## Sync Wave Placement (v2.0)
-
-| Wave | Component | Status | Notes |
-|------|-----------|--------|-------|
-| -10 | ArgoCD self-management + AppProjects | Existing | |
-| -5 | MetalLB (KIND only) | Existing | |
-| -4 | Envoy Gateway controller (KIND only) | Existing | |
-| -3 | Sealed Secrets | Existing | |
-| -2 | cert-manager (KIND only) | Existing | |
-| -1 | Envoy Gateway config | Existing | |
-| **-1** | **agent-sandbox CRD + controller** | **NEW** | CRDs must exist before any Sandbox CR can be created. Wave -1 ensures CRDs are ready before wave 0+. Uses `ServerSideApply=true` (CRD-heavy). |
-| 0 | infra-nemoclaw (namespace + NetworkPolicy) | Existing | |
-| 5 | workload-litellm | Existing | |
-| **8** | **SandboxTemplate for OpenClaw** | **NEW** | Template must exist before Sandbox CR. Defines shared NetworkPolicy and pod defaults. |
-| 10 | workload-openclaw (migrated to Sandbox CR) | **MODIFIED** | StatefulSet replaced with Sandbox CR referencing the template |
-
-**Kinder path:** Waves -5, -4, -2 skipped (built-in addons). agent-sandbox at wave -1 is unaffected.
-
-## Directory Structure (NEW)
-
-```
-infrastructure/
-  agent-sandbox/
-    base/
-      kustomization.yaml          # Remote base for manifest.yaml + extensions.yaml
-    overlays/
-      dev/
-        kustomization.yaml        # Any patches for KIND (imagePullPolicy, etc.)
-
-workloads/
-  openclaw/
-    base/
-      sandbox-template.yaml       # NEW: SandboxTemplate with NetworkPolicy config
-      sandbox.yaml                # NEW: Sandbox CR (replaces statefulset.yaml)
-      statefulset.yaml            # REMOVED or kept for rollback
-      configmap.yaml              # RETAINED
-      service.yaml                # RETAINED (Sandbox creates its own headless Service, but we may need a ClusterIP too)
-      httproute.yaml              # RETAINED
-      networkpolicy.yaml          # MODIFIED: adapt to Sandbox label selectors
-      backup-rbac.yaml            # RETAINED
-      backup-cronjob.yaml         # RETAINED
-```
-
-### New ArgoCD Application
-
-```yaml
-# bootstrap/kinder/infra-agent-sandbox.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: infra-agent-sandbox
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-    argocd.argoproj.io/manifest-generate-paths: infrastructure/agent-sandbox
-spec:
-  project: infrastructure
-  source:
-    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
-    targetRevision: main
-    path: infrastructure/agent-sandbox/overlays/dev
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: agent-sandbox-system
-  syncPolicy:
-    automated:
-      selfHeal: true
-      prune: true
-    syncOptions:
-      - ServerSideApply=true
-      - CreateNamespace=true
-```
-
-## Kustomize Remote Base for agent-sandbox
-
-The agent-sandbox project publishes `manifest.yaml` and `extensions.yaml` as release assets. These can be referenced as Kustomize remote resources:
-
-```yaml
-# infrastructure/agent-sandbox/base/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/manifest.yaml
-  - https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/extensions.yaml
-```
-
-**Note:** Kustomize may not support GitHub release asset URLs directly (they redirect to blob storage). If this fails, download the manifests into the repository as vendored files:
-
-```
-infrastructure/agent-sandbox/base/
-  kustomization.yaml
-  vendored-manifest.yaml      # Downloaded from GitHub releases
-  vendored-extensions.yaml    # Downloaded from GitHub releases
-```
-
-This follows the same pattern used for MetalLB (`github.com/metallb/metallb v0.15.3`).
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `ghcr.io/nvidia/openshell/gateway` as K8s Deployment | Boots internal K3s cluster; nests K8s inside KIND | agent-sandbox controller + LiteLLM for governance |
-| `ghcr.io/nvidia/openshell/cluster` | Addon package for gateway's internal K3s; useless without gateway K3s | agent-sandbox CRDs (standard K8s resources) |
-| `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` directly | 2.4GB image with embedded K3s sandbox expectations, NemoClaw plugin, and internal networking assumptions | Our existing `ghcr.io/openclaw/openclaw:2026.2.19` image deployed as a Sandbox CR |
-| Helm charts for agent-sandbox | No Helm chart is published; project uses raw manifest YAML | Kustomize with vendored manifests |
-| `openshell` CLI for sandbox management | CLI manages sandboxes via gRPC to the K3s-based gateway | `kubectl` for Sandbox CR lifecycle; ArgoCD for GitOps |
-| `nemoclaw onboard` / `nemoclaw connect` commands | CLI orchestrates full sandbox lifecycle assuming K3s runtime | Declarative Sandbox CR + SealedSecrets + ConfigMaps |
-| Privileged containers for OpenShell gateway | Would need DinD/privileged for K3s; violates PSS restricted | agent-sandbox controller runs unprivileged |
-| agent-sandbox `NetworkPolicyManagement: "Managed"` | Default blocks RFC1918 IPs, breaking LiteLLM proxy connectivity | `NetworkPolicyManagement: "Unmanaged"` + our own NetworkPolicy |
+| Dependency | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| None | N/A | N/A | All tooling already exists in the cluster image |
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| agent-sandbox CRD for OpenClaw lifecycle | Keep existing StatefulSet | If agent-sandbox CRD adds no value beyond what StatefulSet provides; acceptable for pure governance-only |
-| agent-sandbox v0.2.1 | agent-sandbox v0.1.1 | Never; v0.2.1 has critical security fixes (Secure by Default networking, StatefulSet-to-Deployment controller migration) |
-| Vendored manifest.yaml | Kustomize remote URL | Try remote URL first; vendor only if redirect fails |
-| SandboxTemplate + SandboxClaim | Direct Sandbox CR | If warm pooling or lifecycle management (auto-shutdown) is needed; for single dev sandbox, direct Sandbox CR is simpler |
-| `NetworkPolicyManagement: "Unmanaged"` | `"Managed"` with custom egress rules | If RFC1918 blocking is acceptable and LiteLLM is reachable via public IP (not our case) |
-| LiteLLM as inference proxy (retained from v1.2) | OpenShell privacy router | Only if OpenShell gateway can be deployed without K3s; unproven for our architecture |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Registration method | `openshell policy set` (Approach C) | `openshell sandbox create` (Approach A) | Creates duplicate Sandbox CR, conflicts with ArgoCD |
+| Registration method | `openshell policy set` (Approach C) | Direct gRPC `CreateSandbox` (Approach B) | Error-prone proto construction, still creates duplicate CR |
+| Policy delivery | Job at wave 11 | ArgoCD PostSync hook | Hook runs on every sync, not just initial; Job is more explicit |
+| Policy delivery | Job at wave 11 | Init container in sandbox pod | Circular: supervisor needs policy before it starts, but init runs before supervisor |
+| CLI source | Cluster image (0.0.12) | Install openshell CLI via pip in Job | Unnecessary; CLI already bundled in cluster image |
+| Supervisor retry | Rely on built-in retry | Custom sidecar for polling | Over-engineering; supervisor designed for gRPC retry |
 
-## Version Compatibility
+## Open Questions (Requiring Runtime Verification)
 
-| Component | Version | Compatible With | Notes |
-|-----------|---------|-----------------|-------|
-| agent-sandbox controller v0.2.1 | v0.2.1 | K8s 1.25+ (needs CRD v1 support) | KIND nodes run K8s 1.28+; compatible |
-| agent-sandbox CRD | `agents.x-k8s.io/v1alpha1` | kubectl, ArgoCD, kubeconform (with CRD schema) | v1alpha1 -- may change in future releases |
-| Sandbox CR | `agents.x-k8s.io/v1alpha1` | OpenClaw 2026.2.19 | OpenClaw does not know it runs in a Sandbox CR; transparent |
-| agent-sandbox controller | v0.2.1 | ArgoCD 2.14.x | Standard Deployment; no special sync requirements |
-| LiteLLM | v1.82.3 | OpenClaw 2026.2.19 | OpenAI-compatible API; version-independent |
+1. **Does `openshell policy set` work on a sandbox the gateway discovered (not created)?**
+   - The gateway watches Sandbox CRs via `openshell.ai/sandbox-id` label (confirmed by commit `0f613b3`)
+   - It creates a database entry for discovered sandboxes, but without a spec
+   - `openshell policy set` calls `UpdateConfig` RPC which requires the sandbox to exist in the database
+   - **LIKELY YES** -- but needs runtime verification on a live cluster
+   - **Fallback:** If `UpdateConfig` fails on a sandbox without an initial spec, use a two-step approach: (1) `openshell sandbox create` to register with spec, (2) delete the duplicate K8s Sandbox CR and let ArgoCD recreate ours
 
-## Ports (Complete Map)
+2. **Does the supervisor retry `GetSandboxConfig` on failure?**
+   - The supervisor is designed for hot-reload (dynamic network policies)
+   - It likely polls `GetSandboxConfig` periodically
+   - **LIKELY YES** -- but needs runtime verification
+   - **Mitigation:** If not, set a higher `startupProbe.failureThreshold` to give the Job time to run
 
-| Port | Component | Namespace | Protocol | Purpose |
-|------|-----------|-----------|----------|---------|
-| 18789 | OpenClaw Gateway (Sandbox) | openclaw | HTTP | Gateway UI, WebChat, API |
-| 4000 | LiteLLM Proxy | nemoclaw | HTTP | OpenAI-compatible inference proxy |
-| 8080 | agent-sandbox controller | agent-sandbox-system | HTTP | Metrics |
-| 8081 | agent-sandbox controller | agent-sandbox-system | HTTP | Health probes |
-| 80/443 | Envoy Gateway | envoy-gateway-system | HTTP/HTTPS | External ingress |
+3. **What mTLS credentials does the Job need?**
+   - The `openshell` CLI uses `~/.config/openshell/gateways/<name>/mtls/` for client certs
+   - In our cluster, client cert is in `openshell-client-tls` secret
+   - The Job needs the client cert mounted and the CLI configured to find it
+   - **May need `OPENSHELL_TLS_CERT`, `OPENSHELL_TLS_KEY`, `OPENSHELL_TLS_CLIENT_CA` env vars** or equivalent CLI flags
 
-## Health Endpoints
-
-| Component | Probe | Path | Port | Confidence |
-|-----------|-------|------|------|------------|
-| OpenClaw (Sandbox) | All probes | `/health` | 18789 | HIGH -- already in production |
-| LiteLLM Proxy | Startup/Liveness | `/health/liveliness` | 4000 | MEDIUM -- spelling is intentional |
-| LiteLLM Proxy | Readiness | `/health/readiness` | 4000 | MEDIUM |
-| agent-sandbox controller | Liveness | `/healthz` | 8081 | HIGH -- standard K8s controller pattern |
-| agent-sandbox controller | Readiness | `/readyz` | 8081 | HIGH |
-
-## Installation Summary
-
-No new CLI tools or host-level binaries. All changes are declarative manifests.
-
-```bash
-# Pre-load images into KIND cluster (one-time)
-make load-image IMAGE=registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.2.1
-
-# LiteLLM is already loaded from v1.2; update if upgrading
-make load-image IMAGE=ghcr.io/berriai/litellm:main-v1.82.3
-
-# OpenClaw is already loaded from v1.0
-# No new images needed for the OpenClaw workload itself
-```
-
-## kubeconform Considerations
-
-The agent-sandbox CRDs (`agents.x-k8s.io/v1alpha1`) are custom resources. kubeconform will need CRD schemas to validate Sandbox, SandboxTemplate, SandboxClaim manifests. Options:
-1. Download the CRD YAML from the release and convert to JSON schema
-2. Use `--skip` for `agents.x-k8s.io` resources during validation
-3. Use `--additional-schema-locations` pointing to the generated schemas
-
-This must be addressed in the CI pipeline update phase.
+4. **Does the gateway accept `openshell gateway add` from within the cluster?**
+   - The CLI is designed for human use (opens browser for auth)
+   - For in-cluster use, `--gateway-endpoint` flag with mTLS may be sufficient
+   - **Needs runtime verification**
 
 ## Confidence Assessment
 
 | Area | Confidence | Reason |
 |------|------------|--------|
-| agent-sandbox controller image + CRD spec | HIGH | Verified from actual manifest.yaml release asset |
-| Sandbox CR replacing StatefulSet | HIGH | CRD supports volumeClaimTemplates, podTemplate, replicas 0/1 -- exact match for OpenClaw constraints |
-| OpenShell gateway standalone deployment | LOW | No official documentation; #407 proves concept but not reproducible steps |
-| OpenClaw sandbox community image tags | LOW | No versioned tags found; may need local build |
-| agent-sandbox + ArgoCD integration | MEDIUM | Standard K8s Deployment; should work but not explicitly documented |
-| NetworkPolicyManagement: "Unmanaged" | MEDIUM | Documented in Go API but not demonstrated in guides |
-| LiteLLM v1.82.3 compatibility | HIGH | OpenAI-compatible; no version coupling with OpenClaw |
-| Sync wave -1 for CRDs | HIGH | Follows existing pattern (CRD-heavy apps get negative waves) |
-
-## Open Questions
-
-1. **agent-sandbox manifest as Kustomize remote base** -- GitHub release asset URLs redirect to blob storage. Kustomize may not follow these redirects. Need to test, and vendor the files if it fails.
-2. **OpenShell gateway without K3s** -- Can the gateway binary start with `--backend=kubernetes` or similar? Needs hands-on testing of the container image. If not possible, Option A (agent-sandbox + LiteLLM only) is the path.
-3. **Sandbox CR headless Service vs ClusterIP** -- The agent-sandbox controller creates a headless Service for each Sandbox (stable DNS). The existing OpenClaw Service is ClusterIP. Need to verify if HTTPRoute can reference the headless Service, or if we need both.
-4. **kubeconform CRD schemas** -- Need to generate JSON schemas from the agent-sandbox CRD definitions for CI validation.
-5. **OpenClaw sandbox community image** -- Is `ghcr.io/nvidia/openshell-community/sandboxes/openclaw` published with version tags, or does it need to be built locally? If so, do we need it at all, since we already have our own OpenClaw image?
-6. **agent-sandbox + PSS restricted** -- Does the controller itself comply with PSS `restricted`? The `agent-sandbox-system` namespace may need different PSS settings than our workload namespaces.
+| Root cause ("sandbox has no spec") | HIGH | Git history shows the exact error, proto files confirm gateway needs SandboxSpec in SQLite |
+| Proto file structure | HIGH | Read directly from `github.com/NVIDIA/OpenShell/proto/` (sandbox.proto, datamodel.proto, openshell.proto) |
+| Recommended approach (Approach C) | MEDIUM | Architecturally sound but `UpdateConfig` on gateway-discovered sandbox not verified at runtime |
+| Policy YAML format | HIGH | Official schema reference verified, community base policy inspected |
+| NemoClaw Apply phase | MEDIUM | Docs + issue analysis, not direct blueprint source inspection |
+| Supervisor env vars | MEDIUM | Confirmed by DeepWiki and commit history, not from Rust source inspection |
 
 ## Sources
 
-### Official Documentation (HIGH confidence)
-- [agent-sandbox Getting Started](https://agent-sandbox.sigs.k8s.io/docs/getting_started/) -- installation, basic usage
-- [agent-sandbox Guides](https://agent-sandbox.sigs.k8s.io/docs/guides/) -- network policies, gVisor, KIND
-- [agent-sandbox CRD: agents.x-k8s.io_sandboxes.yaml](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/k8s/crds/agents.x-k8s.io_sandboxes.yaml) -- full CRD schema
-- [agent-sandbox Extensions API v1alpha1](https://pkg.go.dev/sigs.k8s.io/agent-sandbox/extensions/api/v1alpha1) -- Go types for SandboxTemplate, SandboxClaim, SandboxWarmPool
-- [agent-sandbox Releases](https://github.com/kubernetes-sigs/agent-sandbox/releases) -- v0.2.1 manifest.yaml verified
-- [OpenShell Support Matrix](https://docs.nvidia.com/openshell/latest/reference/support-matrix.html) -- two images (gateway + cluster)
-- [OpenShell Gateway Management](https://docs.nvidia.com/openshell/latest/sandboxes/manage-gateways.html) -- port 8080, TLS modes
-- [OpenShell Architecture](https://docs.nvidia.com/openshell/latest/about/architecture.html) -- four components
-- [OpenShell Inference Routing](https://docs.nvidia.com/openshell/latest/inference/configure.html) -- inference.local, credential injection
-- [OpenShell Releases](https://github.com/NVIDIA/OpenShell/releases) -- v0.0.12 latest
-- [NemoClaw Architecture](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html) -- blueprint structure
-- [NemoClaw Network Policies](https://docs.nvidia.com/nemoclaw/latest/reference/network-policies.html) -- baseline egress rules, FQDN list
-- [NemoClaw Inference Profiles](https://docs.nvidia.com/nemoclaw/latest/reference/inference-profiles.html) -- NVIDIA NIM config, model list
+**Official Documentation (HIGH confidence):**
+- [OpenShell Policy Schema Reference](https://docs.nvidia.com/openshell/latest/reference/policy-schema.html)
+- [OpenShell Gateway Authentication](https://docs.nvidia.com/openshell/latest/reference/gateway-auth.html)
+- [OpenShell Sandbox Management](https://docs.nvidia.com/openshell/latest/sandboxes/manage-sandboxes.html)
+- [OpenShell Gateway Management](https://docs.nvidia.com/openshell/latest/sandboxes/manage-gateways.html)
+- [OpenShell Sandbox Policies](https://docs.nvidia.com/openshell/latest/sandboxes/policies.html)
+- [OpenShell Architecture](https://docs.nvidia.com/openshell/latest/about/architecture.html)
+- [NemoClaw Architecture](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html)
+- [NemoClaw Commands](https://docs.nvidia.com/nemoclaw/latest/reference/commands.html)
+- [OpenClaw OpenShell Integration](https://docs.openclaw.ai/gateway/openshell)
 
-### GitHub Issues and Community (MEDIUM confidence)
-- [NemoClaw #407: OpenShift deployment via agent-sandbox CRD](https://github.com/NVIDIA/NemoClaw/issues/407) -- critical proof-of-concept for agent-sandbox replacing K3s
-- [OpenShell-Community: openclaw sandbox](https://github.com/NVIDIA/OpenShell-Community/tree/main/sandboxes/openclaw) -- Dockerfile, startup script, policy.yaml
-- [agent-sandbox DeepWiki](https://deepwiki.com/kubernetes-sigs/agent-sandbox) -- architecture overview, controller image confirmed
-- [OpenShell DeepWiki](https://deepwiki.com/NVIDIA/OpenShell) -- internal K3s architecture details
-- [Google Blog: Agent Sandbox for Kubernetes](https://opensource.googleblog.com/2025/11/unleashing-autonomous-ai-agents-why-kubernetes-needs-a-new-standard-for-agent-execution.html) -- motivation and design rationale
+**Source Code (HIGH confidence):**
+- [OpenShell proto/sandbox.proto](https://github.com/NVIDIA/OpenShell/blob/main/proto/sandbox.proto) -- SandboxPolicy, GetSandboxConfigRequest/Response
+- [OpenShell proto/datamodel.proto](https://github.com/NVIDIA/OpenShell/blob/main/proto/datamodel.proto) -- Sandbox, SandboxSpec, SandboxTemplate
+- [OpenShell proto/openshell.proto](https://github.com/NVIDIA/OpenShell/blob/main/proto/openshell.proto) -- OpenShell service with 40+ RPCs including CreateSandbox, UpdateConfig, GetSandboxConfig
+- [OpenShell-Community base policy](https://github.com/NVIDIA/OpenShell-Community/tree/main/sandboxes/base) -- Default policy.yaml
 
-### Existing Codebase (HIGH confidence)
-- `workloads/openclaw/base/statefulset.yaml` -- current OpenClaw StatefulSet (migration source)
-- `workloads/openclaw/base/networkpolicy.yaml` -- current NetworkPolicy with LiteLLM egress
-- `infrastructure/nemoclaw/` -- existing namespace + NetworkPolicy from v1.2
-- `bootstrap/kinder/infra-nemoclaw.yaml` -- existing ArgoCD Application at wave 0
-- `bootstrap/kinder/workload-litellm.yaml` -- existing LiteLLM Application at wave 5
+**DeepWiki Analysis (MEDIUM confidence):**
+- [NVIDIA/OpenShell DeepWiki](https://deepwiki.com/NVIDIA/OpenShell) -- Supervisor startup, GetSandboxConfig flow, Rust crate structure
 
----
-*Stack research for: OpenShell + agent-sandbox deployment on Pincer Ops*
-*Researched: 2026-03-20*
+**Issue Analysis (HIGH confidence for NemoClaw behavior):**
+- [NemoClaw #46](https://github.com/NVIDIA/NemoClaw/issues/46) -- Policy set command format, step 7/7 details
+- [NemoClaw #152](https://github.com/NVIDIA/NemoClaw/issues/152) -- Sandbox registration lifecycle, readiness polling
+
+**Git History (HIGHEST confidence -- our own codebase):**
+- `dd30221` -- "sandbox has no spec" error, supervisor bypass
+- `0f613b3` -- `openshell.ai/sandbox-id` label for gateway discovery
+- `e14c899` -- OPENSHELL_ENDPOINT and OPENSHELL_SANDBOX_ID env vars
+- `3bd1a7f` -- Original supervisor as PID 1 implementation
