@@ -140,7 +140,7 @@ fc00:f853:ccd:e793::/64
     infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
-    workload-openclaw.yaml
+    workload-openclaw-sandbox.yaml
     workload-litellm.yaml
     workload-openshell-gateway.yaml
   )
@@ -181,7 +181,7 @@ fc00:f853:ccd:e793::/64
     infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
-    workload-openclaw.yaml
+    workload-openclaw-sandbox.yaml
     workload-litellm.yaml
     workload-openshell-gateway.yaml
   )
@@ -210,7 +210,7 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
-    workload-openclaw.yaml
+    workload-openclaw-sandbox.yaml
     projects/infrastructure.yaml
     projects/workloads.yaml
     projects/openshell-project.yaml
