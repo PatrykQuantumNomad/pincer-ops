@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: phase_complete
-stopped_at: Completed 26-03-PLAN.md
+stopped_at: Phase 26 verified and complete
 last_updated: "2026-03-21T11:49:00Z"
 last_activity: 2026-03-21 -- Phase 26 complete (all 3 plans executed, BATS structural tests for MIGR-01 through MIGR-07)
 progress:
@@ -11,7 +11,7 @@ progress:
   completed_phases: 4
   total_plans: 9
   completed_plans: 9
-  percent: 100
+  percent: 57
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 
 Phase: 26 of 29 (openclaw-sandbox-cr-migration)
 Plan: 3/3 complete
-Status: Phase 26 complete -- all plans executed, ready for Phase 27
-Last activity: 2026-03-21 -- Phase 26 plan 03 complete (BATS structural tests for MIGR-01 through MIGR-07)
+Status: Phase 26 verified and complete, ready to plan Phase 27
+Last activity: 2026-03-21 -- Phase 26 verified (5/5 must-haves)
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -69,7 +69,6 @@ None.
 
 ### Blockers/Concerns
 
-- Gateway static CR adoption: spike needed before Phase 26 planning (does gateway adopt pre-existing Sandbox CR?)
 - Supervisor binary arch: confirm arm64 availability before Phase 27 planning
 - LiteLLM stays running through Phase 27 as inference fallback -- removed only in Phase 28 after privacy router verified
 - PSS privileged on openshell namespace: deliberate tradeoff, supervisor enforces isolation internally
