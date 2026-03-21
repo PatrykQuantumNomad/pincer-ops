@@ -1,10 +1,12 @@
-# sandbox.yaml -- OpenClaw running as a Sandbox CR.
+# sandbox.yaml -- OpenClaw running as a Sandbox CR with supervisor isolation.
+#
+# The openshell-sandbox supervisor runs as PID 1, enforcing Landlock filesystem
+# restrictions, seccomp-BPF syscall filtering, and network namespace isolation.
+# The supervisor wraps the OpenClaw node process and communicates with the
+# OpenShell gateway for policy delivery via gRPC.
 #
 # The agent-sandbox controller reconciles this into a Pod, headless Service,
 # and PVC. The stable hostname is openclaw-sandbox.openshell.svc.cluster.local.
-#
-# Source: adapted from kubernetes-sigs/agent-sandbox examples/openclaw-sandbox/
-# with repo conventions (probes, resources, securityContext, initContainer).
 apiVersion: agents.x-k8s.io/v1alpha1
 kind: Sandbox
 metadata:
@@ -76,13 +78,23 @@ spec:
           image: ghcr.io/openclaw/openclaw:2026.3.13-1
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            allowPrivilegeEscalation: false
+            runAsUser: 0
+            allowPrivilegeEscalation: true
             capabilities:
+              add: ["NET_ADMIN", "SYS_ADMIN"]
               drop: ["ALL"]
             readOnlyRootFilesystem: true
-          command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+          command:
+            - /opt/openshell/bin/openshell-sandbox
+          args:
+            - "--"
+            - "node"
+            - "dist/index.js"
+            - "gateway"
+            - "--bind"
+            - "lan"
+            - "--port"
+            - "18789"
           ports:
             - containerPort: 18789
               name: gateway
@@ -97,6 +109,8 @@ spec:
               value: "production"
             - name: HOME
               value: "/home/node"
+            - name: OPENSHELL_GRPC_ENDPOINT
+              value: "openshell.openshell.svc.cluster.local:8080"
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
@@ -104,6 +118,9 @@ spec:
               mountPath: /tmp
             - name: cache
               mountPath: /home/node/.cache
+            - name: supervisor-bin
+              mountPath: /opt/openshell/bin
+              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -139,6 +156,10 @@ spec:
         - name: cache
           emptyDir:
             sizeLimit: 100Mi
+        - name: supervisor-bin
+          hostPath:
+            path: /opt/openshell/bin
+            type: Directory
   volumeClaimTemplates:
     - metadata:
         name: data
