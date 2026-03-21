@@ -1,0 +1,47 @@
+# workload-openclaw-sandbox.yaml -- ArgoCD Application for OpenClaw Sandbox CR.
+#
+# Deploys OpenClaw as a Sandbox CR in the openshell namespace. The agent-sandbox
+# controller (wave 2) reconciles the CR into a Pod, headless Service, and PVC.
+#
+# v2.0 Sync Wave Map:
+#   Wave -10: ArgoCD self-management + AppProjects
+#   Wave  -5: MetalLB (KIND only)
+#   Wave  -4: Envoy Gateway controller (KIND only)
+#   Wave  -3: Sealed Secrets
+#   Wave  -2: cert-manager (KIND only)
+#   Wave  -1: Envoy Gateway config
+#   Wave   0: infra-nemoclaw, infra-openshell (namespaces)
+#   Wave   2: infra-agent-sandbox (CRD controller)
+#   Wave   5: workload-openshell-gateway, workload-litellm
+#   Wave +10: workload-openclaw-sandbox [this app]
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workload-openclaw-sandbox
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/manifest-generate-paths: workloads/openclaw-sandbox
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: openshell
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: workloads/openclaw-sandbox/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshell
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
