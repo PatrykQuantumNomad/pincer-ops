@@ -9,9 +9,9 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### Infrastructure Foundation
 
-- [ ] **INFRA-01**: `openshell` namespace created with PSS `privileged` label and ArgoCD tracking
-- [ ] **INFRA-02**: `agent-sandbox-system` namespace created with PSS `restricted` label
-- [ ] **INFRA-03**: ArgoCD AppProjects updated with openshell and agent-sandbox-system destinations
+- [x] **INFRA-01**: `openshell` namespace created with PSS `privileged` label and ArgoCD tracking
+- [x] **INFRA-02**: `agent-sandbox-system` namespace created with PSS `restricted` label
+- [x] **INFRA-03**: ArgoCD AppProjects updated with openshell and agent-sandbox-system destinations
 - [ ] **INFRA-04**: `make doctor` checks Landlock kernel support on KIND nodes (`/sys/kernel/security/lsm`)
 - [ ] **INFRA-05**: Bootstrap script updated with TLS generation and new namespace creation steps
 
@@ -101,9 +101,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 23 | Pending |
-| INFRA-02 | Phase 23 | Pending |
-| INFRA-03 | Phase 23 | Pending |
+| INFRA-01 | Phase 23 | Complete |
+| INFRA-02 | Phase 23 | Complete |
+| INFRA-03 | Phase 23 | Complete |
 | INFRA-04 | Phase 23 | Pending |
 | INFRA-05 | Phase 23 | Pending |
 | SAND-01 | Phase 24 | Pending |

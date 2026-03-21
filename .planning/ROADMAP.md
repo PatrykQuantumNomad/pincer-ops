@@ -76,7 +76,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 23-01-PLAN.md — Namespace manifests, ArgoCD Applications, AppProject, BATS tests, kubeconform
+- [x] 23-01-PLAN.md — Namespace manifests, ArgoCD Applications, AppProject, BATS tests, kubeconform
 - [ ] 23-02-PLAN.md — Bootstrap namespace creation, TLS placeholder, doctor Landlock and PSS checks
 
 ### Phase 24: Agent-Sandbox CRD Controller
@@ -205,7 +205,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 20. Security Hardening | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 21. OpenClaw Integration and Network Cutover | v1.2 | 1/1 | Complete | 2026-03-20 |
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 0/2 | Planned | - |
+| 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 1/2 | In Progress|  |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 0/? | Not started | - |
 | 25. OpenShell Gateway | v2.0 | 0/? | Not started | - |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
