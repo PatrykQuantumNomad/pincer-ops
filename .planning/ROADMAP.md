@@ -104,11 +104,11 @@ Plans:
   3. Gateway RBAC allows Sandbox CRUD in openshell namespace and read access to nodes/runtimeclasses
   4. TLS is disabled via OPENSHELL_DISABLE_TLS and OPENSHELL_DISABLE_GATEWAY_AUTH env vars
   5. All gateway manifests are pre-rendered static YAML (no Helm in ArgoCD)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 25-01: TBD
-- [ ] 25-02: TBD
+- [ ] 25-01-PLAN.md — Pre-rendered gateway manifests (StatefulSet, RBAC, Service) and ArgoCD Application at wave 5
+- [ ] 25-02-PLAN.md — BATS structural tests for gateway artifacts and validate-manifests.sh update
 
 ### Phase 26: OpenClaw Sandbox CR Migration
 **Goal**: OpenClaw runs as an ArgoCD-managed Sandbox CR in the openshell namespace, accessible via localhost:80 through Envoy Gateway, with old StatefulSet and openclaw namespace removed
@@ -207,7 +207,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 25. OpenShell Gateway | v2.0 | 0/? | Not started | - |
+| 25. OpenShell Gateway | v2.0 | 0/2 | Not started | - |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |
