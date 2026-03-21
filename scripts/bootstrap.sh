@@ -33,6 +33,16 @@ source "${SCRIPT_DIR}/lib/sealed-secrets.sh"
 trap 'echo ""; log_warn "Bootstrap interrupted by signal"; exit 130' INT TERM
 
 # ---------------------------------------------------------------------------
+# TLS artifact generation (Phase 29: mTLS between gateway and sandbox)
+# ---------------------------------------------------------------------------
+# Placeholder: generates no certificates. Phase 29 activates real cert
+# generation with cert-manager self-signed CA. The function exists now so
+# that bootstrap step ordering is established and tested.
+generate_tls_artifacts() {
+  log_info "TLS artifact generation: skipped (Phase 29 activates this)"
+}
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 # CLUSTER_PROVIDER is NOT readonly here -- check_provider() may modify it
@@ -181,6 +191,27 @@ run_cmd kubectl wait --for=condition=available deployment/argocd-server -n argoc
 run_cmd kubectl wait --for=condition=available deployment/argocd-repo-server -n argocd --timeout=120s
 run_cmd kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=120s
 log_info "ArgoCD is ready"
+
+# Step 8b: Create OpenShell namespaces (bootstrap creates, ArgoCD adopts)
+# These namespaces must exist before root-app syncs so ArgoCD Applications
+# can adopt them with PSS labels and tracking annotations via ServerSideApply.
+log_step "Creating OpenShell namespaces..."
+NS_YAML=$(kubectl create namespace openshell --dry-run=client -o yaml)
+if [ "${VERBOSE}" = true ]; then
+  echo "${NS_YAML}" | kubectl apply -f -
+else
+  echo "${NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
+fi
+NS_YAML=$(kubectl create namespace agent-sandbox-system --dry-run=client -o yaml)
+if [ "${VERBOSE}" = true ]; then
+  echo "${NS_YAML}" | kubectl apply -f -
+else
+  echo "${NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
+fi
+log_info "OpenShell namespaces created"
+
+# Step 8c: Generate TLS artifacts (placeholder -- Phase 29 activates)
+generate_tls_artifacts
 
 # Step 9: Apply root Application
 log_step "Applying root Application..."
