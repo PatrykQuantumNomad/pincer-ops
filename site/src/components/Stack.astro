@@ -35,15 +35,23 @@ const tools = [
   {
     name: 'cert-manager',
     role: 'TLS Certificate Automation',
-    desc: 'Automates certificate issuance and renewal. Self-signed ClusterIssuer for dev environments. Infrastructure-ready for HTTPS when you need it.',
+    desc: 'Automates certificate issuance and renewal. Self-signed CA chain issues mTLS certificates for gateway-to-sandbox communication.',
     breaks: 'No automated TLS. Future HTTPS listeners require manual certificate management.',
     color: '#F5A623',
     icon: '&#x2713;',
   },
   {
+    name: 'OpenShell Gateway',
+    role: 'Sandbox Lifecycle Manager',
+    desc: 'Manages sandbox pods via gRPC. Delivers security policies, handles inference routing through the privacy router. mTLS-secured StatefulSet with SQLite storage.',
+    breaks: 'No sandbox lifecycle management. No policy delivery. No privacy router for inference.',
+    color: '#7C3AED',
+    icon: '&#x1F6E1;',
+  },
+  {
     name: 'OpenClaw',
     role: 'The Workload',
-    desc: 'AI assistant gateway. Single-instance StatefulSet, PVC-backed. Connects to 14+ messaging platforms. The application everything else exists to serve.',
+    desc: 'AI assistant gateway. Runs as a Sandbox CR with supervisor isolation \u2014 Landlock filesystem restrictions, seccomp-BPF, and network namespace. The application everything else exists to serve.',
     breaks: 'There\'s nothing to deploy. This is the whole point of the platform.',
     color: '#FF6B35',
     icon: '&#x2699;',
@@ -55,7 +63,7 @@ const flowSteps = [
   'hostPort map',
   'Envoy Gateway',
   'HTTPRoute',
-  'OpenClaw :18789',
+  'Sandbox Pod :18789',
 ];
 ---
 
