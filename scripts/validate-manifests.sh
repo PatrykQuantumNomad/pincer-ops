@@ -104,6 +104,9 @@ validate_kustomize "infrastructure/nemoclaw/overlays/dev" "nemoclaw/dev"
 # openshell: namespace only
 validate_kustomize "infrastructure/openshell/base" "openshell"
 
+# openshell gateway: local resources only (pre-rendered from Helm chart)
+validate_kustomize "infrastructure/openshell/gateway" "openshell-gateway"
+
 # metallb: remote resource (github.com/metallb/...) -- SKIP kustomize build
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build

@@ -142,12 +142,13 @@ fc00:f853:ccd:e793::/64
     infra-agent-sandbox.yaml
     workload-openclaw.yaml
     workload-litellm.yaml
+    workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 15 ]
+  [ "${actual_count}" -eq 16 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -182,12 +183,13 @@ fc00:f853:ccd:e793::/64
     infra-agent-sandbox.yaml
     workload-openclaw.yaml
     workload-litellm.yaml
+    workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 12 ]
+  [ "${actual_count}" -eq 13 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
