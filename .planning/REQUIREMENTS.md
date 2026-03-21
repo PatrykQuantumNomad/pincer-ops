@@ -54,10 +54,10 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### Security Hardening
 
-- [ ] **SEC-01**: mTLS enabled between gateway and sandbox pods via cert-manager
-- [ ] **SEC-02**: TLS certificates stored as SealedSecrets for Git-safe management
-- [ ] **SEC-03**: NetworkPolicy retained as belt-and-suspenders alongside supervisor proxy
-- [ ] **SEC-04**: Sandbox pods accept only SSH ingress (port 2222) from gateway pod
+- [x] **SEC-01**: mTLS enabled between gateway and sandbox pods via cert-manager
+- [x] **SEC-02**: TLS certificates stored as SealedSecrets for Git-safe management
+- [x] **SEC-03**: NetworkPolicy retained as belt-and-suspenders alongside supervisor proxy
+- [x] **SEC-04**: Sandbox pods accept only SSH ingress (port 2222) from gateway pod
 
 ### Testing & Validation
 
@@ -131,10 +131,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFER-02 | Phase 28 | Complete |
 | INFER-03 | Phase 28 | Complete |
 | INFER-04 | Phase 28 | Complete |
-| SEC-01 | Phase 29 | Pending |
-| SEC-02 | Phase 29 | Pending |
-| SEC-03 | Phase 29 | Pending |
-| SEC-04 | Phase 29 | Pending |
+| SEC-01 | Phase 29 | Complete |
+| SEC-02 | Phase 29 | Complete |
+| SEC-03 | Phase 29 | Complete |
+| SEC-04 | Phase 29 | Complete |
 | TEST-01 | Phase 29 | Pending |
 | TEST-02 | Phase 29 | Complete |
 | TEST-03 | Phase 29 | Pending |

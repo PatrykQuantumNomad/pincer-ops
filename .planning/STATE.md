@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: executing
-stopped_at: Completed 29-02-PLAN.md
-last_updated: "2026-03-21T15:24:30Z"
-last_activity: 2026-03-21 -- Phase 29 plans 01+02 executed (mTLS hardening + Sandbox CRD schema)
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-03-21T15:26:48.542Z"
+last_activity: 2026-03-21 -- Phase 29 plan 01 complete (mTLS cert chain + gateway hardening)
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 17
   completed_plans: 16
-  percent: 94
+  percent: 88
 ---
 
 # Project State
@@ -68,6 +68,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 27]: 27-03: Updated runAsNonRoot test to runAsUser 0 (supervisor requires root). Fixed stale egress count (3->4) in nemoclaw-manifests.bats.
 - [Phase 28]: 28-01: Kept HTTPS egress (443) as defense-in-depth alongside supervisor proxy. Single model gpt-4o with provider-native ID.
 - [Phase 28]: 28-02: Cleaned stale nemoclaw/litellm sync wave map comments from 10 bootstrap YAML files for zero-reference cleanup
+- [Phase 29]: 29-01: openshell-client-tls ca.crt for client CA volume (avoids separate secret). Root CA in cert-manager ns (ClusterIssuer requirement). SealedSecret placeholder with re-seal instructions.
 - [Phase 29]: 29-02: Full CRD schema extraction for local kubeconform validation. SCHEMA_LOCATION_LOCAL as lowest-priority fallback. Pattern: schemas/{group}/{kind}_{version}.json
 
 ### Pending Todos
@@ -81,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:24:30Z
-Stopped at: Completed 29-02-PLAN.md
+Last session: 2026-03-21T15:26:48.539Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
