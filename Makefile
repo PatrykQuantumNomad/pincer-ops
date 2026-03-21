@@ -173,6 +173,44 @@ doctor: ## Check cluster health for current provider
 	      echo "  cert-manager:    NOT FOUND"; \
 	    fi; \
 	  fi; \
+	  echo "--- OpenShell Infrastructure ---"; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  if kubectl get namespace openshell >/dev/null 2>&1; then \
+	    echo "  openshell ns:    exists"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  openshell ns:    NOT FOUND"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  if kubectl get namespace agent-sandbox-system >/dev/null 2>&1; then \
+	    echo "  agent-sandbox ns: exists"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  agent-sandbox ns: NOT FOUND"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  PSS_OPENSHELL=$$(kubectl get namespace openshell -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null); \
+	  if [ "$$PSS_OPENSHELL" = "privileged" ]; then \
+	    echo "  openshell PSS:   privileged (correct)"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  openshell PSS:   INCORRECT (expected privileged, got $$PSS_OPENSHELL)"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  PSS_SANDBOX=$$(kubectl get namespace agent-sandbox-system -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null); \
+	  if [ "$$PSS_SANDBOX" = "restricted" ]; then \
+	    echo "  sandbox PSS:     restricted (correct)"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  sandbox PSS:     INCORRECT (expected restricted, got $$PSS_SANDBOX)"; \
+	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  NODE_CONTAINER="$(CLUSTER_NAME)-control-plane"; \
+	  LSM_LIST=$$(docker exec "$$NODE_CONTAINER" cat /sys/kernel/security/lsm 2>/dev/null || echo ""); \
+	  KERN_VER=$$(docker exec "$$NODE_CONTAINER" uname -r 2>/dev/null || echo "unknown"); \
+	  if echo "$$LSM_LIST" | grep -q landlock; then \
+	    echo "  Landlock:        available (kernel $$KERN_VER)"; PASS=$$((PASS + 1)); \
+	  elif [ "$$(uname -s)" = "Darwin" ]; then \
+	    echo "  Landlock:        not available (kernel $$KERN_VER -- expected on macOS, requires Linux 5.13+)"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  Landlock:        NOT AVAILABLE (kernel $$KERN_VER -- requires Linux 5.13+ with CONFIG_SECURITY_LANDLOCK=y)"; \
+	  fi; \
 	  ISSUES=$$((TOTAL - PASS)); \
 	  if [ "$$ISSUES" -eq 0 ]; then \
 	    echo "$$PASS/$$TOTAL components healthy"; \
