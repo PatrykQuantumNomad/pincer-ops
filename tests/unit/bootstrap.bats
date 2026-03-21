@@ -140,6 +140,7 @@ fc00:f853:ccd:e793::/64
     infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
+    infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
     workload-litellm.yaml
     workload-openshell-gateway.yaml
@@ -148,7 +149,7 @@ fc00:f853:ccd:e793::/64
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 16 ]
+  [ "${actual_count}" -eq 17 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -181,6 +182,7 @@ fc00:f853:ccd:e793::/64
     infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
+    infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
     workload-litellm.yaml
     workload-openshell-gateway.yaml
@@ -189,7 +191,7 @@ fc00:f853:ccd:e793::/64
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 13 ]
+  [ "${actual_count}" -eq 14 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -210,6 +212,7 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
+    infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
     projects/infrastructure.yaml
     projects/workloads.yaml
