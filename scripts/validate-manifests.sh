@@ -88,8 +88,6 @@ validate_raw "bootstrap/kinder/" "bootstrap/kinder"
 
 # --- Workload overlays ---
 validate_kustomize "workloads/openclaw-sandbox/overlays/dev" "openclaw-sandbox/dev"
-validate_kustomize "workloads/litellm/overlays/dev" "litellm/dev"
-
 # --- Infrastructure bases ---
 # Only validate bases with LOCAL resources. Bases that reference remote URLs
 # (sealed-secrets, cert-manager, metallb) are skipped to avoid downloading
@@ -97,9 +95,6 @@ validate_kustomize "workloads/litellm/overlays/dev" "litellm/dev"
 
 # envoy-gateway: local resources only (EnvoyProxy, GatewayClass, Gateway)
 validate_kustomize "infrastructure/envoy-gateway/base" "envoy-gateway"
-
-# nemoclaw: local resources only (Namespace, NetworkPolicy)
-validate_kustomize "infrastructure/nemoclaw/overlays/dev" "nemoclaw/dev"
 
 # openshell: namespace only
 validate_kustomize "infrastructure/openshell/base" "openshell"

@@ -87,8 +87,6 @@ _mock_kubectl_kustomize() {
   assert_output --partial "PASS: bootstrap/kind"
   assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "FAIL: openclaw-sandbox/dev"
-  assert_output --partial "FAIL: litellm/dev"
-  assert_output --partial "FAIL: nemoclaw/dev"
 }
 
 # ===========================================================================
@@ -118,8 +116,6 @@ _mock_kubectl_kustomize() {
   assert_output --partial "PASS: bootstrap/kind"
   assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "FAIL: openclaw-sandbox/dev"
-  assert_output --partial "FAIL: litellm/dev"
-  assert_output --partial "FAIL: nemoclaw/dev"
 }
 
 # ===========================================================================
@@ -134,8 +130,6 @@ _mock_kubectl_kustomize() {
   assert_output --partial "PASS: bootstrap/kind"
   assert_output --partial "PASS: bootstrap/kinder"
   assert_output --partial "PASS: openclaw-sandbox/dev"
-  assert_output --partial "PASS: litellm/dev"
-  assert_output --partial "PASS: nemoclaw/dev"
   assert_output --partial "PASS: envoy-gateway"
   assert_output --partial "All validations passed"
 }

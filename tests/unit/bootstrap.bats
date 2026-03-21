@@ -137,19 +137,17 @@ fc00:f853:ccd:e793::/64
     infra-envoy-gateway-config.yaml
     infra-cert-manager.yaml
     infra-sealed-secrets.yaml
-    infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
     infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
-    workload-litellm.yaml
     workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 17 ]
+  [ "${actual_count}" -eq 15 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -159,7 +157,6 @@ fc00:f853:ccd:e793::/64
 
 @test "kind bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/infrastructure.yaml"
-  assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/workloads.yaml"
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/openshell-project.yaml"
 }
 
@@ -179,19 +176,17 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
-    infra-nemoclaw.yaml
     infra-openshell.yaml
     infra-agent-sandbox.yaml
     infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
-    workload-litellm.yaml
     workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 14 ]
+  [ "${actual_count}" -eq 12 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -201,7 +196,6 @@ fc00:f853:ccd:e793::/64
 
 @test "kinder bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/infrastructure.yaml"
-  assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/workloads.yaml"
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/openshell-project.yaml"
 }
 
@@ -215,7 +209,6 @@ fc00:f853:ccd:e793::/64
     infra-openshell-supervisor.yaml
     workload-openclaw-sandbox.yaml
     projects/infrastructure.yaml
-    projects/workloads.yaml
     projects/openshell-project.yaml
   )
 
