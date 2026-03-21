@@ -32,6 +32,31 @@ data:
     end
     return hs
 
+  # SAND-03: Sandbox resource health assessment for sync wave ordering.
+  # Maps Ready condition to ArgoCD health states: Ready=True -> Healthy,
+  # Ready=False -> Degraded, no status -> Progressing.
+  resource.customizations.health.agents.x-k8s.io_Sandbox: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = "Waiting for sandbox"
+    if obj.status ~= nil then
+      if obj.status.conditions ~= nil then
+        for i, condition in ipairs(obj.status.conditions) do
+          if condition.type == "Ready" then
+            if condition.status == "True" then
+              hs.status = "Healthy"
+              hs.message = condition.message
+            elseif condition.status == "False" then
+              hs.status = "Degraded"
+              hs.message = condition.message
+            end
+            return hs
+          end
+        end
+      end
+    end
+    return hs
+
   # MCP-02: Local account for MCP API access (apiKey only, no UI login)
   accounts.mcp-readonly: apiKey
   accounts.mcp-readonly.enabled: "true"

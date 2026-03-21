@@ -1,8 +1,8 @@
-# infra-agent-sandbox.yaml -- ArgoCD Application for the agent-sandbox-system namespace.
+# infra-agent-sandbox.yaml -- ArgoCD Application for the agent-sandbox CRD controller.
 #
-# Manages the agent-sandbox-system namespace with Pod Security Standards (PSS)
-# enforcement at the restricted level. The CRD controller running here must
-# comply with restricted PSS -- no privileged access, non-root, seccomp required.
+# Deploys the agent-sandbox CRD controller (Sandbox CRD, controller Deployment,
+# RBAC, Service) with PSS restricted enforcement. The controller reconciles
+# Sandbox CRs into pods in later phases.
 #
 # v2.0 Sync Wave Map:
 #   Wave -10: ArgoCD self-management + AppProjects
@@ -11,7 +11,8 @@
 #   Wave  -3: Sealed Secrets
 #   Wave  -2: cert-manager (KIND only)
 #   Wave  -1: Envoy Gateway config
-#   Wave   0: infra-nemoclaw, infra-openshell, infra-agent-sandbox [this app]
+#   Wave   0: infra-nemoclaw, infra-openshell
+#   Wave   2: infra-agent-sandbox [this app] -- CRD controller, needs namespace from wave 0
 #   Wave  +5: workload-litellm
 #   Wave +10: workload-openclaw
 #
@@ -22,7 +23,7 @@ metadata:
   name: infra-agent-sandbox
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
     argocd.argoproj.io/manifest-generate-paths: infrastructure/agent-sandbox
     notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
     notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
