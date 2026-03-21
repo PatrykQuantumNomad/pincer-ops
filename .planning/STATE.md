@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: executing
-stopped_at: Completed 29-03-PLAN.md
+status: milestone_complete
+stopped_at: Phase 29 verified — v2.0 milestone complete
 last_updated: "2026-03-21T15:35:35Z"
 last_activity: 2026-03-21 -- Phase 29 plan 03 complete (BATS structural tests for SEC-01 through SEC-04)
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 17
   completed_plans: 17
   percent: 100
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 29 in progress -- mTLS hardening between gateway and sandbox
+**Current focus:** v2.0 milestone complete — all 7 phases (23-29) verified
 
 ## Current Position
 
