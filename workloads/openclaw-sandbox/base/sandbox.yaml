@@ -1,0 +1,149 @@
+# sandbox.yaml -- OpenClaw running as a Sandbox CR.
+#
+# The agent-sandbox controller reconciles this into a Pod, headless Service,
+# and PVC. The stable hostname is openclaw-sandbox.openshell.svc.cluster.local.
+#
+# Source: adapted from kubernetes-sigs/agent-sandbox examples/openclaw-sandbox/
+# with repo conventions (probes, resources, securityContext, initContainer).
+apiVersion: agents.x-k8s.io/v1alpha1
+kind: Sandbox
+metadata:
+  name: openclaw-sandbox
+  namespace: openshell
+spec:
+  podTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openclaw-gateway
+        sandbox: openclaw-sandbox
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: seed-config
+          image: ghcr.io/openclaw/openclaw:2026.3.13-1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: openclaw-config
+                  key: OPENCLAW_GATEWAY_TOKEN
+          command:
+            - sh
+            - -c
+            - |
+              CFG=/home/node/.openclaw/openclaw.json
+              if [ ! -f "$CFG" ] || ! node -e "require('$CFG')" 2>/dev/null; then
+                echo "seed-config: seeding openclaw.json from ConfigMap"
+                cp /config/openclaw.json "$CFG"
+                chown 1000:1000 "$CFG"
+              else
+                CURRENT=$(node -e "try{const c=require('$CFG');console.log(c.gateway?.auth?.token||'')}catch(e){}" 2>/dev/null)
+                if [ "$CURRENT" != "$OPENCLAW_GATEWAY_TOKEN" ]; then
+                  echo "seed-config: updating gateway token to match env var"
+                  node -e "
+                    const fs=require('fs');
+                    const c=JSON.parse(fs.readFileSync('$CFG','utf8'));
+                    c.gateway=c.gateway||{};
+                    c.gateway.auth=c.gateway.auth||{};
+                    c.gateway.auth.token='$OPENCLAW_GATEWAY_TOKEN';
+                    fs.writeFileSync('$CFG',JSON.stringify(c,null,2)+'\n');
+                  "
+                  chown 1000:1000 "$CFG"
+                fi
+              fi
+              chown -R 1000:1000 /home/node/.openclaw
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/.openclaw
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: openclaw-gateway
+          image: ghcr.io/openclaw/openclaw:2026.3.13-1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+          ports:
+            - containerPort: 18789
+              name: gateway
+              protocol: TCP
+          env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: openclaw-config
+                  key: OPENCLAW_GATEWAY_TOKEN
+            - name: NODE_ENV
+              value: "production"
+            - name: HOME
+              value: "/home/node"
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/.openclaw
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /home/node/.cache
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            periodSeconds: 60
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: openclaw-config
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: cache
+          emptyDir:
+            sizeLimit: 100Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi

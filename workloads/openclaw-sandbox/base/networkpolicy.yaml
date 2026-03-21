@@ -1,0 +1,63 @@
+# networkpolicy.yaml -- Network isolation for OpenClaw sandbox pod in openshell namespace.
+#
+# Scoped to pods with app.kubernetes.io/name: openclaw-gateway label.
+# Does NOT affect the OpenShell gateway pod (different labels).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-deny-all
+  namespace: openshell
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-allow
+  namespace: openshell
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - protocol: TCP
+          port: 18789
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nemoclaw
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm-proxy
+      ports:
+        - protocol: TCP
+          port: 4000
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
