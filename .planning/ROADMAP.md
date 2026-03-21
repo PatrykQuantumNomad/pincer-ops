@@ -137,12 +137,12 @@ Plans:
   3. Landlock filesystem restrictions prevent writes outside designated paths inside the sandbox
   4. Network namespace with veth pair forces all sandbox egress through the HTTP CONNECT proxy
   5. OpenShell network policy YAML (per-binary, per-endpoint rules) is delivered to the sandbox via gateway gRPC
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 27-01: TBD
-- [ ] 27-02: TBD
-- [ ] 27-03: TBD
+- [ ] 27-01-PLAN.md — Supervisor DaemonSet Kustomize root, ArgoCD Applications (wave 3), bootstrap.sh image loading, validate-manifests.sh
+- [ ] 27-02-PLAN.md — Sandbox CR supervisor as PID 1, hostPath mount, elevated capabilities, NetworkPolicy gRPC egress
+- [ ] 27-03-PLAN.md — BATS structural tests for SUPV-01 through SUPV-06 and bootstrap.bats file count updates
 
 ### Phase 28: Privacy Router and Network Transition
 **Goal**: OpenShell privacy router handles all inference routing, LiteLLM Proxy is removed, and the nemoclaw namespace is fully cleaned up
@@ -209,6 +209,6 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
-| 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
+| 27. Supervisor Binary Side-Loading | v2.0 | 0/3 | Not started | - |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |
 | 29. mTLS, Hardening, and Testing | v2.0 | 0/? | Not started | - |
