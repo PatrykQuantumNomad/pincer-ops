@@ -115,8 +115,8 @@ load '../test_helper'
   assert_success
 }
 
-@test "infra-agent-sandbox Application at sync wave 0" {
-  run grep 'sync-wave: "0"' \
+@test "infra-agent-sandbox Application at sync wave 2" {
+  run grep 'sync-wave: "2"' \
     "${PROJECT_ROOT}/bootstrap/kind/infra-agent-sandbox.yaml"
   assert_success
 }
@@ -137,8 +137,8 @@ load '../test_helper'
   assert_success
 }
 
-@test "agent-sandbox kustomization lists namespace.yaml" {
-  run grep 'namespace.yaml' \
+@test "agent-sandbox kustomization references remote manifest.yaml" {
+  run grep 'kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/manifest.yaml' \
     "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/kustomization.yaml"
   assert_success
 }

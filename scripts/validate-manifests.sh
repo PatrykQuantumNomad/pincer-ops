@@ -104,16 +104,15 @@ validate_kustomize "infrastructure/nemoclaw/overlays/dev" "nemoclaw/dev"
 # openshell: namespace only
 validate_kustomize "infrastructure/openshell/base" "openshell"
 
-# agent-sandbox: namespace only
-validate_kustomize "infrastructure/agent-sandbox/base" "agent-sandbox"
-
 # metallb: remote resource (github.com/metallb/...) -- SKIP kustomize build
 # sealed-secrets: remote resource (github.com/bitnami-labs/...) -- SKIP kustomize build
 # cert-manager: remote resource (github.com/cert-manager/...) -- SKIP kustomize build
+# agent-sandbox: remote resource (github.com/kubernetes-sigs/agent-sandbox/...) -- SKIP kustomize build
 echo "=== Skipped infrastructure bases with remote resources ==="
 echo "  - infrastructure/metallb/base (remote: github.com/metallb/metallb)"
 echo "  - infrastructure/sealed-secrets/base (remote: github.com/bitnami-labs/sealed-secrets)"
 echo "  - infrastructure/cert-manager/base (remote: github.com/cert-manager/cert-manager)"
+echo "  - infrastructure/agent-sandbox/base (remote: github.com/kubernetes-sigs/agent-sandbox)"
 echo ""
 
 # --- Summary ---
