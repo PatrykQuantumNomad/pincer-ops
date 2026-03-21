@@ -1,6 +1,6 @@
 # Pincer Ops
 
-GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) inside an [OpenShell](https://github.com/NVIDIA/OpenShell) sandbox with kernel-level isolation. Implements the [NemoClaw](https://github.com/NVIDIA/NemoClaw) reference architecture on Kubernetes — OpenShell gateway, agent-sandbox CRD controller, supervisor binary with Landlock + seccomp-BPF, mTLS, and privacy router inference routing. This repository is the **single source of truth** for cluster state.
+GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) inside an [OpenShell](https://github.com/NVIDIA/OpenShell) sandbox with kernel-level isolation. Deploys the OpenShell sandbox runtime on Kubernetes via GitOps, inspired by the [NemoClaw](https://github.com/NVIDIA/NemoClaw) reference architecture — OpenShell gateway, agent-sandbox CRD controller, supervisor binary with Landlock + seccomp-BPF, mTLS, and privacy router inference routing. This repository is the **single source of truth** for cluster state.
 
 ## Architecture
 
@@ -102,9 +102,9 @@ make openclaw-cli CMD="devices approve <requestId>"
 
 LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and routed through the OpenShell privacy router — they are **not** set in deployment manifests or K8s Secrets.
 
-#### Validate NemoClaw Stack
+#### Validate OpenShell Stack
 
-The NemoClaw architecture is the combination of OpenShell gateway, agent-sandbox CRD controller, supervisor binary, and OpenClaw as a Sandbox CR. Validate all components are running:
+The OpenShell runtime layer includes the gateway, agent-sandbox CRD controller, supervisor binary, and OpenClaw as a Sandbox CR. Validate all components are running:
 
 ```bash
 kubectl get sandbox -n openshell              # Sandbox CR exists
