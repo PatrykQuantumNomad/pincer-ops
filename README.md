@@ -1,6 +1,6 @@
 # Pincer Ops
 
-GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw), an open-source, self-hosted AI agent runtime. This repository is the **single source of truth** for cluster state: all infrastructure manifests, ArgoCD Application definitions, and bootstrap configuration live here.
+GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) inside an [OpenShell](https://github.com/NVIDIA/OpenShell) sandbox with kernel-level isolation. Implements the [NemoClaw](https://github.com/NVIDIA/NemoClaw) reference architecture on Kubernetes — OpenShell gateway, agent-sandbox CRD controller, supervisor binary with Landlock + seccomp-BPF, mTLS, and privacy router inference routing. This repository is the **single source of truth** for cluster state.
 
 ## Architecture
 
@@ -10,7 +10,9 @@ Kinder or KIND multi-node (1 control-plane + 2 workers)
   → [KIND: ArgoCD-managed MetalLB, Envoy GW controller, cert-manager]
     → Envoy Gateway DaemonSet + hostPort (ArgoCD-managed, both providers)
       → ArgoCD (App of Apps pattern, self-managing)
-        → OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
+        → OpenShell Gateway (mTLS StatefulSet, sandbox lifecycle, policy delivery)
+          → Agent-Sandbox CRD Controller (reconciles Sandbox CRs into pods)
+            → OpenClaw Sandbox CR (single replica, PVC-backed, supervisor isolation)
 ```
 
 Everything deploys from a single root Application through ArgoCD sync waves:
@@ -21,9 +23,13 @@ Everything deploys from a single root Application through ArgoCD sync waves:
 |-5|MetalLB|LoadBalancer IPs needed by Gateway|
 |-4|Envoy Gateway controller|Gateway API CRDs and controller|
 |-3|Sealed Secrets|Decrypt SealedSecrets before workloads need them|
-|-2|cert-manager|TLS certificate infrastructure|
+|-2|cert-manager|TLS certificate infrastructure (mTLS CA chain)|
 |-1|Envoy Gateway config|Gateway + HTTPRoute resources (needs CRDs from -4)|
-|+10|OpenClaw|Depends on all infrastructure|
+|0|OpenShell namespaces|openshell + agent-sandbox-system topology|
+|2|Agent-Sandbox CRD|Sandbox CRD controller for pod reconciliation|
+|3|Supervisor DaemonSet|Binary side-loading for Landlock + seccomp-BPF|
+|5|OpenShell Gateway|mTLS gateway, sandbox lifecycle, privacy router|
+|+10|OpenClaw Sandbox|AI gateway as Sandbox CR with supervisor isolation|
 
 When using Kinder (default), waves -5 (MetalLB), -4 (Envoy Gateway controller), and -2 (cert-manager) are skipped -- these components are provided by Kinder as built-in addons.
 
@@ -58,9 +64,9 @@ make up                    # Bootstrap with Kinder (default)
 CLUSTER_PROVIDER=kind make up  # Bootstrap with KIND instead
 ```
 
-This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD with the root Application, and deploys all infrastructure and OpenClaw. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.
+This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD, issues mTLS certificates, and deploys the full OpenShell + OpenClaw stack. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.
 
-After bootstrap completes (~5 minutes), OpenClaw is accessible at `http://localhost`.
+After bootstrap completes (~4 minutes), OpenClaw is accessible at `http://localhost`.
 
 ### Provider Differences
 
@@ -94,7 +100,18 @@ make openclaw-cli CMD="devices approve <requestId>"
 # 4. Click "Connect" again — status should go Online
 ```
 
-LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding or through the OpenClaw UI at `http://localhost` — they are **not** set in the deployment manifests.
+LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and routed through the OpenShell privacy router — they are **not** set in deployment manifests or K8s Secrets.
+
+#### NemoClaw Plugin (Optional)
+
+The NemoClaw CLI plugin adds interactive sandbox management commands (`launch`, `connect`, `status`, log streaming) to OpenClaw:
+
+```bash
+make openclaw-cli CMD="skills install @nemoclaw/plugin"
+make openclaw-cli CMD="skills list"    # Verify installation
+```
+
+In this GitOps deployment, sandbox lifecycle is managed by ArgoCD and the agent-sandbox controller. The NemoClaw plugin provides an optional interactive layer on top — useful for debugging, monitoring sandbox activity, and managing inference providers from within the OpenClaw CLI.
 
 #### Managing Channels and Devices
 
@@ -177,10 +194,12 @@ pincer-ops/
 │   ├── metallb/                      # MetalLB L2 LoadBalancer
 │   ├── envoy-gateway/                # Gateway API implementation
 │   ├── sealed-secrets/               # Bitnami Sealed Secrets controller
-│   └── cert-manager/                 # TLS certificate management
+│   ├── cert-manager/                 # TLS certificate management
+│   ├── openshell/                    # OpenShell gateway + supervisor + mTLS certs
+│   └── agent-sandbox/                # Sandbox CRD controller
 ├── workloads/
-│   └── openclaw/
-│       ├── base/                     # StatefulSet, Service, ConfigMap, NetworkPolicy, etc.
+│   └── openclaw-sandbox/
+│       ├── base/                     # Sandbox CR, Service, ConfigMap, HTTPRoute, NetworkPolicy
 │       └── overlays/dev/             # Kustomize dev overlay
 ├── cluster/
 │   ├── kind-config.yaml              # KIND cluster definition (3 nodes)
@@ -195,9 +214,11 @@ pincer-ops/
 │   ├── lib/common.sh                 # Shared helper library
 │   ├── lib/sealed-secrets.sh         # Sealing key backup/restore
 │   └── hooks/                        # Pre-commit hook for plaintext Secret detection
+├── schemas/
+│   └── agents.x-k8s.io/             # Local kubeconform schema for Sandbox CRD
 └── tests/
     ├── test_helper.bash              # Common BATS test infrastructure
-    ├── unit/                         # Unit tests (106 tests)
+    ├── unit/                         # Unit tests (309 tests)
     └── integration/                  # Integration tests (10 tests)
 ```
 
@@ -215,7 +236,7 @@ This single command must reconstruct the complete cluster state for the selected
 - **Gateway API over ingress-nginx** — Envoy Gateway implements the Gateway API standard, avoiding a future migration from the deprecated Ingress API
 - **Kustomize over Helm** — Declarative overlays without template complexity; better fit for GitOps state repositories
 - **SealedSecrets over SOPS/External Secrets** — Encrypted secrets committed directly to Git; simpler workflow for single-cluster
-- **StatefulSet for OpenClaw** — Stable storage identity required for the file-backed monolith (`replicas: 1` always)
+- **Sandbox CR for OpenClaw** — ArgoCD-managed Sandbox CR with supervisor isolation (single replica, PVC-backed)
 - **DaemonSet with hostPort for Envoy** — Only viable path for `localhost` access on macOS/KIND (MetalLB VIPs unreachable from host)
 
 ## MCP Integration
@@ -232,7 +253,7 @@ This enables AI-assisted operations: checking pod status, viewing ArgoCD sync st
 
 - **Manifest validation** — `make validate` runs kubeconform against all local bases (also runs in CI on PRs)
 - **Pre-commit hook** — Rejects any commit containing a plaintext `kind: Secret` resource (`make hooks` to install)
-- **BATS test suite** — 116 tests covering all scripts (`make test`)
+- **BATS test suite** — 319 tests covering all manifests and scripts (`make test`)
 - **ArgoCD notifications** — Webhook triggers on sync failures and health degradation
 - **Automated backups** — CronJobs for OpenClaw PVC data (2AM) and sealing key export (3AM)
 

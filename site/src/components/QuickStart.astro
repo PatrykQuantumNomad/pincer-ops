@@ -41,6 +41,15 @@ const steps = [
     ],
     note: 'Approve the pending device, then click Connect again in the dashboard',
   },
+  {
+    step: '06',
+    label: 'Install NemoClaw plugin (optional)',
+    commands: [
+      'make openclaw-cli CMD="skills install @nemoclaw/plugin"',
+      'make openclaw-cli CMD="skills list"',
+    ],
+    note: 'Adds NemoClaw CLI commands (launch, connect, status) for interactive sandbox management',
+  },
 ];
 
 const prereqs = [
