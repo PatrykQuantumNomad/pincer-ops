@@ -43,12 +43,13 @@ const steps = [
   },
   {
     step: '06',
-    label: 'Install NemoClaw plugin (optional)',
+    label: 'NemoClaw CLI (optional)',
     commands: [
-      'make openclaw-cli CMD="skills install @nemoclaw/plugin"',
-      'make openclaw-cli CMD="skills list"',
+      'pip install nemoclaw',
+      'kubectl port-forward svc/openshell -n openshell 8080:8080 &',
+      'nemoclaw status',
     ],
-    note: 'Adds NemoClaw CLI commands (launch, connect, status) for interactive sandbox management',
+    note: 'Interactive sandbox management via OpenShell gateway API — monitor activity, view logs, manage inference',
   },
 ];
 

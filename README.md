@@ -102,16 +102,21 @@ make openclaw-cli CMD="devices approve <requestId>"
 
 LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and routed through the OpenShell privacy router — they are **not** set in deployment manifests or K8s Secrets.
 
-#### NemoClaw Plugin (Optional)
+#### NemoClaw CLI (Optional)
 
-The NemoClaw CLI plugin adds interactive sandbox management commands (`launch`, `connect`, `status`, log streaming) to OpenClaw:
+The NemoClaw CLI provides interactive sandbox management commands (`launch`, `connect`, `status`, log streaming) via the OpenShell gateway API:
 
 ```bash
-make openclaw-cli CMD="skills install @nemoclaw/plugin"
-make openclaw-cli CMD="skills list"    # Verify installation
+# Install on your host machine (not inside the pod)
+pip install nemoclaw
+
+# Point at the OpenShell gateway (requires port-forward)
+kubectl port-forward svc/openshell -n openshell 8080:8080 &
+nemoclaw status
+nemoclaw logs openclaw-sandbox
 ```
 
-In this GitOps deployment, sandbox lifecycle is managed by ArgoCD and the agent-sandbox controller. The NemoClaw plugin provides an optional interactive layer on top — useful for debugging, monitoring sandbox activity, and managing inference providers from within the OpenClaw CLI.
+In this GitOps deployment, sandbox lifecycle is managed by ArgoCD and the agent-sandbox controller. The NemoClaw CLI provides an optional interactive layer — useful for monitoring sandbox activity, viewing logs, and managing inference providers through the OpenShell gateway.
 
 #### Managing Channels and Devices
 
