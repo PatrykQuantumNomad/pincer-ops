@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: executing
 stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-03-21T12:44:08Z"
+last_updated: "2026-03-21T12:46:13.315Z"
 last_activity: 2026-03-21 -- Plan 27-02 complete (Sandbox CR supervisor integration)
 progress:
   total_phases: 7
@@ -64,6 +64,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 25-openshell-gateway]: Gateway manifests in separate Kustomize root (infrastructure/openshell/gateway/) with no namespace field due to cluster-scoped RBAC
 - [Phase 27]: 27-01: No SSA on supervisor DaemonSet Application. DirectoryOrCreate hostPath for fresh nodes. Pause:3.10 as main container with minimal resources.
 - [Phase 27]: 27-02: hostPath type Directory (not DirectoryOrCreate) on sandbox -- DaemonSet wave 3 guarantees existence before sandbox wave 10. RuntimeDefault seccomp stays -- supervisor applies seccomp-BPF internally.
+- [Phase 27]: 27-02: hostPath type Directory on sandbox (DaemonSet wave 3 guarantees existence). RuntimeDefault seccomp stays (supervisor applies seccomp-BPF internally).
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T12:44:08Z
+Last session: 2026-03-21T12:46:06.740Z
 Stopped at: Completed 27-02-PLAN.md
 Resume file: None
