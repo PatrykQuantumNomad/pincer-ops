@@ -1,0 +1,57 @@
+# daemonset.yaml -- DaemonSet distributing the openshell-sandbox supervisor binary.
+#
+# Runs on every node (including control-plane via Exists toleration). The init
+# container copies the supervisor binary from the cluster image to a hostPath
+# volume at /opt/openshell/bin/. The main container is a pause image that keeps
+# the DaemonSet pod alive so the binary remains on the node.
+#
+# The supervisor binary is extracted from ghcr.io/nvidia/openshell/cluster:0.0.12.
+# This image must be pre-loaded into KIND/Kinder (see bootstrap.sh Step 15b).
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openshell-supervisor
+  namespace: openshell
+  labels:
+    app.kubernetes.io/name: openshell-supervisor
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openshell-supervisor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openshell-supervisor
+    spec:
+      initContainers:
+        - name: copy-supervisor
+          image: ghcr.io/nvidia/openshell/cluster:0.0.12
+          imagePullPolicy: IfNotPresent
+          command: ["cp", "/opt/openshell/bin/openshell-sandbox", "/host-bin/openshell-sandbox"]
+          volumeMounts:
+            - name: host-bin
+              mountPath: /host-bin
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              cpu: 10m
+              memory: 16Mi
+      volumes:
+        - name: host-bin
+          hostPath:
+            path: /opt/openshell/bin
+            type: DirectoryOrCreate
+      tolerations:
+        - operator: Exists

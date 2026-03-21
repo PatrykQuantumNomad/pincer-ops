@@ -1,0 +1,48 @@
+# infra-openshell-supervisor.yaml -- ArgoCD Application for supervisor DaemonSet.
+#
+# Distributes the openshell-sandbox supervisor binary to all cluster nodes via
+# a DaemonSet with an init container. The binary is extracted from the cluster
+# image and placed at /opt/openshell/bin/openshell-sandbox on each node.
+#
+# v2.0 Sync Wave Map:
+#   Wave -10: ArgoCD self-management + AppProjects
+#   Wave  -5: MetalLB (KIND only)
+#   Wave  -4: Envoy Gateway controller (KIND only)
+#   Wave  -3: Sealed Secrets
+#   Wave  -2: cert-manager (KIND only)
+#   Wave  -1: Envoy Gateway config
+#   Wave   0: infra-nemoclaw, infra-openshell (namespaces)
+#   Wave   2: infra-agent-sandbox (CRD controller)
+#   Wave   3: infra-openshell-supervisor [this app]
+#   Wave   5: workload-openshell-gateway, workload-litellm
+#   Wave +10: workload-openclaw-sandbox
+#
+# Lives in bootstrap/ so root-app discovers it via recursive directory scan.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-openshell-supervisor
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/manifest-generate-paths: infrastructure/openshell/supervisor
+    notifications.argoproj.io/subscribe.on-sync-failed.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.platform-webhook: ""
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.platform-webhook: ""
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: openshell
+  source:
+    repoURL: https://github.com/PatrykQuantumNomad/pincer-ops.git
+    targetRevision: main
+    path: infrastructure/openshell/supervisor
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshell
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
