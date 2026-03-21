@@ -167,3 +167,100 @@ load '../test_helper'
     "${PROJECT_ROOT}/bootstrap/kinder/projects/openshell-project.yaml"
   assert_success
 }
+
+# ===========================================================================
+# Agent-Sandbox CRD Controller (SAND-01, SAND-02)
+# ===========================================================================
+
+@test "agent-sandbox kustomization references v0.2.1" {
+  run grep 'v0.2.1' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/kustomization.yaml"
+  assert_success
+}
+
+@test "agent-sandbox kustomization includes deployment patch" {
+  run grep 'patch-deployment.yaml' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/kustomization.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch has readinessProbe" {
+  run grep 'readinessProbe' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch has livenessProbe" {
+  run grep 'livenessProbe' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch has resource requests" {
+  run grep 'requests:' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch has resource limits" {
+  run grep 'limits:' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch has securityContext" {
+  run grep 'securityContext' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch sets runAsNonRoot" {
+  run grep 'runAsNonRoot: true' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch drops all capabilities" {
+  run grep 'drop:' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+@test "agent-sandbox deployment patch sets imagePullPolicy IfNotPresent" {
+  run grep 'imagePullPolicy: IfNotPresent' \
+    "${PROJECT_ROOT}/infrastructure/agent-sandbox/base/patch-deployment.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox Lua Health Check (SAND-03)
+# ===========================================================================
+
+@test "argocd-cm has Sandbox Lua health check key" {
+  run grep 'resource.customizations.health.agents.x-k8s.io_Sandbox' \
+    "${PROJECT_ROOT}/bootstrap/kind/argocd-cm.yaml"
+  assert_success
+}
+
+@test "Sandbox Lua health check maps Ready condition" {
+  run grep 'condition.type == "Ready"' \
+    "${PROJECT_ROOT}/bootstrap/kind/argocd-cm.yaml"
+  assert_success
+}
+
+@test "Sandbox Lua health check returns Healthy on True" {
+  run grep 'hs.status = "Healthy"' \
+    "${PROJECT_ROOT}/bootstrap/kind/argocd-cm.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Provider Parity (Phase 24 additions)
+# ===========================================================================
+
+@test "argocd-cm.yaml byte-identical across providers" {
+  run diff \
+    "${PROJECT_ROOT}/bootstrap/kind/argocd-cm.yaml" \
+    "${PROJECT_ROOT}/bootstrap/kinder/argocd-cm.yaml"
+  assert_success
+}
