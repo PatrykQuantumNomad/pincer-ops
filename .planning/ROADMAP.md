@@ -120,12 +120,12 @@ Plans:
   3. Old `workload-openclaw` ArgoCD Application and `openclaw` namespace no longer exist
   4. Sandbox CR specifies `NetworkPolicyManagement: "Unmanaged"` with custom NetworkPolicy rules applied
   5. ArgoCD root-app sync reconstructs the complete Sandbox CR stack from Git
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 26-01: TBD
-- [ ] 26-02: TBD
-- [ ] 26-03: TBD
+- [ ] 26-01-PLAN.md — Sandbox CR Kustomize manifests (sandbox.yaml, configmap, httproute, networkpolicy) and ArgoCD Application
+- [ ] 26-02-PLAN.md — Remove old openclaw resources, update AppProject, bootstrap.sh, validate-manifests.sh, and Makefile
+- [ ] 26-03-PLAN.md — BATS structural tests for MIGR-01 through MIGR-07 and bootstrap.bats file list update
 
 ### Phase 27: Supervisor Binary Side-Loading
 **Goal**: Supervisor binary runs as PID 1 inside the sandbox pod, enforcing Landlock filesystem restrictions, seccomp-BPF syscall filtering, and network namespace isolation
@@ -208,7 +208,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
+| 26. OpenClaw Sandbox CR Migration | v2.0 | 0/3 | Planned | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |
 | 29. mTLS, Hardening, and Testing | v2.0 | 0/? | Not started | - |
