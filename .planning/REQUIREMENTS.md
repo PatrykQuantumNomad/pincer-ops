@@ -49,8 +49,8 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 - [x] **INFER-01**: Privacy router intercepts `inference.local` calls from sandbox and routes to configured providers
 - [x] **INFER-02**: Provider credentials configured via OpenShell gateway (not K8s Secret in sandbox pod)
-- [ ] **INFER-03**: LiteLLM Proxy Application removed after privacy router verified end-to-end
-- [ ] **INFER-04**: `nemoclaw` namespace fully cleaned up (all LiteLLM resources, SealedSecret)
+- [x] **INFER-03**: LiteLLM Proxy Application removed after privacy router verified end-to-end
+- [x] **INFER-04**: `nemoclaw` namespace fully cleaned up (all LiteLLM resources, SealedSecret)
 
 ### Security Hardening
 
@@ -129,8 +129,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SUPV-06 | Phase 27 | Complete |
 | INFER-01 | Phase 28 | Complete |
 | INFER-02 | Phase 28 | Complete |
-| INFER-03 | Phase 28 | Pending |
-| INFER-04 | Phase 28 | Pending |
+| INFER-03 | Phase 28 | Complete |
+| INFER-04 | Phase 28 | Complete |
 | SEC-01 | Phase 29 | Pending |
 | SEC-02 | Phase 29 | Pending |
 | SEC-03 | Phase 29 | Pending |

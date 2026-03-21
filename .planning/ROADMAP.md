@@ -58,7 +58,7 @@
 - [x] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests (completed 2026-03-21)
 - [x] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup (completed 2026-03-21)
 - [x] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active (completed 2026-03-21)
-- [ ] **Phase 28: Privacy Router and Network Transition** - Gateway inference routing replaces LiteLLM, nemoclaw namespace cleaned up
+- [x] **Phase 28: Privacy Router and Network Transition** - Gateway inference routing replaces LiteLLM, nemoclaw namespace cleaned up (completed 2026-03-21)
 - [ ] **Phase 29: mTLS, Hardening, and Testing** - mTLS enabled, BATS structural tests, kubeconform CRD schemas, dual-provider verification
 
 ## Phase Details
@@ -157,7 +157,7 @@ Plans:
 
 Plans:
 - [x] 28-01-PLAN.md — Inference routing transition: ConfigMap to inference.local, NetworkPolicy LiteLLM egress removal, BATS tests
-- [ ] 28-02-PLAN.md — LiteLLM/nemoclaw cleanup: delete 18 files, remove workloads AppProject, update bootstrap.bats and validate-manifests
+- [x] 28-02-PLAN.md — LiteLLM/nemoclaw cleanup: delete 18 files, remove workloads AppProject, update bootstrap.bats and validate-manifests
 
 ### Phase 29: mTLS, Hardening, and Testing
 **Goal**: Gateway-to-sandbox communication is mTLS-secured, all new manifests have structural tests, and the full stack passes dual-provider verification
@@ -210,5 +210,5 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
 | 27. Supervisor Binary Side-Loading | v2.0 | 3/3 | Complete   | 2026-03-21 |
-| 28. Privacy Router and Network Transition | v2.0 | 1/2 | In Progress|  |
+| 28. Privacy Router and Network Transition | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 29. mTLS, Hardening, and Testing | v2.0 | 0/? | Not started | - |
