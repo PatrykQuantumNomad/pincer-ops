@@ -26,11 +26,10 @@
   1. A ConfigMap in the openshell namespace contains a complete security policy YAML with Landlock filesystem rules, seccomp-BPF syscall filters, and network namespace egress rules
   2. `kustomize build` with a dev overlay produces a policy ConfigMap with profile-specific values
   3. `make validate` passes with the new policy ConfigMap included in kubeconform validation
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 30-01: TBD
-- [ ] 30-02: TBD
+- [ ] 30-01-PLAN.md -- Create policy ConfigMap with Landlock/network/process sections and wire into Kustomize
 
 ### Phase 31: Registration Bridge
 **Goal**: A Kubernetes Job bridges the GitOps-to-gateway gap by injecting the security policy into the gateway's database so supervisor can fetch it via GetSandboxConfig
