@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
-status: phase_complete
-stopped_at: Phase 27 verified and complete
-last_updated: "2026-03-21T12:55:21.278Z"
-last_activity: 2026-03-21 -- Plan 27-03 complete (BATS structural tests for supervisor)
+status: executing
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-03-21T13:56:31.982Z"
+last_activity: 2026-03-21 -- Plan 28-01 complete (inference routing transition)
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_plans: 14
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 27 verified -- supervisor binary side-loading complete, ready for Phase 28
+**Current focus:** Phase 28 in progress -- inference routing transitioned to privacy router, LiteLLM removal next
 
 ## Current Position
 
-Phase: 27 of 29 (supervisor-binary-side-loading)
-Plan: 3/3 complete
-Status: Phase 27 verified and complete, ready to plan Phase 28
-Last activity: 2026-03-21 -- Phase 27 verified (5/5 must-haves, 6 runtime items need live cluster)
+Phase: 28 of 29 (privacy-router-and-network-transition)
+Plan: 1/2 complete
+Status: executing
+Last activity: 2026-03-21 -- Plan 28-01 complete (inference routing transition)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 - [Phase 27]: 27-02: hostPath type Directory (not DirectoryOrCreate) on sandbox -- DaemonSet wave 3 guarantees existence before sandbox wave 10. RuntimeDefault seccomp stays -- supervisor applies seccomp-BPF internally.
 - [Phase 27]: 27-02: hostPath type Directory on sandbox (DaemonSet wave 3 guarantees existence). RuntimeDefault seccomp stays (supervisor applies seccomp-BPF internally).
 - [Phase 27]: 27-03: Updated runAsNonRoot test to runAsUser 0 (supervisor requires root). Fixed stale egress count (3->4) in nemoclaw-manifests.bats.
+- [Phase 28]: 28-01: Kept HTTPS egress (443) as defense-in-depth alongside supervisor proxy. Single model gpt-4o with provider-native ID.
 
 ### Pending Todos
 
@@ -79,6 +80,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T12:55:21.275Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-03-21T13:56:31.979Z
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None

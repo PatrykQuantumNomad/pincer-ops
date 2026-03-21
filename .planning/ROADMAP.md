@@ -156,7 +156,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 28-01-PLAN.md — Inference routing transition: ConfigMap to inference.local, NetworkPolicy LiteLLM egress removal, BATS tests
+- [x] 28-01-PLAN.md — Inference routing transition: ConfigMap to inference.local, NetworkPolicy LiteLLM egress removal, BATS tests
 - [ ] 28-02-PLAN.md — LiteLLM/nemoclaw cleanup: delete 18 files, remove workloads AppProject, update bootstrap.bats and validate-manifests
 
 ### Phase 29: mTLS, Hardening, and Testing
@@ -210,5 +210,5 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 3/3 | Complete | 2026-03-21 |
 | 27. Supervisor Binary Side-Loading | v2.0 | 3/3 | Complete   | 2026-03-21 |
-| 28. Privacy Router and Network Transition | v2.0 | 0/2 | Not started | - |
+| 28. Privacy Router and Network Transition | v2.0 | 1/2 | In Progress|  |
 | 29. mTLS, Hardening, and Testing | v2.0 | 0/? | Not started | - |
