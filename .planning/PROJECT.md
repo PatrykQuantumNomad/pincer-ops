@@ -61,7 +61,18 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 
 ### Active
 
-(No active milestone)
+## Current Milestone: v2.1 OpenShell Runtime Integration
+
+**Goal:** Close the supervisor-to-gateway runtime gap so kernel-level isolation (Landlock, seccomp-BPF, network namespaces) and the privacy router are fully active — not just deployed but operational.
+
+**Target features:**
+- Supervisor running as PID 1 inside sandbox pod (currently bypassed)
+- Landlock filesystem restrictions active
+- seccomp-BPF syscall filtering active
+- Network namespace isolation forcing egress through HTTP CONNECT proxy
+- Privacy router handling inference.local requests end-to-end
+- Gateway-to-supervisor policy delivery via gRPC working
+- `make up && make openclaw-onboard` produces fully functional stack
 
 ### Out of Scope
 
@@ -122,4 +133,4 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-21 after v2.0 milestone shipped*
+*Last updated: 2026-03-21 after v2.1 milestone started*

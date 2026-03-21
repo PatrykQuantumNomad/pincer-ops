@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: OpenShell Sandbox
-status: milestone_complete
-stopped_at: v2.0 milestone complete — archived
-last_updated: "2026-03-21T16:00:00Z"
-last_activity: 2026-03-21 -- v2.0 milestone archival complete
+milestone: v2.1
+milestone_name: OpenShell Runtime Integration
+status: researching
+stopped_at: Milestone v2.1 started — researching
+last_updated: "2026-03-21T18:30:00Z"
+last_activity: 2026-03-21 -- Milestone v2.1 started
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** v2.0 shipped — ready for next milestone
+**Current focus:** v2.1 — close supervisor-to-gateway runtime gap
 
 ## Current Position
 
-Phase: None (between milestones)
-Plan: N/A
-Status: v2.0 milestone complete and archived
-Last activity: 2026-03-21 -- v2.0 milestone archival
+Phase: Not started (researching)
+Plan: --
+Status: Researching OpenShell gateway integration contract
+Last activity: 2026-03-21 -- Milestone v2.1 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -45,7 +45,7 @@ Progress: [██████████] 100%
 
 ### Decisions
 
-All v2.0 decisions archived to .planning/milestones/v2.0-ROADMAP.md and .planning/PROJECT.md Key Decisions table.
+None yet for v2.1.
 
 ### Pending Todos
 
@@ -53,11 +53,13 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 28 runtime verification (end-to-end inference via inference.local) deferred -- approved by user, pending cluster stabilization
+- Gateway responds "sandbox has no spec" — supervisor cannot fetch policies
+- Supervisor bypassed in v2.0 — OpenClaw runs directly as node (uid 1000)
+- Privacy router non-functional without working supervisor
 - SealedSecret placeholder values need real keys sealed post-bootstrap
 
 ## Session Continuity
 
-Last session: 2026-03-21T16:00:00Z
-Stopped at: v2.0 milestone archival complete
+Last session: 2026-03-21T18:30:00Z
+Stopped at: Milestone v2.1 started — researching
 Resume file: None
