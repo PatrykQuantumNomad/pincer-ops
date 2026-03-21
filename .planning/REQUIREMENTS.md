@@ -61,27 +61,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POL-01 | — | Pending |
-| POL-02 | — | Pending |
-| POL-03 | — | Pending |
-| POL-04 | — | Pending |
-| POL-05 | — | Pending |
-| POL-06 | — | Pending |
-| SUPV-01 | — | Pending |
-| SUPV-02 | — | Pending |
-| SUPV-03 | — | Pending |
-| SUPV-04 | — | Pending |
-| SUPV-05 | — | Pending |
-| VERT-01 | — | Pending |
-| VERT-02 | — | Pending |
-| VERT-03 | — | Pending |
-| VERT-04 | — | Pending |
+| POL-01 | Phase 30 | Pending |
+| POL-02 | Phase 31 | Pending |
+| POL-03 | Phase 31 | Pending |
+| POL-04 | Phase 31 | Pending |
+| POL-05 | Phase 31 | Pending |
+| POL-06 | Phase 30 | Pending |
+| SUPV-01 | Phase 32 | Pending |
+| SUPV-02 | Phase 32 | Pending |
+| SUPV-03 | Phase 32 | Pending |
+| SUPV-04 | Phase 32 | Pending |
+| SUPV-05 | Phase 32 | Pending |
+| VERT-01 | Phase 34 | Pending |
+| VERT-02 | Phase 34 | Pending |
+| VERT-03 | Phase 34 | Pending |
+| VERT-04 | Phase 33 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after initial definition*
+*Last updated: 2026-03-21 after roadmap creation*
