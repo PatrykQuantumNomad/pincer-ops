@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: executing
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-03-21T11:37:11Z"
-last_activity: 2026-03-21 -- Phase 26 plan 01 complete (Sandbox CR Kustomize stack)
+stopped_at: Completed 26-02-PLAN.md
+last_updated: "2026-03-21T11:38:53Z"
+last_activity: 2026-03-21 -- Phase 26 plan 02 complete (old resource removal and script updates)
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 78
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 26 executing -- Sandbox CR Kustomize stack complete, 2 plans remaining
+**Current focus:** Phase 26 executing -- Sandbox CR stack and old resource removal complete, 1 plan remaining
 
 ## Current Position
 
 Phase: 26 of 29 (openclaw-sandbox-cr-migration)
-Plan: 1/3 complete
-Status: Executing Phase 26 -- plan 01 done, plans 02 and 03 remaining
-Last activity: 2026-03-21 -- Phase 26 plan 01 complete (Sandbox CR Kustomize stack)
+Plan: 2/3 complete
+Status: Executing Phase 26 -- plans 01 and 02 done, plan 03 remaining
+Last activity: 2026-03-21 -- Phase 26 plan 02 complete (old resource removal and script updates)
 
 Progress: [████████░░] 78%
 
@@ -39,7 +39,7 @@ Progress: [████████░░] 78%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02), 1 plan in ~2 min (26-01), 1 plan in ~3 min (26-02)
 
 ## Accumulated Context
 
@@ -52,6 +52,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 25-01: Gateway manifests in separate Kustomize root (infrastructure/openshell/gateway/) -- no namespace field due to cluster-scoped RBAC. SSA enabled. Sync wave 5.
 25-02: Fixed bootstrap.bats stale file counts (15->16 kind, 12->13 kinder) as deviation -- directly caused by 25-01 adding workload-openshell-gateway.yaml.
 26-01: Pod-scoped NetworkPolicy in shared namespace. HTTPRoute targets controller-created Service. ArgoCD project: openshell for Sandbox CR.
+26-02: Old workload-openclaw removed. bootstrap.sh waits for Sandbox CR Ready. Makefile uses label-selector logs in openshell namespace.
 
 - [Phase 23]: generate_tls_artifacts() placeholder for Phase 29 mTLS activation
 - [Phase 23]: Landlock absence on macOS treated as warning (pass) in doctor target
@@ -74,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T11:37:11Z
-Stopped at: Completed 26-01-PLAN.md
+Last session: 2026-03-21T11:38:53Z
+Stopped at: Completed 26-02-PLAN.md
 Resume file: None
