@@ -55,7 +55,7 @@
 
 - [x] **Phase 23: Namespace Architecture and Infrastructure Foundation** - New namespace topology, AppProject updates, Landlock checks, bootstrap TLS prep (completed 2026-03-21)
 - [x] **Phase 24: Agent-Sandbox CRD Controller** - CRD registration, controller deployment, custom Lua health check for Sandbox resources (completed 2026-03-21)
-- [ ] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests
+- [x] **Phase 25: OpenShell Gateway** - Gateway StatefulSet, RBAC, Service, TLS-disabled dev config, pre-rendered Helm manifests (completed 2026-03-21)
 - [ ] **Phase 26: OpenClaw Sandbox CR Migration** - OpenClaw moves from StatefulSet to Sandbox CR with HTTPRoute rewiring and namespace cleanup
 - [ ] **Phase 27: Supervisor Binary Side-Loading** - DaemonSet delivers supervisor to nodes, Sandbox CR mounts it, kernel-level isolation active
 - [ ] **Phase 28: Privacy Router and Network Transition** - Gateway inference routing replaces LiteLLM, nemoclaw namespace cleaned up
@@ -108,7 +108,7 @@ Plans:
 
 Plans:
 - [x] 25-01-PLAN.md — Pre-rendered gateway manifests (StatefulSet, RBAC, Service) and ArgoCD Application at wave 5
-- [ ] 25-02-PLAN.md — BATS structural tests for gateway artifacts and validate-manifests.sh update
+- [x] 25-02-PLAN.md — BATS structural tests for gateway artifacts and validate-manifests.sh update
 
 ### Phase 26: OpenClaw Sandbox CR Migration
 **Goal**: OpenClaw runs as an ArgoCD-managed Sandbox CR in the openshell namespace, accessible via localhost:80 through Envoy Gateway, with old StatefulSet and openclaw namespace removed
@@ -207,7 +207,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29
 | 22. Validation and Testing | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 23. Namespace Architecture and Infrastructure Foundation | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 24. Agent-Sandbox CRD Controller | v2.0 | 2/2 | Complete   | 2026-03-21 |
-| 25. OpenShell Gateway | v2.0 | 1/2 | In Progress|  |
+| 25. OpenShell Gateway | v2.0 | 2/2 | Complete   | 2026-03-21 |
 | 26. OpenClaw Sandbox CR Migration | v2.0 | 0/? | Not started | - |
 | 27. Supervisor Binary Side-Loading | v2.0 | 0/? | Not started | - |
 | 28. Privacy Router and Network Transition | v2.0 | 0/? | Not started | - |

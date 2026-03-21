@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: OpenShell Sandbox
 status: completed
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-03-21T10:53:42.813Z"
-last_activity: 2026-03-21 -- Phase 25 Plan 01 complete (gateway manifests + ArgoCD Application)
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-03-21T11:00:50Z"
+last_activity: 2026-03-21 -- Phase 25 complete (gateway BATS tests + validation)
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Phase 25 in progress (Plan 01 complete, Plan 02 pending)
+**Current focus:** Phase 25 complete (all plans executed)
 
 ## Current Position
 
-Phase: 25 (OpenShell Gateway) in progress
-Plan: 1/2 complete
-Status: Plan 25-01 complete, ready for Plan 25-02
-Last activity: 2026-03-21 -- Phase 25 Plan 01 complete (gateway manifests + ArgoCD Application)
+Phase: 25 (OpenShell Gateway) complete
+Plan: 2/2 complete
+Status: Phase 25 complete
+Last activity: 2026-03-21 -- Phase 25 complete (gateway BATS tests + validation)
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [████████░░] 83%
 - v1.0: 20 plans in 2.94 hours
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
-- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01)
+- v2.0: 1 plan in ~4 min (23-01), 1 plan in ~6 min (24-01), 1 plan in ~2 min (24-02), 1 plan in ~2 min (25-01), 1 plan in ~4 min (25-02)
 
 ## Accumulated Context
 
@@ -50,6 +50,7 @@ v2.0 decisions: Static Sandbox CR (GitOps), DaemonSet+hostPath (supervisor), Fre
 23-01: openshell AppProject groups both namespaces as single security boundary. Sync wave 0. No overlay structure for namespace-only bases.
 24-01: Namespace PSS labels applied via patch (not resource) to avoid Kustomize duplicate with upstream manifest. Sync wave 2 for CRD controller.
 25-01: Gateway manifests in separate Kustomize root (infrastructure/openshell/gateway/) -- no namespace field due to cluster-scoped RBAC. SSA enabled. Sync wave 5.
+25-02: Fixed bootstrap.bats stale file counts (15->16 kind, 12->13 kinder) as deviation -- directly caused by 25-01 adding workload-openshell-gateway.yaml.
 
 - [Phase 23]: generate_tls_artifacts() placeholder for Phase 29 mTLS activation
 - [Phase 23]: Landlock absence on macOS treated as warning (pass) in doctor target
@@ -73,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T10:53:35.984Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-03-21T11:00:50Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
