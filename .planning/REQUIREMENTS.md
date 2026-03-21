@@ -28,13 +28,13 @@ Requirements for v2.0 OpenShell Sandbox milestone. Each maps to roadmap phases.
 
 ### OpenClaw Migration
 
-- [ ] **MIGR-01**: OpenClaw runs as static Sandbox CR managed by ArgoCD (wave 10)
-- [ ] **MIGR-02**: Agent-sandbox controller reconciles Sandbox CR into Pod with stable hostname and PVC
-- [ ] **MIGR-03**: HTTPRoute updated to target Sandbox pod Service in openshell namespace
+- [x] **MIGR-01**: OpenClaw runs as static Sandbox CR managed by ArgoCD (wave 10)
+- [x] **MIGR-02**: Agent-sandbox controller reconciles Sandbox CR into Pod with stable hostname and PVC
+- [x] **MIGR-03**: HTTPRoute updated to target Sandbox pod Service in openshell namespace
 - [ ] **MIGR-04**: Old `workload-openclaw` ArgoCD Application removed
 - [ ] **MIGR-05**: Old `openclaw` namespace and orphaned PVC cleaned up
-- [ ] **MIGR-06**: OpenClaw accessible via localhost:80 through Envoy Gateway after migration
-- [ ] **MIGR-07**: OpenClaw `NetworkPolicyManagement: "Unmanaged"` with our own NetworkPolicy rules
+- [x] **MIGR-06**: OpenClaw accessible via localhost:80 through Envoy Gateway after migration
+- [x] **MIGR-07**: OpenClaw `NetworkPolicyManagement: "Unmanaged"` with our own NetworkPolicy rules
 
 ### Supervisor + Isolation
 
@@ -114,13 +114,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SAND-06 | Phase 25 | Complete |
 | SAND-07 | Phase 25 | Complete |
 | SAND-08 | Phase 25 | Complete |
-| MIGR-01 | Phase 26 | Pending |
-| MIGR-02 | Phase 26 | Pending |
-| MIGR-03 | Phase 26 | Pending |
+| MIGR-01 | Phase 26 | Complete |
+| MIGR-02 | Phase 26 | Complete |
+| MIGR-03 | Phase 26 | Complete |
 | MIGR-04 | Phase 26 | Pending |
 | MIGR-05 | Phase 26 | Pending |
-| MIGR-06 | Phase 26 | Pending |
-| MIGR-07 | Phase 26 | Pending |
+| MIGR-06 | Phase 26 | Complete |
+| MIGR-07 | Phase 26 | Complete |
 | SUPV-01 | Phase 27 | Pending |
 | SUPV-02 | Phase 27 | Pending |
 | SUPV-03 | Phase 27 | Pending |
