@@ -568,8 +568,8 @@ load '../test_helper'
   assert_success
 }
 
-@test "sandbox CR has securityContext runAsNonRoot" {
-  run grep 'runAsNonRoot: true' \
+@test "sandbox CR container runs as root (supervisor requirement)" {
+  run grep 'runAsUser: 0' \
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_success
 }
@@ -768,5 +768,218 @@ load '../test_helper'
 
 @test "workload-openclaw.yaml removed from kinder" {
   run test ! -f "${PROJECT_ROOT}/bootstrap/kinder/workload-openclaw.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Supervisor DaemonSet (SUPV-01)
+# ===========================================================================
+
+@test "supervisor DaemonSet has apiVersion apps/v1" {
+  run grep 'apiVersion: apps/v1' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has kind DaemonSet" {
+  run grep 'kind: DaemonSet' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has name openshell-supervisor" {
+  run grep 'name: openshell-supervisor' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet uses cluster image" {
+  run grep 'image: ghcr.io/nvidia/openshell/cluster:0.0.12' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet copies openshell-sandbox binary" {
+  run grep 'openshell-sandbox' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet uses pause image" {
+  run grep 'image: registry.k8s.io/pause:3.10' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has imagePullPolicy IfNotPresent" {
+  run grep 'imagePullPolicy: IfNotPresent' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has hostPath /opt/openshell/bin" {
+  run grep 'path: /opt/openshell/bin' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has DirectoryOrCreate type" {
+  run grep 'type: DirectoryOrCreate' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has resource requests" {
+  run grep 'requests:' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has resource limits" {
+  run grep 'limits:' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor DaemonSet has toleration operator Exists" {
+  run grep 'operator: Exists' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/daemonset.yaml"
+  assert_success
+}
+
+@test "supervisor kustomization lists daemonset.yaml" {
+  run grep 'daemonset.yaml' \
+    "${PROJECT_ROOT}/infrastructure/openshell/supervisor/kustomization.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Supervisor ArgoCD Application (SUPV-01)
+# ===========================================================================
+
+@test "infra-openshell-supervisor has sync-wave 3" {
+  run grep 'sync-wave: "3"' \
+    "${PROJECT_ROOT}/bootstrap/kind/infra-openshell-supervisor.yaml"
+  assert_success
+}
+
+@test "infra-openshell-supervisor uses project openshell" {
+  run grep 'project: openshell' \
+    "${PROJECT_ROOT}/bootstrap/kind/infra-openshell-supervisor.yaml"
+  assert_success
+}
+
+@test "infra-openshell-supervisor source path is supervisor" {
+  run grep 'path: infrastructure/openshell/supervisor' \
+    "${PROJECT_ROOT}/bootstrap/kind/infra-openshell-supervisor.yaml"
+  assert_success
+}
+
+@test "infra-openshell-supervisor has CreateNamespace false" {
+  run grep 'CreateNamespace=false' \
+    "${PROJECT_ROOT}/bootstrap/kind/infra-openshell-supervisor.yaml"
+  assert_success
+}
+
+@test "infra-openshell-supervisor.yaml byte-identical across providers" {
+  run diff \
+    "${PROJECT_ROOT}/bootstrap/kind/infra-openshell-supervisor.yaml" \
+    "${PROJECT_ROOT}/bootstrap/kinder/infra-openshell-supervisor.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox Supervisor Integration (SUPV-02, SUPV-03)
+# ===========================================================================
+
+@test "sandbox CR has supervisor binary command" {
+  run grep '/opt/openshell/bin/openshell-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has supervisor-bin volume" {
+  run grep 'name: supervisor-bin' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR mounts supervisor-bin readOnly" {
+  run grep 'readOnly: true' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has hostPath type Directory for supervisor-bin" {
+  run grep 'type: Directory' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox Security Context (SUPV-04, SUPV-05)
+# ===========================================================================
+
+@test "sandbox CR has NET_ADMIN capability" {
+  run grep 'NET_ADMIN' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has SYS_ADMIN capability" {
+  run grep 'SYS_ADMIN' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has runAsUser 0" {
+  run grep 'runAsUser: 0' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has allowPrivilegeEscalation true" {
+  run grep 'allowPrivilegeEscalation: true' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR has RuntimeDefault seccomp profile" {
+  run grep 'type: RuntimeDefault' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox gRPC Policy Delivery (SUPV-06)
+# ===========================================================================
+
+@test "sandbox CR has OPENSHELL_GRPC_ENDPOINT env var" {
+  run grep 'OPENSHELL_GRPC_ENDPOINT' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox CR gRPC endpoint targets openshell gateway" {
+  run grep 'openshell.openshell.svc.cluster.local:8080' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy has gRPC port 8080" {
+  run grep 'port: 8080' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
+  assert_success
+}
+
+@test "sandbox NetworkPolicy gRPC egress targets openshell namespace" {
+  run grep 'kubernetes.io/metadata.name: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/networkpolicy.yaml"
   assert_success
 }
