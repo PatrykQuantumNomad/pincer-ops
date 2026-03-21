@@ -1,4 +1,19 @@
+# kustomization.yaml -- Agent-sandbox CRD controller via remote resource.
+# References the upstream manifest.yaml from kubernetes-sigs/agent-sandbox
+# v0.2.1 (CRD, controller Deployment, RBAC, Service). The deployment patch
+# adds probes, resources, securityContext, and imagePullPolicy required by
+# repo conventions and PSS restricted enforcement on this namespace.
+#
+# The upstream manifest includes its own Namespace resource. PSS restricted
+# labels are applied via patch-namespace.yaml (not a separate namespace.yaml
+# resource) to avoid duplicate resource errors in Kustomize.
+#
+# WARNING: Do NOT add a namespace: field here. The upstream manifest hard-codes
+# namespace references in ClusterRoleBinding subjects.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
+  - https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.2.1/manifest.yaml
+patches:
+  - path: patch-deployment.yaml
+  - path: patch-namespace.yaml
