@@ -124,7 +124,7 @@ fc00:f853:ccd:e793::/64
 # Provider directory structure validation (dual-provider bootstrap)
 # ===========================================================================
 
-@test "kind bootstrap directory contains all v1.0 Applications" {
+@test "kind bootstrap directory contains all Applications" {
   local kind_dir="${PROJECT_ROOT}/bootstrap/kind"
   local expected_files=(
     root-app.yaml
@@ -137,12 +137,13 @@ fc00:f853:ccd:e793::/64
     infra-envoy-gateway-config.yaml
     infra-cert-manager.yaml
     infra-sealed-secrets.yaml
+    workload-openclaw.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 10 ]
+  [ "${actual_count}" -eq 11 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -170,12 +171,13 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
+    workload-openclaw.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 7 ]
+  [ "${actual_count}" -eq 8 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -194,6 +196,7 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
+    workload-openclaw.yaml
     projects/infrastructure.yaml
   )
 
