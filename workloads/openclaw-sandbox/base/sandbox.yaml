@@ -26,7 +26,7 @@ spec:
       securityContext:
         fsGroup: 1000
         seccompProfile:
-          type: RuntimeDefault
+          type: Unconfined
       initContainers:
         - name: seed-config
           image: ghcr.io/openclaw/openclaw:2026.3.13-1
@@ -82,20 +82,13 @@ spec:
           image: ghcr.io/openclaw/openclaw:2026.3.13-1
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
+            runAsUser: 0
+            allowPrivilegeEscalation: true
             capabilities:
               drop: ["ALL"]
-            readOnlyRootFilesystem: true
+              add: ["SYS_ADMIN", "NET_ADMIN", "SYS_PTRACE", "SYSLOG"]
           command:
-            - node
-            - dist/index.js
-            - gateway
-            - "--bind"
-            - "lan"
-            - "--port"
-            - "18789"
+            - /opt/openshell/bin/openshell-sandbox
           ports:
             - containerPort: 18789
               name: gateway
@@ -110,12 +103,22 @@ spec:
               value: "production"
             - name: HOME
               value: "/home/node"
-            # Supervisor env vars disabled until Sandbox CR spec supports gateway policy delivery.
-            # Re-enable with supervisor as PID 1 when openshell.ai/sandbox spec fields are mapped.
-            # - name: OPENSHELL_ENDPOINT
-            #   value: "https://openshell.openshell.svc.cluster.local:8080"
-            # - name: OPENSHELL_SANDBOX_ID
-            #   value: "openclaw-sandbox"
+            - name: OPENSHELL_SANDBOX_COMMAND
+              value: "node dist/index.js gateway --bind lan --port 18789"
+            - name: OPENSHELL_ENDPOINT
+              value: "https://openshell.openshell.svc.cluster.local:8080"
+            - name: OPENSHELL_SANDBOX_ID
+              value: "openclaw-sandbox"
+            - name: OPENSHELL_SANDBOX
+              value: "openclaw-sandbox"
+            - name: OPENSHELL_LOG_LEVEL
+              value: "info"
+            - name: OPENSHELL_TLS_CA
+              value: "/etc/openshell-tls/client/ca.crt"
+            - name: OPENSHELL_TLS_CERT
+              value: "/etc/openshell-tls/client/tls.crt"
+            - name: OPENSHELL_TLS_KEY
+              value: "/etc/openshell-tls/client/tls.key"
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
@@ -123,16 +126,12 @@ spec:
               mountPath: /tmp
             - name: cache
               mountPath: /home/node/.cache
-            # Supervisor and mTLS volumes disabled until gateway policy delivery is resolved.
-            # - name: supervisor-bin
-            #   mountPath: /opt/openshell/bin
-            #   readOnly: true
-            # - name: tls-client
-            #   mountPath: /etc/openshell-tls/client
-            #   readOnly: true
-            # - name: tls-ca
-            #   mountPath: /etc/openshell-tls/ca
-            #   readOnly: true
+            - name: supervisor-bin
+              mountPath: /opt/openshell/bin
+              readOnly: true
+            - name: tls-client
+              mountPath: /etc/openshell-tls/client
+              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -168,20 +167,14 @@ spec:
         - name: cache
           emptyDir:
             sizeLimit: 100Mi
-        # Supervisor and mTLS volumes disabled until gateway policy delivery is resolved.
-        # - name: supervisor-bin
-        #   hostPath:
-        #     path: /opt/openshell/bin
-        #     type: Directory
-        # - name: tls-client
-        #   secret:
-        #     secretName: openshell-client-tls
-        # - name: tls-ca
-        #   secret:
-        #     secretName: openshell-client-tls
-        #     items:
-        #       - key: ca.crt
-        #         path: ca.crt
+        - name: supervisor-bin
+          hostPath:
+            path: /opt/openshell/bin
+            type: Directory
+        - name: tls-client
+          secret:
+            secretName: openshell-client-tls
+            defaultMode: 256
   volumeClaimTemplates:
     - metadata:
         name: data
