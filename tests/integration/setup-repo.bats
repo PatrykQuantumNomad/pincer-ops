@@ -59,7 +59,7 @@ spec:
     targetRevision: v1.3.0
 EOF
 
-  for f in infrastructure.yaml workloads.yaml; do
+  for f in infrastructure.yaml; do
     cat > "${INTEGRATION_REPO}/bootstrap/kind/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -85,7 +85,7 @@ spec:
 EOF
   done
 
-  for f in infrastructure.yaml workloads.yaml; do
+  for f in infrastructure.yaml; do
     cat > "${INTEGRATION_REPO}/bootstrap/kinder/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject

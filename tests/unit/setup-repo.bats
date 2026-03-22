@@ -42,7 +42,7 @@ spec:
     targetRevision: main
 EOF
   done
-  for f in infrastructure.yaml workloads.yaml; do
+  for f in infrastructure.yaml; do
     cat > "${TEMP_PROJECT}/bootstrap/kind/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -64,7 +64,7 @@ spec:
     targetRevision: main
 EOF
   done
-  for f in infrastructure.yaml workloads.yaml; do
+  for f in infrastructure.yaml; do
     cat > "${TEMP_PROJECT}/bootstrap/kinder/projects/${f}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -359,8 +359,8 @@ teardown() {
   local FORK_URL="https://github.com/testuser/pincer-ops.git"
 
   create_temp_project
-  # Remove most files to test partial updates — keep only root-app, argocd-self,
-  # and projects/workloads in each provider dir (3 per dir = 6 total remaining)
+  # Remove most files to test partial updates — keep only root-app and argocd-self
+  # in each provider dir (2 per dir = 4 total remaining)
   for dir in kind kinder; do
     rm -f "${TEMP_PROJECT}/bootstrap/${dir}/workload-openclaw.yaml"
     rm -f "${TEMP_PROJECT}/bootstrap/${dir}/infra-metallb.yaml"
@@ -378,10 +378,10 @@ teardown() {
     exit 0
   '
 
-  # 3 files per provider dir = 6 total remaining
+  # 2 files per provider dir = 4 total remaining
   run bash "${TEMP_PROJECT}/scripts/setup-repo.sh" --force
   assert_success
-  assert_output --partial "Updated 6 file(s)"
+  assert_output --partial "Updated 4 file(s)"
 }
 
 # ===========================================================================

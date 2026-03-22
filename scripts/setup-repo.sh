@@ -46,7 +46,6 @@ readonly REPO_FILES=(
   "${BOOTSTRAP_DIR}/kind/infra-sealed-secrets.yaml"
   "${BOOTSTRAP_DIR}/kind/infra-cert-manager.yaml"
   "${BOOTSTRAP_DIR}/kind/projects/infrastructure.yaml"
-  "${BOOTSTRAP_DIR}/kind/projects/workloads.yaml"
   # Kinder provider (reduced set -- no MetalLB, Envoy GW controller, cert-manager)
   "${BOOTSTRAP_DIR}/kinder/root-app.yaml"
   "${BOOTSTRAP_DIR}/kinder/argocd-self.yaml"
@@ -54,7 +53,6 @@ readonly REPO_FILES=(
   "${BOOTSTRAP_DIR}/kinder/infra-envoy-gateway-config.yaml"
   "${BOOTSTRAP_DIR}/kinder/infra-sealed-secrets.yaml"
   "${BOOTSTRAP_DIR}/kinder/projects/infrastructure.yaml"
-  "${BOOTSTRAP_DIR}/kinder/projects/workloads.yaml"
 )
 
 # ---------------------------------------------------------------------------
