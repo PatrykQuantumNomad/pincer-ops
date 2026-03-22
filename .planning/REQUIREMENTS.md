@@ -1,87 +1,69 @@
 # Requirements: Pincer Ops
 
-**Defined:** 2026-03-21
+**Defined:** 2026-03-22
 **Core Value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
 
-## v2.1 Requirements
+## v3.0 Requirements
 
-Requirements for OpenShell Runtime Integration milestone. Each maps to roadmap phases.
+Requirements for OpenShell Removal milestone. Remove the non-functional OpenShell integration (gateway, supervisor, agent-sandbox CRD, policy system) and restore OpenClaw as a standalone StatefulSet in the `openclaw` namespace with K8s-native security.
 
-### Policy Delivery
+### Removal
 
-- [x] **POL-01**: OpenShell security policy YAML defines Landlock filesystem rules, seccomp-BPF syscall filter, and network namespace egress rules as a ConfigMap
-- [x] **POL-02**: Registration Job at sync wave 11 runs `openshell policy set` to inject policy into gateway database after Sandbox CR discovery
-- [x] **POL-03**: Registration Job authenticates to gateway gRPC using mTLS client certificate from openshell-client-tls secret
-- [x] **POL-04**: Registration Job is idempotent -- re-running does not create duplicate sandbox entries or fail on existing policy
-- [x] **POL-05**: Policy can be updated via `openshell policy set` without restarting sandbox pod (hot-reload)
-- [x] **POL-06**: Policy ConfigMap supports overlay-based profiles (dev/staging/prod) via Kustomize
+- [ ] **REM-01**: All OpenShell infrastructure removed (gateway StatefulSet, supervisor DaemonSet, namespace, RBAC, TLS chain, SealedSecret)
+- [ ] **REM-02**: Agent-sandbox CRD controller and Sandbox CR removed
+- [ ] **REM-03**: Registration Job and policy ConfigMap removed
+- [ ] **REM-04**: All ArgoCD Applications referencing OpenShell removed from both providers
+- [ ] **REM-05**: Bootstrap script cleaned of OpenShell-specific steps (TLS generation, image loading, supervisor/gateway waits)
+- [ ] **REM-06**: AppProject `openshell` removed from both providers
 
-### Supervisor Enablement
+### Restoration
 
-- [x] **SUPV-01**: Supervisor binary runs as PID 1 inside sandbox pod, managing the OpenClaw process
-- [x] **SUPV-02**: Landlock filesystem restrictions are active -- sandbox process cannot access paths outside its allow-list
-- [x] **SUPV-03**: seccomp-BPF syscall filtering is active -- sandbox process is restricted to approved syscall set
-- [x] **SUPV-04**: Network namespace isolation forces all sandbox egress through the HTTP CONNECT proxy
-- [x] **SUPV-05**: Privacy router handles inference.local requests end-to-end -- LLM API calls route through the proxy
+- [ ] **RST-01**: OpenClaw runs as a StatefulSet in `openclaw` namespace (replicas: 1, PVC-backed)
+- [ ] **RST-02**: OpenClaw command is `node dist/index.js gateway --bind lan --port 18789` (no supervisor wrapper)
+- [ ] **RST-03**: Security hardened: runAsNonRoot, runAsUser 1000, drop ALL capabilities, readOnlyRootFilesystem, seccomp RuntimeDefault
+- [ ] **RST-04**: NetworkPolicy: default-deny + allow Envoy ingress (18789), DNS egress (53), HTTPS egress (443)
+- [ ] **RST-05**: HTTPRoute routes localhost traffic to OpenClaw via Envoy Gateway
+- [ ] **RST-06**: `make up` bootstraps a fully functional cluster with OpenClaw accessible at localhost:80
 
-### Runtime Verification
+### Validation
 
-- [x] **VERT-01**: `make up && make openclaw-onboard` produces a fully functional stack with supervisor enforcing isolation
-- [x] **VERT-02**: Live cluster test confirms supervisor successfully fetches policy from gateway via GetSandboxConfig
-- [x] **VERT-03**: Live cluster test confirms Landlock, seccomp-BPF, and network namespace are enforced
-- [x] **VERT-04**: BATS structural tests cover policy ConfigMap, registration Job, and updated sandbox manifests
-
-## Future Requirements
-
-### Observability
-
-- **OBS-01**: Supervisor policy enforcement metrics exposed via Prometheus endpoint
-- **OBS-02**: Gateway dashboard showing sandbox policy status and revision history
-
-### Multi-Sandbox
-
-- **MULTI-01**: Multiple Sandbox CRs with distinct policies on the same cluster
-- **MULTI-02**: Per-sandbox policy isolation (no cross-sandbox policy leakage)
+- [ ] **VAL-01**: `make validate` passes with all manifests
+- [ ] **VAL-02**: `make test` passes with updated BATS tests
+- [ ] **VAL-03**: `make up` completes without errors on Kinder
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| L7 inspection rules (HTTP method/path filtering) | L4 host:port rules sufficient for v2.1; adds complexity |
-| Custom gRPC client for registration | Error-prone; `openshell` CLI wraps the same RPCs |
-| Sidecar for policy polling | Over-engineering; supervisor has built-in retry |
-| Init container for registration | Circular dependency: supervisor needs policy before starting |
-| Gateway source code modification | Unsustainable; upstream OpenShell changes would break |
-| File-based policy fallback | Supervisor does not support reading policy from files |
-| Production cloud deployment | Local-first on KIND/Kinder |
+| OpenShell sandbox isolation | Incompatible with GitOps -- gateway requires CreateSandbox lifecycle |
+| Supervisor binary enforcement | Depends on OpenShell gateway policy delivery |
+| mTLS between gateway and sandbox | No gateway to authenticate against |
+| Agent-sandbox CRD | Only needed for OpenShell integration |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POL-01 | Phase 30 | Complete |
-| POL-02 | Phase 31 | Complete |
-| POL-03 | Phase 31 | Complete |
-| POL-04 | Phase 31 | Complete |
-| POL-05 | Phase 31 | Complete |
-| POL-06 | Phase 30 | Complete |
-| SUPV-01 | Phase 32 | Complete |
-| SUPV-02 | Phase 32 | Complete |
-| SUPV-03 | Phase 32 | Complete |
-| SUPV-04 | Phase 32 | Complete |
-| SUPV-05 | Phase 32 | Complete |
-| VERT-01 | Phase 34 | Complete |
-| VERT-02 | Phase 34 | Complete |
-| VERT-03 | Phase 34 | Complete |
-| VERT-04 | Phase 33 | Complete |
+| REM-01 | Phase 35 | Pending |
+| REM-02 | Phase 35 | Pending |
+| REM-03 | Phase 35 | Pending |
+| REM-04 | Phase 35 | Pending |
+| REM-05 | Phase 35 | Pending |
+| REM-06 | Phase 35 | Pending |
+| RST-01 | Phase 36 | Pending |
+| RST-02 | Phase 36 | Pending |
+| RST-03 | Phase 36 | Pending |
+| RST-04 | Phase 36 | Pending |
+| RST-05 | Phase 36 | Pending |
+| RST-06 | Phase 36 | Pending |
+| VAL-01 | Phase 37 | Pending |
+| VAL-02 | Phase 37 | Pending |
+| VAL-03 | Phase 37 | Pending |
 
 **Coverage:**
-- v2.1 requirements: 15 total
+- v3.0 requirements: 15 total
 - Mapped to phases: 15
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after roadmap creation*
+*Requirements defined: 2026-03-22*

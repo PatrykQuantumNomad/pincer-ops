@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: OpenShell Runtime Integration
-status: milestone_complete
-stopped_at: v2.1 milestone archived
-last_updated: "2026-03-22T12:10:00Z"
-last_activity: 2026-03-22 -- v2.1 milestone complete and archived
+milestone: v3.0
+milestone_name: OpenShell Removal
+status: executing
+stopped_at: Milestone created
+last_updated: "2026-03-22T14:00:00Z"
+last_activity: 2026-03-22 -- v3.0 milestone started
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** Planning next milestone
+**Current focus:** v3.0 Phase 35 -- Remove OpenShell Stack
 
 ## Current Position
 
-Phase: Not started
+Phase: 35 of 37 (Remove OpenShell Stack)
 Plan: Not started
-Status: v2.1 milestone complete and archived, ready to plan next milestone
-Last activity: 2026-03-22 -- v2.1 archived
+Status: Ready to plan Phase 35
+Last activity: 2026-03-22 -- v3.0 milestone created
 
-Progress: Ready for next milestone
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -42,13 +42,15 @@ Progress: Ready for next milestone
 - v2.0: 17 plans in ~1 day (2026-03-21)
 - v2.1: 5 plans in ~10min (2026-03-22)
 
-**Cumulative:** 34 phases, 63 plans, 130 requirements across 5 milestones in 6 days
-
 ## Accumulated Context
 
 ### Decisions
 
-(Full decision log archived in PROJECT.md Key Decisions table and milestone archives)
+- OpenShell gateway/supervisor architecture is incompatible with GitOps (gateway requires CreateSandbox lifecycle)
+- Remove all OpenShell components and revert OpenClaw to standalone StatefulSet
+- Remove agent-sandbox CRD controller (only needed for OpenShell)
+- Move OpenClaw back to `openclaw` namespace (like v1.0)
+- Use K8s-native security (NetworkPolicy, securityContext, PSS) instead of OpenShell policy enforcement
 
 ### Pending Todos
 
@@ -57,11 +59,10 @@ None.
 ### Blockers/Concerns
 
 - SealedSecret placeholder values need real keys sealed post-bootstrap
-- Landlock in best_effort mode (log-only enforcement on some kernels)
-- PSS privileged on openshell namespace (required for supervisor capabilities)
+- Current cluster has OpenShell resources that will need cleanup on next `make down && make up`
 
 ## Session Continuity
 
-Last session: 2026-03-22T12:10:00Z
-Stopped at: v2.1 milestone archived
+Last session: 2026-03-22T14:00:00Z
+Stopped at: Milestone created, ready to plan Phase 35
 Resume file: None
