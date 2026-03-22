@@ -1,0 +1,13 @@
+# backup-rbac.yaml -- ServiceAccount for the OpenClaw PVC backup CronJob.
+#
+# Dedicated identity for the backup pod (principle of least privilege).
+# The CronJob only needs filesystem access to the PVC and hostPath volume,
+# not Kubernetes API access, but a dedicated SA avoids using the default SA.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw-backup
+  namespace: openclaw
+  labels:
+    app.kubernetes.io/name: openclaw-backup
+    app.kubernetes.io/component: backup
