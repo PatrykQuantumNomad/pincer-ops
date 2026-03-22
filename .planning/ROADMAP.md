@@ -40,11 +40,10 @@ Plans:
   2. The Job authenticates to gateway gRPC using the openshell-client-tls mTLS certificate
   3. Re-running the Job (or ArgoCD re-syncing it) does not create duplicates or fail on existing policy
   4. Running `openshell policy set` with updated policy content updates the gateway's stored policy without requiring sandbox pod restart
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 31-01: TBD
-- [ ] 31-02: TBD
+- [ ] 31-01-PLAN.md -- Create PostSync hook Job with CLI init container, mTLS config scaffolding, and policy registration command
 
 ### Phase 32: Supervisor Activation
 **Goal**: Supervisor runs as PID 1 inside the sandbox pod, fetches policy from gateway, and enforces Landlock/seccomp-BPF/network-namespace isolation with privacy router handling inference traffic
@@ -98,7 +97,7 @@ Phases execute in numeric order: 30 -> 31 -> 32 -> 33 -> 34
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 30. Policy Definition | 1/1 | Complete   | 2026-03-22 |
-| 31. Registration Bridge | 0/? | Not started | - |
+| 31. Registration Bridge | 0/1 | Not started | - |
 | 32. Supervisor Activation | 0/? | Not started | - |
 | 33. Structural Tests | 0/? | Not started | - |
 | 34. Runtime Verification | 0/? | Not started | - |
