@@ -150,6 +150,13 @@ doctor: ## Check cluster health for current provider
 	  else \
 	    echo "  Sealed Secrets:  NOT FOUND"; \
 	  fi; \
+	  TOTAL=$$((TOTAL + 1)); \
+	  OC_READY=$$(kubectl get statefulset openclaw-gateway -n openclaw -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
+	  if [ -n "$$OC_READY" ] && [ "$$OC_READY" -gt 0 ] 2>/dev/null; then \
+	    echo "  OpenClaw:        $$OC_READY ready"; PASS=$$((PASS + 1)); \
+	  else \
+	    echo "  OpenClaw:        NOT FOUND"; \
+	  fi; \
 	  if [ "$(CLUSTER_PROVIDER)" = "kind" ]; then \
 	    TOTAL=$$((TOTAL + 1)); \
 	    REPLICAS=$$(kubectl get deploy controller -n metallb-system -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
