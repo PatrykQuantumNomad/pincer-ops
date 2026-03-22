@@ -69,10 +69,10 @@ Plans:
   2. BATS tests validate the registration Job references correct ConfigMap, uses mTLS secret, and runs at sync wave 11
   3. BATS tests validate the sandbox pod spec has supervisor as entrypoint (PID 1) with correct volume mounts
   4. `make test` passes with all new structural tests included
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 33-01: TBD
+- [ ] 33-01-PLAN.md -- Fix 3 broken tests and add ~60 new structural tests for policy ConfigMap, registration Job, and supervisor sandbox changes
 
 ### Phase 34: Runtime Verification
 **Goal**: Live cluster confirms the full supervisor-to-gateway-to-isolation pipeline works end-to-end
