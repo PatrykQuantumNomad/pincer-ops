@@ -119,6 +119,10 @@ setup-mcp: ## Generate ArgoCD API token for MCP integration
 verify-netpol: ## Run runtime NetworkPolicy enforcement tests
 	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/verify-networkpolicy.sh
 
+.PHONY: verify-supervisor
+verify-supervisor: ## Run runtime supervisor isolation verification tests
+	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/verify-supervisor.sh
+
 .PHONY: doctor
 doctor: ## Check cluster health for current provider
 	@echo "Provider: $(CLUSTER_PROVIDER)"
