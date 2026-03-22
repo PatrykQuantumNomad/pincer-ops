@@ -46,11 +46,11 @@ See: .planning/milestones/v2.1-ROADMAP.md
 
 </details>
 
-### v3.0 OpenShell Removal (In Progress)
+### v3.0 OpenShell Removal (Complete)
 
 - [x] **Phase 35: Remove OpenShell Stack** - Delete all OpenShell infrastructure, ArgoCD Applications, bootstrap steps, and tests (completed 2026-03-22)
 - [x] **Phase 36: Restore OpenClaw StatefulSet** - Recreate OpenClaw as a standalone StatefulSet in openclaw namespace with K8s-native security (completed 2026-03-22)
-- [ ] **Phase 37: Validation** - Update BATS tests, validate manifests, verify make up works end-to-end
+- [x] **Phase 37: Validation** - Update BATS tests, validate manifests, verify make up works end-to-end (completed 2026-03-22)
 
 ## Phase Details
 
@@ -94,11 +94,11 @@ Plans:
   1. `make validate` passes (kubeconform)
   2. `make test` passes (all BATS tests updated for new structure)
   3. `make up` completes without errors on Kinder
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 37-01-PLAN.md — Fix BATS test assertions and remove phantom file references for v3.0 structure
-- [ ] 37-02-PLAN.md — End-to-end Kinder bootstrap verification
+- [x] 37-02-PLAN.md — End-to-end Kinder bootstrap verification
 
 ## Progress
 
@@ -110,6 +110,6 @@ Plans:
 | v2.0 OpenShell Sandbox | 23-29 | 17 | ✓ Complete | 2026-03-21 |
 | v2.1 OpenShell Runtime Integration | 30-34 | 5 | ✓ Complete | 2026-03-22 |
 
-| v3.0 OpenShell Removal | 35-37 | 6 | In Progress | - |
+| v3.0 OpenShell Removal | 35-37 | 6 | ✓ Complete | 2026-03-22 |
 
-**Totals:** 34 phases, 69 plans, 5 milestones shipped
+**Totals:** 37 phases, 75 plans, 6 milestones shipped
