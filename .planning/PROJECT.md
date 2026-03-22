@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime — inside an OpenShell sandbox with kernel-level isolation (Landlock, seccomp-BPF, network namespaces) and L7 policy enforcement via HTTP CONNECT proxy. This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND (opt-in) for local development with production-fidelity networking.
+A GitOps-driven Kubernetes platform for deploying and operating OpenClaw — an open-source, self-hosted AI agent runtime — as a standalone StatefulSet with K8s-native security (NetworkPolicy, securityContext, PSS). This repository contains all declarative infrastructure manifests, ArgoCD Application definitions, bootstrap configuration, and MCP server integration. It is the single source of truth for cluster state, running on Kinder (default) or KIND (opt-in) for local development with production-fidelity networking.
 
 ## Core Value
 
@@ -64,6 +64,11 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 - ✓ 68 structural BATS tests for policy, registration, and supervisor manifests — v2.1
 - ✓ Runtime verification script (`make verify-supervisor`) proving isolation on live cluster — v2.1
 - ✓ 15/15 v2.1 requirements shipped (POL-01 through VERT-04) — v2.1
+- ✓ All OpenShell infrastructure removed (gateway, supervisor, agent-sandbox, policy, TLS, registration) — v3.0
+- ✓ OpenClaw restored as standalone StatefulSet with K8s-native security (runAsNonRoot, drop ALL, readOnlyRootFilesystem, fsGroup) — v3.0
+- ✓ Full Kinder bootstrap verified end-to-end: 4/4 components healthy, localhost:80 accessible — v3.0
+- ✓ 117 BATS tests passing with v3.0 directory structure — v3.0
+- ✓ 15/15 v3.0 requirements shipped (REM-01 through VAL-03) — v3.0
 
 ### Active
 
@@ -80,16 +85,14 @@ Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct t
 - Argo Rollouts / progressive delivery — meaningless with replicas:1
 - Multi-cluster ArgoCD management — premature for single-cluster setup
 - NVIDIA GPU device plugin — deferred; cloud inference is default
-- OpenShell K3s cluster mode — extracting K8s resources directly into KIND instead
-- Custom KIND node images — using DaemonSet + hostPath for supervisor binary instead
-- PVC data migration from v1.2 — fresh start for v2.0, re-onboard OpenClaw
+- OpenShell sandbox isolation — removed in v3.0, incompatible with GitOps
 
 ## Context
 
-Shipped v2.1 with ~45,400 LOC across YAML/Shell/JSON/BATS.
-Tech stack: Kinder (default), KIND (opt-in), ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, OpenShell gateway, agent-sandbox CRD controller, supervisor with kernel-level isolation, Kustomize.
-Platform: 34 phases, 63 plans, 130 requirements across 5 milestones — all delivered in 6 days total.
-Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic), SealedSecret placeholder values need real keys, PSS privileged on openshell namespace, Landlock in best_effort mode (log-only enforcement).
+Shipped v3.0 with ~37,700 LOC across YAML/Shell/JSON/BATS (net -7,677 lines from OpenShell removal).
+Tech stack: Kinder (default), KIND (opt-in), ArgoCD, MetalLB, Envoy Gateway, Sealed Secrets, cert-manager, Kustomize.
+Platform: 37 phases, 75 plans, 145 requirements across 6 milestones — all delivered in 6 days total.
+Known tech debt: placeholder webhook URL, hostPath backups, manual pre-commit install, argocd-self circular dependency (cosmetic), SealedSecret placeholder values need real keys, dangerouslyAllowHostHeaderOriginFallback for local dev.
 
 Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries included: MetalLB, Envoy Gateway, cert-manager, Metrics Server, CoreDNS tuning, Headlamp dashboard, and local registry pre-installed. Kinder uses default Deployment mode for Envoy Gateway — DaemonSet + hostPort config still needed for macOS localhost access. Kinder handles MetalLB IPAddressPool and cert-manager ClusterIssuer automatically.
 
@@ -119,16 +122,19 @@ Kinder (https://kinder.patrykgolabek.dev/) is a fork of KIND with batteries incl
 | Fresh PVC start for v2.0 | Avoids migration complexity; OpenClaw re-onboards | ✓ Good — clean migration without data compatibility issues |
 | PostSync hook for registration Job | Avoids immutable field errors, guarantees Sandbox CR exists | ✓ Good — clean re-sync behavior, one-shot idempotent registration |
 | /proc filesystem for in-container inspection | No dependency on pgrep/ps which may not be in container image | ✓ Good — universal availability in Linux containers |
-| Landlock best_effort mode | Log-only enforcement; graceful degradation on unsupported kernels | — Pending — sufficient for v2.1, may tighten in future |
+| Landlock best_effort mode | Log-only enforcement; graceful degradation on unsupported kernels | — Removed — OpenShell deleted in v3.0 |
+| Remove OpenShell stack | Gateway's CreateSandbox lifecycle incompatible with GitOps | ✓ Good — clean removal, restored standalone OpenClaw |
+| fsGroup for PVC ownership | Replaces chown in init container; works with dropped ALL capabilities | ✓ Good — no root needed in init container |
+| controlUi hostHeaderOriginFallback | Required for --bind lan; acceptable for local dev | ✓ Good — break-glass for local development |
 
 ## Constraints
 
 - **Platform**: Kinder (default) or KIND (opt-in) — local development only
 - **GitOps**: ArgoCD watches `main` branch only; all changes flow through Git
 - **Secrets**: All secrets must be Bitnami SealedSecrets — no plaintext Secrets in Git
-- **OpenClaw scaling**: Always `replicas: 1` (Sandbox CR singleton constraint) — cannot scale horizontally
+- **OpenClaw scaling**: Always `replicas: 1` (file-backed monolith) — cannot scale horizontally
 - **Manifests**: Kustomize for overlays, no Helm value files; explicit API versions; resource requests AND limits on all workloads
 - **Image policy**: Explicit version tags only, `imagePullPolicy: IfNotPresent`
 
 ---
-*Last updated: 2026-03-22 after v2.1 milestone complete*
+*Last updated: 2026-03-22 after v3.0 milestone complete*

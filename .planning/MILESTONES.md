@@ -1,5 +1,32 @@
 # Milestones: Pincer Ops
 
+## v3.0 OpenShell Removal (Shipped: 2026-03-22)
+
+**Delivered:** Removed the entire OpenShell stack (gateway, supervisor, agent-sandbox CRD, policy system, TLS chain) and restored OpenClaw as a standalone StatefulSet with K8s-native security, verified end-to-end with a fresh Kinder cluster bootstrap.
+
+**Phases completed:** 35-37 (6 plans total)
+
+**Key accomplishments:**
+
+- Deleted all OpenShell infrastructure (gateway, supervisor, agent-sandbox CRD, registration Job, policy ConfigMap, mTLS certs) — 9,930 lines removed
+- Restored OpenClaw as standalone StatefulSet in openclaw namespace with hardened security (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem, fsGroup)
+- Fixed two runtime bugs during e2e verification: init container chown with dropped capabilities, and missing controlUi config for non-loopback binding
+- Updated all 117 BATS tests and removed phantom file references for v3.0 directory structure
+- Verified full Kinder bootstrap end-to-end: 4/4 components healthy, OpenClaw accessible at localhost:80
+
+**Stats:**
+
+- 75 files changed
+- +2,253 / -9,930 lines (net -7,677 LOC — major cleanup)
+- 3 phases, 6 plans, 15 requirements shipped (15/15)
+- 1 day (2026-03-22)
+
+**Git range:** `feat(35-01)` → `fix(37-02)`
+
+**What's next:** Define next milestone goals with `/gsd:new-milestone`
+
+---
+
 ## v2.1 OpenShell Runtime Integration (Shipped: 2026-03-22)
 
 **Delivered:** Closed the supervisor-to-gateway runtime gap — kernel-level isolation (Landlock, seccomp-BPF, network namespaces) and the privacy router are fully operational with declarative policy delivery, automated registration, and a runtime verification script proving enforcement on a live cluster.
