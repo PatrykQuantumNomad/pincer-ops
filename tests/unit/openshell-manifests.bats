@@ -1271,3 +1271,425 @@ load '../test_helper'
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_failure
 }
+
+# ===========================================================================
+# Policy ConfigMap (POL-01, VERT-04)
+# ===========================================================================
+
+@test "policy ConfigMap has apiVersion v1" {
+  run grep 'apiVersion: v1' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has kind ConfigMap" {
+  run grep 'kind: ConfigMap' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has name openshell-sandbox-policy" {
+  run grep 'name: openshell-sandbox-policy' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has policy.yaml data key" {
+  run grep 'policy.yaml:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has version 1" {
+  run grep 'version: 1' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has filesystem_policy section" {
+  run grep 'filesystem_policy:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has include_workdir false" {
+  run grep 'include_workdir: false' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_only includes /usr" {
+  run grep '\- /usr$' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_only includes /etc" {
+  run grep '\- /etc' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_only includes /proc" {
+  run grep '\- /proc' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_only includes /opt/openshell/bin" {
+  run grep '\- /opt/openshell/bin' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_write includes /home/node/.openclaw" {
+  run grep '\- /home/node/.openclaw' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_write includes /tmp" {
+  run grep '\- /tmp' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap read_write includes /dev/null" {
+  run grep '\- /dev/null' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has landlock section" {
+  run grep 'landlock:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has landlock compatibility best_effort" {
+  run grep 'compatibility: best_effort' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has process section" {
+  run grep 'process:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has run_as_user 1000" {
+  run grep 'run_as_user: "1000"' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has run_as_group 1000" {
+  run grep 'run_as_group: "1000"' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap has network_policies section" {
+  run grep 'network_policies:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap network endpoint host is openshell service" {
+  run grep 'host: openshell.openshell.svc.cluster.local' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap network endpoint port is 8080" {
+  run grep 'port: 8080' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap network enforcement is enforce" {
+  run grep 'enforcement: enforce' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap network binary path is openshell-sandbox" {
+  run grep 'path: /opt/openshell/bin/openshell-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_success
+}
+
+@test "policy ConfigMap does not contain seccomp field" {
+  run grep 'seccomp' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/policy-configmap.yaml"
+  assert_failure
+}
+
+# ===========================================================================
+# Registration Job (POL-02 through POL-05, VERT-04)
+# ===========================================================================
+
+@test "registration Job has apiVersion batch/v1" {
+  run grep 'apiVersion: batch/v1' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has kind Job" {
+  run grep 'kind: Job' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has name openclaw-sandbox-policy-registration" {
+  run grep 'name: openclaw-sandbox-policy-registration' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has namespace openshell" {
+  run grep 'namespace: openshell' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has PostSync hook annotation" {
+  run grep 'argocd.argoproj.io/hook: PostSync' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has BeforeHookCreation delete policy" {
+  run grep 'argocd.argoproj.io/hook-delete-policy: BeforeHookCreation' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has backoffLimit 3" {
+  run grep 'backoffLimit: 3' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has activeDeadlineSeconds 120" {
+  run grep 'activeDeadlineSeconds: 120' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has restartPolicy OnFailure" {
+  run grep 'restartPolicy: OnFailure' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has automountServiceAccountToken false" {
+  run grep 'automountServiceAccountToken: false' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has RuntimeDefault seccomp profile" {
+  run grep 'type: RuntimeDefault' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has runAsNonRoot true" {
+  run grep 'runAsNonRoot: true' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has install-cli init container" {
+  run grep 'name: install-cli' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job init container uses curlimages/curl:8.12.1" {
+  run grep 'image: curlimages/curl:8.12.1' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job CLI download URL contains openshell" {
+  run grep 'OpenShell/releases/download' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has register-policy main container" {
+  run grep 'name: register-policy' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has cli-bin emptyDir volume" {
+  run grep 'name: cli-bin' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has policy volume from openshell-sandbox-policy ConfigMap" {
+  run grep 'name: openshell-sandbox-policy' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job has tls-client volume from openshell-client-tls Secret" {
+  run grep 'secretName: openshell-client-tls' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job command includes openshell policy set openclaw-sandbox" {
+  run grep 'openshell policy set openclaw-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job command includes --policy /policy/policy.yaml" {
+  run grep '\-\-policy /policy/policy.yaml' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job scaffolds CLI config gateways directory" {
+  run grep 'config/openshell/gateways' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job mounts /tls for mTLS certs with readOnly" {
+  run grep 'mountPath: /tls' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+@test "registration Job register-policy container has resource limits" {
+  run grep 'limits:' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/registration-job.yaml"
+  assert_success
+}
+
+# ===========================================================================
+# Sandbox Phase 32 Additions -- Supervisor (SUPV-01 through SUPV-05, VERT-04)
+# ===========================================================================
+
+@test "sandbox supervisor has openshell-sandbox as container command" {
+  run grep '/opt/openshell/bin/openshell-sandbox' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has SYS_PTRACE capability" {
+  run grep 'SYS_PTRACE' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has SYSLOG capability" {
+  run grep 'SYSLOG' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_SANDBOX_COMMAND env var" {
+  run grep 'OPENSHELL_SANDBOX_COMMAND' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor OPENSHELL_SANDBOX_COMMAND contains node command" {
+  run grep 'node dist/index.js gateway' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_SANDBOX_ID env var with value openclaw-sandbox" {
+  run grep 'value: "openclaw-sandbox"' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_SANDBOX env var" {
+  run grep 'name: OPENSHELL_SANDBOX$' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_LOG_LEVEL set to info" {
+  run grep 'OPENSHELL_LOG_LEVEL' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor OPENSHELL_LOG_LEVEL value is info" {
+  run grep -A1 'OPENSHELL_LOG_LEVEL' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+  assert_output --partial 'info'
+}
+
+@test "sandbox supervisor has OPENSHELL_TLS_CA pointing to ca.crt" {
+  run grep '/etc/openshell-tls/client/ca.crt' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_TLS_CERT pointing to tls.crt" {
+  run grep '/etc/openshell-tls/client/tls.crt' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has OPENSHELL_TLS_KEY pointing to tls.key" {
+  run grep '/etc/openshell-tls/client/tls.key' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor has tls-client volume defined" {
+  run grep 'name: tls-client' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor tls-client secret is openshell-client-tls" {
+  run grep 'secretName: openshell-client-tls' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor tls-client volume has defaultMode 256" {
+  run grep 'defaultMode: 256' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor tls-client mountPath is /etc/openshell-tls/client" {
+  run grep 'mountPath: /etc/openshell-tls/client' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
+
+@test "sandbox supervisor tls-client mount is readOnly" {
+  run grep -A1 'mountPath: /etc/openshell-tls/client' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+  assert_output --partial 'readOnly: true'
+}
+
+@test "sandbox supervisor container runs as root for capabilities" {
+  run grep 'runAsUser: 0' \
+    "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
+  assert_success
+}
