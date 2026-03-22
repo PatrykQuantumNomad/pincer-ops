@@ -948,10 +948,10 @@ load '../test_helper'
   assert_success
 }
 
-@test "workload-openclaw-sandbox has ServerSideApply" {
+@test "workload-openclaw-sandbox does not use ServerSideApply" {
   run grep 'ServerSideApply=true' \
     "${PROJECT_ROOT}/bootstrap/kind/workload-openclaw-sandbox.yaml"
-  assert_success
+  assert_failure
 }
 
 @test "workload-openclaw-sandbox has CreateNamespace false" {
