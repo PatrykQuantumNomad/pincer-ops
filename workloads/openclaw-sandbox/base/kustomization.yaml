@@ -8,3 +8,4 @@ resources:
   - httproute.yaml
   - networkpolicy.yaml
   - policy-configmap.yaml
+  - registration-job.yaml
