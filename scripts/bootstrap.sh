@@ -33,43 +33,6 @@ source "${SCRIPT_DIR}/lib/sealed-secrets.sh"
 trap 'echo ""; log_warn "Bootstrap interrupted by signal"; exit 130' INT TERM
 
 # ---------------------------------------------------------------------------
-# TLS artifact generation (Phase 29: mTLS between gateway and sandbox)
-# ---------------------------------------------------------------------------
-# Creates the cert-manager CA chain for gateway-to-sandbox mTLS:
-#   1. Root CA Certificate (selfsigned-issuer -> openshell-ca-tls secret)
-#   2. CA ClusterIssuer (openshell-ca-issuer, references openshell-ca-tls)
-#   3. Server + client leaf certificates in openshell namespace
-# Depends on selfsigned-issuer ClusterIssuer (both Kinder addon and KIND
-# ArgoCD-managed cert-manager provide it).
-generate_tls_artifacts() {
-  log_step "Generating TLS artifacts for OpenShell mTLS..."
-
-  local TLS_DIR="${SCRIPT_DIR}/../infrastructure/openshell/gateway"
-
-  # Apply root CA Certificate (issued by selfsigned-issuer)
-  run_cmd kubectl apply -f "${TLS_DIR}/certificate-ca.yaml"
-
-  # Wait for CA certificate to be issued before creating the ClusterIssuer
-  run_cmd kubectl wait --for=condition=Ready certificate/openshell-ca \
-    -n cert-manager --timeout=120s
-
-  # Apply CA ClusterIssuer (needs CA secret to exist)
-  run_cmd kubectl apply -f "${TLS_DIR}/clusterissuer-ca.yaml"
-
-  # Apply server and client certificates
-  run_cmd kubectl apply -f "${TLS_DIR}/certificate-server.yaml"
-  run_cmd kubectl apply -f "${TLS_DIR}/certificate-client.yaml"
-
-  # Wait for both certificates to be issued
-  run_cmd kubectl wait --for=condition=Ready certificate/openshell-server-tls \
-    -n openshell --timeout=120s
-  run_cmd kubectl wait --for=condition=Ready certificate/openshell-client-tls \
-    -n openshell --timeout=120s
-
-  log_info "TLS artifacts generated -- mTLS certificates issued by cert-manager"
-}
-
-# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 # CLUSTER_PROVIDER is NOT readonly here -- check_provider() may modify it
@@ -219,29 +182,10 @@ run_cmd kubectl wait --for=condition=available deployment/argocd-repo-server -n 
 run_cmd kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=120s
 log_info "ArgoCD is ready"
 
-# Step 8b: Create OpenShell namespaces (bootstrap creates, ArgoCD adopts)
-# These namespaces must exist before root-app syncs so ArgoCD Applications
-# can adopt them with PSS labels and tracking annotations via ServerSideApply.
-log_step "Creating OpenShell namespaces..."
-NS_YAML=$(kubectl create namespace openshell --dry-run=client -o yaml)
-if [ "${VERBOSE}" = true ]; then
-  echo "${NS_YAML}" | kubectl apply -f -
-else
-  echo "${NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
-fi
-NS_YAML=$(kubectl create namespace agent-sandbox-system --dry-run=client -o yaml)
-if [ "${VERBOSE}" = true ]; then
-  echo "${NS_YAML}" | kubectl apply -f -
-else
-  echo "${NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
-fi
-log_info "OpenShell namespaces created"
-
 # Step 8c: Ensure cert-manager is ready and selfsigned-issuer exists
 # Kinder provides cert-manager as an addon but does NOT create the
 # selfsigned-issuer ClusterIssuer. For KIND, cert-manager is deployed later
-# (step 15) but we need TLS artifacts now. Wait for CRDs + webhook, then
-# apply the ClusterIssuer before generating certificates.
+# (step 15). Wait for CRDs + webhook, then apply the ClusterIssuer.
 log_step "Waiting for cert-manager readiness..."
 CM_CRD_WAIT=0
 CM_CRD_TIMEOUT=120
@@ -265,9 +209,6 @@ if [ -f "${CM_CLUSTERISSUER}" ]; then
   run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
   log_info "Self-signed ClusterIssuer applied"
 fi
-
-# Step 8d: Generate TLS artifacts (mTLS certificates for OpenShell)
-generate_tls_artifacts
 
 # Step 9: Apply root Application
 log_step "Applying root Application..."
@@ -510,102 +451,6 @@ else
   log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon -- already ready from step 8c)"
 fi
 
-# Step 15b: Load OpenShell cluster image (supervisor binary source)
-# The DaemonSet init container copies the supervisor binary from this image.
-# Must be loaded BEFORE ArgoCD syncs the DaemonSet (sync wave 3).
-log_step "Loading OpenShell cluster image..."
-OPENSHELL_CLUSTER_IMAGE="ghcr.io/nvidia/openshell/cluster:0.0.12"
-if docker image inspect "${OPENSHELL_CLUSTER_IMAGE}" >/dev/null 2>&1; then
-  run_cmd ${CLUSTER_PROVIDER} load docker-image "${OPENSHELL_CLUSTER_IMAGE}" --name "${CLUSTER_NAME}"
-  log_info "OpenShell cluster image loaded"
-else
-  log_warn "OpenShell cluster image not found locally -- DaemonSet will pull from registry"
-  log_warn "Pre-pull with: docker pull ${OPENSHELL_CLUSTER_IMAGE}"
-fi
-
-PAUSE_IMAGE="registry.k8s.io/pause:3.10"
-if docker image inspect "${PAUSE_IMAGE}" >/dev/null 2>&1; then
-  run_cmd ${CLUSTER_PROVIDER} load docker-image "${PAUSE_IMAGE}" --name "${CLUSTER_NAME}"
-fi
-
-# Step 16: Wait for supervisor DaemonSet (wave 3)
-# The supervisor binary must be on all nodes before the sandbox pod can start.
-# DaemonSet init container copies from ghcr.io/nvidia/openshell/cluster image
-# to /opt/openshell/bin/ on each node via hostPath.
-log_step "Waiting for supervisor DaemonSet..."
-SUPERVISOR_WAIT=0
-SUPERVISOR_TIMEOUT=120
-until kubectl get daemonset openshell-supervisor -n openshell >/dev/null 2>&1; do
-  if [ ${SUPERVISOR_WAIT} -ge ${SUPERVISOR_TIMEOUT} ]; then
-    log_error "Supervisor DaemonSet not deployed after ${SUPERVISOR_TIMEOUT}s"
-    exit 1
-  fi
-  sleep 5
-  SUPERVISOR_WAIT=$((SUPERVISOR_WAIT + 5))
-done
-run_cmd kubectl rollout status daemonset/openshell-supervisor -n openshell --timeout=120s
-log_info "Supervisor DaemonSet is ready (binary on all nodes)"
-
-# Step 17: Wait for OpenShell gateway (wave 5)
-# The gateway must be running before sandbox pod can fetch policy via gRPC.
-log_step "Waiting for OpenShell gateway..."
-GW_WAIT=0
-GW_TIMEOUT=180
-until kubectl get statefulset openshell -n openshell >/dev/null 2>&1; do
-  if [ ${GW_WAIT} -ge ${GW_TIMEOUT} ]; then
-    log_error "OpenShell gateway StatefulSet not deployed after ${GW_TIMEOUT}s"
-    exit 1
-  fi
-  sleep 5
-  GW_WAIT=$((GW_WAIT + 5))
-done
-run_cmd kubectl rollout status statefulset/openshell -n openshell --timeout=300s
-log_info "OpenShell gateway is ready"
-
-# Step 18: Deploy OpenClaw Sandbox
-# Strategy: Wait for Sandbox CRD, apply ArgoCD Application directly, poll for
-# Sandbox CR creation, kustomize direct-apply fallback on ComparisonError
-# timeout, then wait for Ready.
-OC_OVERLAY_DIR="${SCRIPT_DIR}/../workloads/openclaw-sandbox/overlays/dev"
-log_step "Deploying OpenClaw sandbox..."
-
-# Wait for Sandbox CRD to be registered (infra-agent-sandbox must sync first)
-log_info "Waiting for Sandbox CRD registration..."
-CRD_WAIT=0
-CRD_TIMEOUT=120
-until kubectl get crd sandboxes.agents.x-k8s.io >/dev/null 2>&1; do
-  if [ ${CRD_WAIT} -ge ${CRD_TIMEOUT} ]; then
-    log_error "Timed out waiting for Sandbox CRD (${CRD_TIMEOUT}s)"
-    exit 1
-  fi
-  sleep 5
-  CRD_WAIT=$((CRD_WAIT + 5))
-done
-log_info "Sandbox CRD registered"
-
-# Apply the workload-openclaw-sandbox Application directly
-run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/workload-openclaw-sandbox.yaml"
-
-# Wait for Sandbox CR to be created (ArgoCD sync or fallback)
-OC_WAIT=0
-OC_TIMEOUT=180
-until kubectl get sandbox openclaw-sandbox -n openshell >/dev/null 2>&1; do
-  if [ ${OC_WAIT} -ge ${OC_TIMEOUT} ]; then
-    ROOT_STATUS=$(kubectl get app root -n argocd -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo "")
-    if [ "${ROOT_STATUS}" = "ComparisonError" ]; then
-      log_warn "ArgoCD cannot sync from repo -- applying OpenClaw sandbox directly"
-      run_cmd kubectl apply --server-side --force-conflicts -f <(kubectl kustomize "${OC_OVERLAY_DIR}")
-      break
-    fi
-    log_error "Timed out waiting for OpenClaw Sandbox CR (${OC_TIMEOUT}s)"
-    exit 1
-  fi
-  sleep 5
-  OC_WAIT=$((OC_WAIT + 5))
-done
-run_cmd kubectl wait --for=condition=Ready sandbox/openclaw-sandbox -n openshell --timeout=300s
-log_info "OpenClaw sandbox is running"
-
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
@@ -626,7 +471,6 @@ else
   echo "  Headlamp Token: kubectl get secret kinder-dashboard-token -n kube-system -o jsonpath=\"{.data.token}\" | base64 -d"
 fi
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
-echo "  OpenClaw:   openclaw-sandbox in openshell namespace (port 18789)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
