@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
+milestone: v2.1
+milestone_name: OpenShell Runtime Integration
+status: executing
 stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-03-22T10:44:40.934Z"
-last_activity: 2026-03-22
+last_updated: "2026-03-22T10:44:40Z"
+last_activity: 2026-03-22 -- Phase 32 complete (1/1 plans)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 3
   completed_plans: 3
-  percent: 40
+  percent: 60
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** v2.1 Phase 32 -- Supervisor Activation
+**Current focus:** v2.1 Phase 33 -- Structural Tests
 
 ## Current Position
 
-Phase: 32 of 34 (Supervisor Activation)
-Plan: 1 of 1 in Phase 31 (Registration Bridge) -- COMPLETE
-Status: Phase 31 complete, ready for Phase 32
-Last activity: 2026-03-22
+Phase: 33 of 34 (Structural Tests)
+Plan: 1 of 1 in Phase 32 (Supervisor Activation) -- COMPLETE
+Status: Phase 32 complete, ready for Phase 33
+Last activity: 2026-03-22 -- Phase 32 complete (supervisor activated as PID 1, validated)
 
-Progress: [####░░░░░░] 40%
+Progress: [######░░░░] 60%
 
 ## Performance Metrics
 
@@ -46,7 +46,7 @@ Progress: [####░░░░░░] 40%
 |-------|------|----------|-------|-------|
 | 30-01 | Policy ConfigMap | 2min | 2 | 2 |
 | 31-01 | Registration Job | 1min | 2 | 2 |
-| Phase 32-01 PSupervisor Activation | 2min | 1 tasks | 1 files |
+| 32-01 | Supervisor Activation | 2min | 1 | 1 |
 
 ## Accumulated Context
 
@@ -70,8 +70,8 @@ None.
 ### Blockers/Concerns
 
 - Gateway responds "sandbox has no spec" -- supervisor cannot fetch policies (root cause: ArgoCD-created Sandbox CR bypasses gateway gRPC registration) -- Phase 31 Job should fix this
-- Supervisor bypassed in v2.0 -- OpenClaw runs directly as node (uid 1000)
-- Privacy router non-functional without working supervisor
+- Supervisor activated as PID 1 in Phase 32 -- runtime verification pending (Phase 34)
+- Privacy router configured (inference.local/v1 + supervisor proxy) -- runtime verification pending (Phase 34)
 - SealedSecret placeholder values need real keys sealed post-bootstrap
 - Runtime behavior of `openshell policy set` on gateway-discovered sandboxes is unverified (research gap -- Phase 34 will test)
 - metadata.json format for CLI config is inferred, not documented (LOW confidence -- Phase 34 will validate)
