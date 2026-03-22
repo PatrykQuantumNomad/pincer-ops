@@ -41,41 +41,17 @@ const layers = [
     kinderSkip: true,
   },
   {
-    wave: '0',
-    name: 'OpenShell Namespaces',
-    description: 'Namespace topology. openshell + agent-sandbox-system.',
+    wave: '-1',
+    name: 'Envoy Config',
+    description: 'Gateway + HTTPRoute resources. DaemonSet + hostPort.',
     color: '#6366F1',
     icon: '&#x2302;',
     kinderSkip: false,
   },
   {
-    wave: '+2',
-    name: 'Agent-Sandbox CRD',
-    description: 'Sandbox CRD controller. Reconciles CRs into pods.',
-    color: '#EC4899',
-    icon: '&#x2B22;',
-    kinderSkip: false,
-  },
-  {
-    wave: '+3',
-    name: 'Supervisor DaemonSet',
-    description: 'Binary side-loading. Landlock + seccomp-BPF isolation.',
-    color: '#14B8A6',
-    icon: '&#x2338;',
-    kinderSkip: false,
-  },
-  {
-    wave: '+5',
-    name: 'OpenShell Gateway',
-    description: 'mTLS gateway. Sandbox lifecycle + policy delivery.',
-    color: '#7C3AED',
-    icon: '&#x1F6E1;',
-    kinderSkip: false,
-  },
-  {
     wave: '+10',
-    name: 'OpenClaw Sandbox',
-    description: 'AI Gateway. Sandbox CR with supervisor as PID 1.',
+    name: 'OpenClaw',
+    description: 'AI Gateway. StatefulSet with PVC-backed storage.',
     color: '#FF6B35',
     icon: '&#x2699;',
     kinderSkip: false,
@@ -116,7 +92,7 @@ const layers = [
         </svg>
 
         <!-- Pipeline nodes -->
-        <div class="relative grid grid-cols-5 gap-3">
+        <div class="relative grid grid-cols-7 gap-3">
           {layers.map((layer) => (
             <div class={`arch-node flex flex-col items-center text-center ${layer.kinderSkip ? 'opacity-40' : ''}`}>
               <!-- Node circle -->

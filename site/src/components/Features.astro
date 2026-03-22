@@ -43,9 +43,9 @@
             <!-- Mock terminal output -->
             <div class="mt-auto font-mono text-xs space-y-1 text-dim bg-void/40 rounded-lg p-4">
               <div><span class="text-muted">1/4</span> Creating cluster (1 CP + 2 workers)...</div>
-              <div><span class="text-muted">2/4</span> Installing ArgoCD + mTLS certificates...</div>
-              <div><span class="text-muted">3/4</span> OpenShell Gateway + Sandbox CRD controller...</div>
-              <div><span class="text-muted">4/4</span> OpenClaw Sandbox CR + supervisor isolation...</div>
+              <div><span class="text-muted">2/4</span> Installing ArgoCD...</div>
+              <div><span class="text-muted">3/4</span> Infrastructure (Envoy, Sealed Secrets)...</div>
+              <div><span class="text-muted">4/4</span> Deploying OpenClaw StatefulSet...</div>
               <div class="text-terminal-green mt-2">&#x2713; Cluster ready. All apps Synced.</div>
             </div>
           </div>
@@ -114,7 +114,7 @@
           <!-- Dashboard metrics -->
           <div class="grid grid-cols-3 gap-3">
             <div class="text-center">
-              <div class="font-mono text-2xl font-bold text-neon-cyan">319</div>
+              <div class="font-mono text-2xl font-bold text-neon-cyan">117</div>
               <div class="font-mono text-xs text-muted">tests</div>
             </div>
             <div class="text-center">

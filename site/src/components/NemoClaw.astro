@@ -31,15 +31,15 @@ const capabilities = [
   <div class="max-w-6xl mx-auto">
     <!-- Section header — left-aligned on md+ -->
     <div class="text-center md:text-left mb-16 fade-in">
-      <span class="font-mono text-xs text-emerald tracking-widest uppercase">The Reference Architecture</span>
+      <span class="font-mono text-xs text-emerald tracking-widest uppercase">Under Evaluation</span>
       <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-light mt-3">
         What is <span class="text-emerald glow-emerald">NemoClaw</span>?
       </h2>
       <p class="text-dim mt-4 max-w-2xl">
         NemoClaw is NVIDIA's open-source reference stack for running OpenClaw
         assistants safely. It combines OpenShell's sandbox runtime with NVIDIA
-        Nemotron models. Pincer Ops is inspired by NemoClaw's architecture &mdash;
-        deploying the same OpenShell runtime layer on Kubernetes via GitOps.
+        Nemotron models. We are evaluating NemoClaw's architecture for future
+        integration into Pincer Ops.
       </p>
     </div>
 
@@ -80,11 +80,11 @@ const capabilities = [
     <!-- Bridge: how Pincer Ops relates to NemoClaw -->
     <div class="text-center md:text-left mt-12 fade-in max-w-xl">
       <p class="text-dim text-sm leading-relaxed">
-        Pincer Ops deploys the
+        We are testing the
         <span class="text-emerald">OpenShell runtime layer</span> that NemoClaw
-        builds upon &mdash; the gateway, supervisor, and sandbox isolation. The
-        NemoClaw plugin and blueprint orchestration can be installed on top for
-        interactive sandbox management.
+        builds upon. A future Pincer Ops milestone may integrate NemoClaw's
+        sandbox isolation, blueprint orchestration, and privacy router
+        for enhanced agent security.
       </p>
     </div>
   </div>

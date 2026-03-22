@@ -73,7 +73,7 @@ pincer-ops/
 │   ├── setup-mcp.sh            # Generate ArgoCD API token for MCP
 │   ├── validate-manifests.sh   # kubeconform validation
 │   └── lib/common.sh           # Shared helpers
-└── tests/                      # 87 unit + 10 integration tests (BATS)
+└── tests/                      # 107 unit + 10 integration tests (BATS)
 ```
 
 ## Quick Start
@@ -103,7 +103,7 @@ make reset       # Full teardown + rebuild
 make sync        # Sync all ArgoCD apps
 make logs        # Tail OpenClaw logs
 make validate    # Validate manifests (kubeconform)
-make test        # Run all 97 BATS tests
+make test        # Run all 117 BATS tests
 ```
 
 ### For Forks
@@ -152,7 +152,7 @@ TLS certificate infrastructure with self-signed ClusterIssuer for dev environmen
 
 - License: MIT
 - Language: Bash + YAML (no application source code, no Dockerfiles)
-- Tests: 97 BATS tests (87 unit + 10 integration)
+- Tests: 117 BATS tests (107 unit + 10 integration)
 - CI: GitHub Actions with kubeconform validation on PRs to main
 - Namespaces: argocd, metallb-system, envoy-gateway-system, kube-system, cert-manager, openclaw
 - KIND cluster name: openclaw-dev
