@@ -33,7 +33,8 @@ spec:
           image: ghcr.io/openclaw/openclaw:2026.2.19
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 0
+            runAsNonRoot: true
+            runAsUser: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
@@ -52,7 +53,6 @@ spec:
               if [ ! -f "$CFG" ] || ! node -e "require('$CFG')" 2>/dev/null; then
                 echo "seed-config: seeding openclaw.json from ConfigMap"
                 cp /config/openclaw.json "$CFG"
-                chown 1000:1000 "$CFG"
               else
                 # Ensure the gateway token in the config matches the env var
                 CURRENT=$(node -e "try{const c=require('$CFG');console.log(c.gateway?.auth?.token||'')}catch(e){}" 2>/dev/null)
@@ -66,10 +66,8 @@ spec:
                     c.gateway.auth.token='$OPENCLAW_GATEWAY_TOKEN';
                     fs.writeFileSync('$CFG',JSON.stringify(c,null,2)+'\n');
                   "
-                  chown 1000:1000 "$CFG"
                 fi
               fi
-              chown -R 1000:1000 /home/node/.openclaw
           volumeMounts:
             - name: data
               mountPath: /home/node/.openclaw
