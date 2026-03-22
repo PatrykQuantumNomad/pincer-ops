@@ -94,10 +94,10 @@ Plans:
   1. `make validate` passes (kubeconform)
   2. `make test` passes (all BATS tests updated for new structure)
   3. `make up` completes without errors on Kinder
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 37-01-PLAN.md — Fix BATS test assertions and remove phantom file references for v3.0 structure
+- [x] 37-01-PLAN.md — Fix BATS test assertions and remove phantom file references for v3.0 structure
 - [ ] 37-02-PLAN.md — End-to-end Kinder bootstrap verification
 
 ## Progress

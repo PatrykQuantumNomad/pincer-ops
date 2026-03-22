@@ -27,8 +27,8 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 
 ### Validation
 
-- [ ] **VAL-01**: `make validate` passes with all manifests
-- [ ] **VAL-02**: `make test` passes with updated BATS tests
+- [x] **VAL-01**: `make validate` passes with all manifests
+- [x] **VAL-02**: `make test` passes with updated BATS tests
 - [ ] **VAL-03**: `make up` completes without errors on Kinder
 
 ## Out of Scope
@@ -56,8 +56,8 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 | RST-04 | Phase 36 | Complete |
 | RST-05 | Phase 36 | Complete |
 | RST-06 | Phase 36 | Complete |
-| VAL-01 | Phase 37 | Pending |
-| VAL-02 | Phase 37 | Pending |
+| VAL-01 | Phase 37 | Complete |
+| VAL-02 | Phase 37 | Complete |
 | VAL-03 | Phase 37 | Pending |
 
 **Coverage:**
