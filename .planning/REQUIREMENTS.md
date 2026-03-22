@@ -18,11 +18,11 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 
 ### Restoration
 
-- [ ] **RST-01**: OpenClaw runs as a StatefulSet in `openclaw` namespace (replicas: 1, PVC-backed)
-- [ ] **RST-02**: OpenClaw command is `node dist/index.js gateway --bind lan --port 18789` (no supervisor wrapper)
-- [ ] **RST-03**: Security hardened: runAsNonRoot, runAsUser 1000, drop ALL capabilities, readOnlyRootFilesystem, seccomp RuntimeDefault
-- [ ] **RST-04**: NetworkPolicy: default-deny + allow Envoy ingress (18789), DNS egress (53), HTTPS egress (443)
-- [ ] **RST-05**: HTTPRoute routes localhost traffic to OpenClaw via Envoy Gateway
+- [x] **RST-01**: OpenClaw runs as a StatefulSet in `openclaw` namespace (replicas: 1, PVC-backed)
+- [x] **RST-02**: OpenClaw command is `node dist/index.js gateway --bind lan --port 18789` (no supervisor wrapper)
+- [x] **RST-03**: Security hardened: runAsNonRoot, runAsUser 1000, drop ALL capabilities, readOnlyRootFilesystem, seccomp RuntimeDefault
+- [x] **RST-04**: NetworkPolicy: default-deny + allow Envoy ingress (18789), DNS egress (53), HTTPS egress (443)
+- [x] **RST-05**: HTTPRoute routes localhost traffic to OpenClaw via Envoy Gateway
 - [ ] **RST-06**: `make up` bootstraps a fully functional cluster with OpenClaw accessible at localhost:80
 
 ### Validation
@@ -50,11 +50,11 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 | REM-04 | Phase 35 | Complete |
 | REM-05 | Phase 35 | Complete |
 | REM-06 | Phase 35 | Complete |
-| RST-01 | Phase 36 | Pending |
-| RST-02 | Phase 36 | Pending |
-| RST-03 | Phase 36 | Pending |
-| RST-04 | Phase 36 | Pending |
-| RST-05 | Phase 36 | Pending |
+| RST-01 | Phase 36 | Complete |
+| RST-02 | Phase 36 | Complete |
+| RST-03 | Phase 36 | Complete |
+| RST-04 | Phase 36 | Complete |
+| RST-05 | Phase 36 | Complete |
 | RST-06 | Phase 36 | Pending |
 | VAL-01 | Phase 37 | Pending |
 | VAL-02 | Phase 37 | Pending |

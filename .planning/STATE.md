@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: OpenShell Removal
 status: executing
-stopped_at: Completed 35-02-PLAN.md
-last_updated: "2026-03-22T16:12:09.256Z"
+stopped_at: Completed 36-01-PLAN.md
+last_updated: "2026-03-22T16:44:59.515Z"
 last_activity: 2026-03-22
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 50
 ---
 
@@ -54,6 +54,8 @@ Progress: [█████░░░░░] 50%
 - [Phase 35-remove-openshell-stack]: Pure deletion of all OpenShell files -- no modifications to remaining files
 - [Phase 35]: Preserved cert-manager readiness wait and ClusterIssuer apply in bootstrap.sh for future TLS
 - [Phase 35]: OpenClaw CLI namespace updated from openshell to openclaw (Phase 36 will create workloads there)
+- [Phase 36]: Used infrastructure AppProject for workload-openclaw (workloads project deleted in Phase 35)
+- [Phase 36]: Removed all LiteLLM/nemoclaw references from ConfigMap and NetworkPolicy for clean v3.0
 
 ### Pending Todos
 
@@ -66,6 +68,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T16:12:09.254Z
-Stopped at: Completed 35-02-PLAN.md
+Last session: 2026-03-22T16:44:59.513Z
+Stopped at: Completed 36-01-PLAN.md
 Resume file: None

@@ -80,10 +80,10 @@ Plans:
   3. NetworkPolicy provides default-deny with explicit allow for Envoy, DNS, HTTPS
   4. HTTPRoute routes localhost:80 to OpenClaw via Envoy Gateway
   5. ArgoCD Application `workload-openclaw` exists in both bootstrap directories
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 36-01-PLAN.md — Create all OpenClaw workload manifests and ArgoCD Applications
+- [x] 36-01-PLAN.md — Create all OpenClaw workload manifests and ArgoCD Applications
 - [ ] 36-02-PLAN.md — Update bootstrap.sh and Makefile for OpenClaw deployment
 
 ### Phase 37: Validation
