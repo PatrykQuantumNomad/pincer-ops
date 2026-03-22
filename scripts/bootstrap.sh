@@ -210,6 +210,16 @@ if [ -f "${CM_CLUSTERISSUER}" ]; then
   log_info "Self-signed ClusterIssuer applied"
 fi
 
+# Step 8d: Create openclaw namespace (before root-app so ArgoCD finds it)
+log_step "Creating openclaw namespace..."
+OC_NS_YAML=$(kubectl create namespace openclaw --dry-run=client -o yaml)
+if [ "${VERBOSE}" = true ]; then
+  echo "${OC_NS_YAML}" | kubectl apply -f -
+else
+  echo "${OC_NS_YAML}" | kubectl apply -f - >/dev/null 2>&1
+fi
+log_info "openclaw namespace ready"
+
 # Step 9: Apply root Application
 log_step "Applying root Application..."
 run_cmd kubectl apply -f "${BOOTSTRAP_DIR}/root-app.yaml"
@@ -451,6 +461,24 @@ else
   log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon -- already ready from step 8c)"
 fi
 
+# Step 16: Wait for OpenClaw Gateway
+log_step "Waiting for OpenClaw Gateway..."
+OC_WAIT=0
+OC_TIMEOUT=300
+until kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; do
+  if [ ${OC_WAIT} -ge ${OC_TIMEOUT} ]; then
+    log_warn "OpenClaw StatefulSet not created after ${OC_TIMEOUT}s (ArgoCD may still be syncing)"
+    log_warn "Run 'make status' to check ArgoCD sync state"
+    break
+  fi
+  sleep 5
+  OC_WAIT=$((OC_WAIT + 5))
+done
+if kubectl get statefulset openclaw-gateway -n openclaw >/dev/null 2>&1; then
+  run_cmd kubectl rollout status statefulset/openclaw-gateway -n openclaw --timeout=300s
+  log_info "OpenClaw Gateway is ready"
+fi
+
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
@@ -471,6 +499,7 @@ else
   echo "  Headlamp Token: kubectl get secret kinder-dashboard-token -n kube-system -o jsonpath=\"{.data.token}\" | base64 -d"
 fi
 echo "  Secrets:    Sealed Secrets v0.35.0 (kube-system)"
+echo "  OpenClaw:   openclaw namespace (localhost:80 via Envoy Gateway)"
 echo "=============================================="
 echo ""
 log_info "Bootstrap complete in ${SECONDS}s"
