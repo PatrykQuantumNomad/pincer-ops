@@ -18,11 +18,11 @@ Requirements for OpenShell Runtime Integration milestone. Each maps to roadmap p
 
 ### Supervisor Enablement
 
-- [ ] **SUPV-01**: Supervisor binary runs as PID 1 inside sandbox pod, managing the OpenClaw process
-- [ ] **SUPV-02**: Landlock filesystem restrictions are active -- sandbox process cannot access paths outside its allow-list
-- [ ] **SUPV-03**: seccomp-BPF syscall filtering is active -- sandbox process is restricted to approved syscall set
-- [ ] **SUPV-04**: Network namespace isolation forces all sandbox egress through the HTTP CONNECT proxy
-- [ ] **SUPV-05**: Privacy router handles inference.local requests end-to-end -- LLM API calls route through the proxy
+- [x] **SUPV-01**: Supervisor binary runs as PID 1 inside sandbox pod, managing the OpenClaw process
+- [x] **SUPV-02**: Landlock filesystem restrictions are active -- sandbox process cannot access paths outside its allow-list
+- [x] **SUPV-03**: seccomp-BPF syscall filtering is active -- sandbox process is restricted to approved syscall set
+- [x] **SUPV-04**: Network namespace isolation forces all sandbox egress through the HTTP CONNECT proxy
+- [x] **SUPV-05**: Privacy router handles inference.local requests end-to-end -- LLM API calls route through the proxy
 
 ### Runtime Verification
 
@@ -67,11 +67,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POL-04 | Phase 31 | Complete |
 | POL-05 | Phase 31 | Complete |
 | POL-06 | Phase 30 | Complete |
-| SUPV-01 | Phase 32 | Pending |
-| SUPV-02 | Phase 32 | Pending |
-| SUPV-03 | Phase 32 | Pending |
-| SUPV-04 | Phase 32 | Pending |
-| SUPV-05 | Phase 32 | Pending |
+| SUPV-01 | Phase 32 | Complete |
+| SUPV-02 | Phase 32 | Complete |
+| SUPV-03 | Phase 32 | Complete |
+| SUPV-04 | Phase 32 | Complete |
+| SUPV-05 | Phase 32 | Complete |
 | VERT-01 | Phase 34 | Pending |
 | VERT-02 | Phase 34 | Pending |
 | VERT-03 | Phase 34 | Pending |

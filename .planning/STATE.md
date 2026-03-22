@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: OpenShell Runtime Integration
-status: executing
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-03-22T00:34:29Z"
-last_activity: 2026-03-22 -- Phase 31 complete (1/1 plans)
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-03-22T10:44:40.934Z"
+last_activity: 2026-03-22
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 40
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 Phase: 32 of 34 (Supervisor Activation)
 Plan: 1 of 1 in Phase 31 (Registration Bridge) -- COMPLETE
 Status: Phase 31 complete, ready for Phase 32
-Last activity: 2026-03-22 -- Phase 31 complete (registration Job created, validated)
+Last activity: 2026-03-22
 
 Progress: [####░░░░░░] 40%
 
@@ -46,6 +46,7 @@ Progress: [####░░░░░░] 40%
 |-------|------|----------|-------|-------|
 | 30-01 | Policy ConfigMap | 2min | 2 | 2 |
 | 31-01 | Registration Job | 1min | 2 | 2 |
+| Phase 32-01 PSupervisor Activation | 2min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Progress: [####░░░░░░] 40%
 - PostSync hook instead of sync wave 11 for registration Job (avoids immutable field errors, guarantees Sandbox CR exists)
 - Direct tarball download for CLI (not install.sh script) -- more predictable in containers
 - No ServiceAccount for registration Job -- only gRPC to gateway, no K8s API access
+- [Phase 32-01]: No separate tls-ca volume -- ca.crt included in openshell-client-tls Secret alongside tls.crt/tls.key
+- [Phase 32-01]: defaultMode 256 (0o400) on tls-client Secret volume for restrictive cert file permissions
+- [Phase 32-01]: readOnlyRootFilesystem removed -- supervisor writes ephemeral CA certs for proxy TLS termination
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T00:34:29Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-03-22T10:44:40.931Z
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None
