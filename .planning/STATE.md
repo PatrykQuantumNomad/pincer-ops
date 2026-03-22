@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: OpenShell Removal
 status: executing
-stopped_at: Milestone created
-last_updated: "2026-03-22T14:00:00Z"
-last_activity: 2026-03-22 -- v3.0 milestone started
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-03-22T16:05:01.609Z"
+last_activity: 2026-03-22 -- Completed 35-01 (Delete OpenShell Stack)
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 35 of 37 (Remove OpenShell Stack)
-Plan: Not started
-Status: Ready to plan Phase 35
-Last activity: 2026-03-22 -- v3.0 milestone created
+Plan: 1 of 2 complete
+Status: Executing Phase 35
+Last activity: 2026-03-22 -- Completed 35-01 (Delete OpenShell Stack)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 - Remove agent-sandbox CRD controller (only needed for OpenShell)
 - Move OpenClaw back to `openclaw` namespace (like v1.0)
 - Use K8s-native security (NetworkPolicy, securityContext, PSS) instead of OpenShell policy enforcement
+- [Phase 35-remove-openshell-stack]: Pure deletion of all OpenShell files -- no modifications to remaining files
 
 ### Pending Todos
 
@@ -63,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T14:00:00Z
-Stopped at: Milestone created, ready to plan Phase 35
+Last session: 2026-03-22T16:05:01.606Z
+Stopped at: Completed 35-01-PLAN.md
 Resume file: None
