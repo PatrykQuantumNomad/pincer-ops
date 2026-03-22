@@ -11,7 +11,9 @@ metadata:
   namespace: openshell
 spec:
   parentRefs:
-    - name: eg
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: eg
       namespace: envoy-gateway-system
   rules:
     - matches:
@@ -19,5 +21,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: openclaw-gateway
+        - group: ""
+          kind: Service
+          name: openclaw-gateway
           port: 18789
+          weight: 1
