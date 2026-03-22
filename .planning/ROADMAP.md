@@ -80,10 +80,11 @@ Plans:
   3. NetworkPolicy provides default-deny with explicit allow for Envoy, DNS, HTTPS
   4. HTTPRoute routes localhost:80 to OpenClaw via Envoy Gateway
   5. ArgoCD Application `workload-openclaw` exists in both bootstrap directories
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 36-01: TBD
+- [ ] 36-01-PLAN.md — Create all OpenClaw workload manifests and ArgoCD Applications
+- [ ] 36-02-PLAN.md — Update bootstrap.sh and Makefile for OpenClaw deployment
 
 ### Phase 37: Validation
 **Goal**: All tests pass, manifests validate, and make up produces a working cluster
@@ -108,6 +109,6 @@ Plans:
 | v2.0 OpenShell Sandbox | 23-29 | 17 | ✓ Complete | 2026-03-21 |
 | v2.1 OpenShell Runtime Integration | 30-34 | 5 | ✓ Complete | 2026-03-22 |
 
-| v3.0 OpenShell Removal | 35-37 | 2 | In Progress | - |
+| v3.0 OpenShell Removal | 35-37 | 4 | In Progress | - |
 
-**Totals:** 34 phases, 65 plans, 5 milestones shipped
+**Totals:** 34 phases, 67 plans, 5 milestones shipped
