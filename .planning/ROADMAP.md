@@ -11,7 +11,7 @@
 ## Phases
 
 - [x] **Phase 30: Policy Definition** - Create OpenShell security policy ConfigMap with Kustomize overlay support (completed 2026-03-22)
-- [ ] **Phase 31: Registration Bridge** - Deploy registration Job that injects policy into gateway database via gRPC
+- [x] **Phase 31: Registration Bridge** - Deploy registration Job that injects policy into gateway database via gRPC (completed 2026-03-22)
 - [ ] **Phase 32: Supervisor Activation** - Re-enable supervisor as PID 1 with full kernel-level isolation enforcement
 - [ ] **Phase 33: Structural Tests** - BATS tests covering policy ConfigMap, registration Job, and updated sandbox manifests
 - [ ] **Phase 34: Runtime Verification** - Live cluster end-to-end verification of the complete isolation stack
@@ -43,7 +43,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 31-01-PLAN.md -- Create PostSync hook Job with CLI init container, mTLS config scaffolding, and policy registration command
+- [x] 31-01-PLAN.md -- Create PostSync hook Job with CLI init container, mTLS config scaffolding, and policy registration command
 
 ### Phase 32: Supervisor Activation
 **Goal**: Supervisor runs as PID 1 inside the sandbox pod, fetches policy from gateway, and enforces Landlock/seccomp-BPF/network-namespace isolation with privacy router handling inference traffic
@@ -97,7 +97,7 @@ Phases execute in numeric order: 30 -> 31 -> 32 -> 33 -> 34
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 30. Policy Definition | 1/1 | Complete   | 2026-03-22 |
-| 31. Registration Bridge | 0/1 | Not started | - |
+| 31. Registration Bridge | 1/1 | Complete   | 2026-03-22 |
 | 32. Supervisor Activation | 0/? | Not started | - |
 | 33. Structural Tests | 0/? | Not started | - |
 | 34. Runtime Verification | 0/? | Not started | - |
