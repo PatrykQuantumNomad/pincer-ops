@@ -137,17 +137,12 @@ fc00:f853:ccd:e793::/64
     infra-envoy-gateway-config.yaml
     infra-cert-manager.yaml
     infra-sealed-secrets.yaml
-    infra-openshell.yaml
-    infra-agent-sandbox.yaml
-    infra-openshell-supervisor.yaml
-    workload-openclaw-sandbox.yaml
-    workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kind_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 15 ]
+  [ "${actual_count}" -eq 10 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -157,7 +152,6 @@ fc00:f853:ccd:e793::/64
 
 @test "kind bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/infrastructure.yaml"
-  assert_file_exists "${PROJECT_ROOT}/bootstrap/kind/projects/openshell-project.yaml"
 }
 
 @test "kinder bootstrap directory excludes KIND-only Applications" {
@@ -176,17 +170,12 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
-    infra-openshell.yaml
-    infra-agent-sandbox.yaml
-    infra-openshell-supervisor.yaml
-    workload-openclaw-sandbox.yaml
-    workload-openshell-gateway.yaml
   )
 
   # Count YAML files (excluding projects/ subdirectory)
   local actual_count
   actual_count=$(find "${kinder_dir}" -maxdepth 1 -name '*.yaml' | wc -l | tr -d ' ')
-  [ "${actual_count}" -eq 12 ]
+  [ "${actual_count}" -eq 7 ]
 
   # Verify each expected file exists
   for f in "${expected_files[@]}"; do
@@ -196,7 +185,6 @@ fc00:f853:ccd:e793::/64
 
 @test "kinder bootstrap directory contains all project files" {
   assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/infrastructure.yaml"
-  assert_file_exists "${PROJECT_ROOT}/bootstrap/kinder/projects/openshell-project.yaml"
 }
 
 @test "shared files are identical across provider directories" {
@@ -206,13 +194,7 @@ fc00:f853:ccd:e793::/64
     argocd-notifications-cm.yaml
     infra-envoy-gateway-config.yaml
     infra-sealed-secrets.yaml
-    infra-openshell.yaml
-    infra-agent-sandbox.yaml
-    infra-openshell-supervisor.yaml
-    workload-openclaw-sandbox.yaml
-    workload-openshell-gateway.yaml
     projects/infrastructure.yaml
-    projects/openshell-project.yaml
   )
 
   for f in "${shared_files[@]}"; do
@@ -271,7 +253,6 @@ fc00:f853:ccd:e793::/64
   assert_output --partial "Applying ArgoCD configuration"
   assert_output --partial "Applying Gateway API configuration"
   assert_output --partial "Deploying Sealed Secrets"
-  assert_output --partial "Deploying OpenClaw"
 }
 
 @test "bootstrap.sh with kinder shows provider-aware summary" {
@@ -335,49 +316,6 @@ fc00:f853:ccd:e793::/64
   # KIND shows MetalLB range in summary
   assert_output --partial "L2 pool"
   assert_output --partial "Provider: kind"
-}
-
-# ===========================================================================
-# OpenShell bootstrap: TLS placeholder and namespace ordering (Phase 23)
-# ===========================================================================
-
-@test "bootstrap.sh defines generate_tls_artifacts function" {
-  run grep -q 'generate_tls_artifacts()' "${SCRIPTS_DIR}/bootstrap.sh"
-  assert_success
-}
-
-@test "bootstrap.sh calls generate_tls_artifacts" {
-  run grep -q 'generate_tls_artifacts$' "${SCRIPTS_DIR}/bootstrap.sh"
-  assert_success
-}
-
-@test "bootstrap.sh creates openshell namespace before root-app" {
-  # Verify Step 8b (namespace creation) appears before Step 9 (root-app)
-  local ns_line root_line
-  ns_line=$(grep -n 'namespace openshell' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
-  root_line=$(grep -n 'Apply root Application' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
-  [ -n "$ns_line" ] && [ -n "$root_line" ] && [ "$ns_line" -lt "$root_line" ]
-}
-
-@test "bootstrap.sh creates agent-sandbox-system namespace before root-app" {
-  local ns_line root_line
-  ns_line=$(grep -n 'namespace agent-sandbox-system' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
-  root_line=$(grep -n 'Apply root Application' "${SCRIPTS_DIR}/bootstrap.sh" | head -1 | cut -d: -f1)
-  [ -n "$ns_line" ] && [ -n "$root_line" ] && [ "$ns_line" -lt "$root_line" ]
-}
-
-# ===========================================================================
-# TLS Activation (TEST-04 -- Phase 29)
-# ===========================================================================
-
-@test "bootstrap.sh generate_tls_artifacts is active" {
-  run grep 'kubectl wait.*certificate' "${SCRIPTS_DIR}/bootstrap.sh"
-  assert_success
-}
-
-@test "bootstrap.sh generate_tls_artifacts is not placeholder" {
-  run grep 'Phase 29 activates this' "${SCRIPTS_DIR}/bootstrap.sh"
-  assert_failure
 }
 
 # ===========================================================================
