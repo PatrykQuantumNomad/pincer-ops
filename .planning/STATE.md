@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: OpenShell Runtime Integration
-status: ready_to_plan
-stopped_at: Roadmap created -- ready to plan Phase 30
-last_updated: "2026-03-21T19:00:00Z"
-last_activity: 2026-03-21 -- Roadmap created (5 phases, 15 requirements)
+status: executing
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-03-22T00:05:46Z"
+last_activity: 2026-03-22 -- Phase 30 complete (1/1 plans)
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Running `kubectl apply -f bootstrap/{provider}/root-app.yaml` must reconstruct the complete cluster state -- full GitOps reproducibility from a single command.
-**Current focus:** v2.1 Phase 30 -- Policy Definition
+**Current focus:** v2.1 Phase 31 -- Registration Bridge
 
 ## Current Position
 
-Phase: 30 of 34 (Policy Definition)
-Plan: -- (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-21 -- Roadmap created (5 phases, 15 requirements mapped)
+Phase: 31 of 34 (Registration Bridge)
+Plan: 1 of 1 in Phase 30 (Policy Definition) -- COMPLETE
+Status: Phase 30 complete, ready for Phase 31
+Last activity: 2026-03-22 -- Phase 30 complete (policy ConfigMap created, validated)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [##░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -40,12 +40,20 @@ Progress: [░░░░░░░░░░] 0%
 - v1.1: 12 plans in ~2.5 hours
 - v1.2: 9 plans in ~4 hours
 - v2.0: 17 plans in ~1 day (2026-03-21)
+- v2.1: 1 plan in 2min (2026-03-22)
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 30-01 | Policy ConfigMap | 2min | 2 | 2 |
 
 ## Accumulated Context
 
 ### Decisions
 
-None yet for v2.1.
+- Policy ConfigMap placed in workloads/openclaw-sandbox/base/ (consumed by sandbox, auto-discovered by ArgoCD)
+- No seccomp fields in policy YAML (supervisor handles syscall filtering internally)
+- Minimal network policy: only gateway gRPC endpoint (tightest viable set)
+- Landlock best_effort for v2.1 log-only enforcement
 
 ### Pending Todos
 
@@ -61,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T19:00:00Z
-Stopped at: Roadmap created -- ready to plan Phase 30
+Last session: 2026-03-22T00:05:46Z
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None

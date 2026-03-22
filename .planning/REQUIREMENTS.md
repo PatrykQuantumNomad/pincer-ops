@@ -9,12 +9,12 @@ Requirements for OpenShell Runtime Integration milestone. Each maps to roadmap p
 
 ### Policy Delivery
 
-- [ ] **POL-01**: OpenShell security policy YAML defines Landlock filesystem rules, seccomp-BPF syscall filter, and network namespace egress rules as a ConfigMap
+- [x] **POL-01**: OpenShell security policy YAML defines Landlock filesystem rules, seccomp-BPF syscall filter, and network namespace egress rules as a ConfigMap
 - [ ] **POL-02**: Registration Job at sync wave 11 runs `openshell policy set` to inject policy into gateway database after Sandbox CR discovery
 - [ ] **POL-03**: Registration Job authenticates to gateway gRPC using mTLS client certificate from openshell-client-tls secret
 - [ ] **POL-04**: Registration Job is idempotent -- re-running does not create duplicate sandbox entries or fail on existing policy
 - [ ] **POL-05**: Policy can be updated via `openshell policy set` without restarting sandbox pod (hot-reload)
-- [ ] **POL-06**: Policy ConfigMap supports overlay-based profiles (dev/staging/prod) via Kustomize
+- [x] **POL-06**: Policy ConfigMap supports overlay-based profiles (dev/staging/prod) via Kustomize
 
 ### Supervisor Enablement
 
@@ -61,12 +61,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POL-01 | Phase 30 | Pending |
+| POL-01 | Phase 30 | Complete |
 | POL-02 | Phase 31 | Pending |
 | POL-03 | Phase 31 | Pending |
 | POL-04 | Phase 31 | Pending |
 | POL-05 | Phase 31 | Pending |
-| POL-06 | Phase 30 | Pending |
+| POL-06 | Phase 30 | Complete |
 | SUPV-01 | Phase 32 | Pending |
 | SUPV-02 | Phase 32 | Pending |
 | SUPV-03 | Phase 32 | Pending |

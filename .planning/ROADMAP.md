@@ -10,7 +10,7 @@
 
 ## Phases
 
-- [ ] **Phase 30: Policy Definition** - Create OpenShell security policy ConfigMap with Kustomize overlay support
+- [x] **Phase 30: Policy Definition** - Create OpenShell security policy ConfigMap with Kustomize overlay support (completed 2026-03-22)
 - [ ] **Phase 31: Registration Bridge** - Deploy registration Job that injects policy into gateway database via gRPC
 - [ ] **Phase 32: Supervisor Activation** - Re-enable supervisor as PID 1 with full kernel-level isolation enforcement
 - [ ] **Phase 33: Structural Tests** - BATS tests covering policy ConfigMap, registration Job, and updated sandbox manifests
@@ -29,7 +29,7 @@
 **Plans**: 1 plan
 
 Plans:
-- [ ] 30-01-PLAN.md -- Create policy ConfigMap with Landlock/network/process sections and wire into Kustomize
+- [x] 30-01-PLAN.md -- Create policy ConfigMap with Landlock/network/process sections and wire into Kustomize
 
 ### Phase 31: Registration Bridge
 **Goal**: A Kubernetes Job bridges the GitOps-to-gateway gap by injecting the security policy into the gateway's database so supervisor can fetch it via GetSandboxConfig
@@ -97,7 +97,7 @@ Phases execute in numeric order: 30 -> 31 -> 32 -> 33 -> 34
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 30. Policy Definition | 0/? | Not started | - |
+| 30. Policy Definition | 1/1 | Complete   | 2026-03-22 |
 | 31. Registration Bridge | 0/? | Not started | - |
 | 32. Supervisor Activation | 0/? | Not started | - |
 | 33. Structural Tests | 0/? | Not started | - |
