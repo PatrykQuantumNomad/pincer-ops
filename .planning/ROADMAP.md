@@ -55,11 +55,10 @@ Plans:
   3. seccomp-BPF syscall filtering is active -- the sandbox process is restricted to the approved syscall set
   4. Network namespace isolation forces all sandbox egress through the HTTP CONNECT proxy
   5. LLM API calls from OpenClaw route through inference.local and are handled end-to-end by the privacy router
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 32-01: TBD
-- [ ] 32-02: TBD
+- [ ] 32-01-PLAN.md -- Update sandbox.yaml to enable supervisor as PID 1 with capabilities, mTLS volumes, and OPENSHELL env vars
 
 ### Phase 33: Structural Tests
 **Goal**: BATS tests prove structural correctness of all new and modified manifests from phases 30-32
@@ -98,6 +97,6 @@ Phases execute in numeric order: 30 -> 31 -> 32 -> 33 -> 34
 |-------|----------------|--------|-----------|
 | 30. Policy Definition | 1/1 | Complete   | 2026-03-22 |
 | 31. Registration Bridge | 1/1 | Complete   | 2026-03-22 |
-| 32. Supervisor Activation | 0/? | Not started | - |
+| 32. Supervisor Activation | 0/1 | Not started | - |
 | 33. Structural Tests | 0/? | Not started | - |
 | 34. Runtime Verification | 0/? | Not started | - |
