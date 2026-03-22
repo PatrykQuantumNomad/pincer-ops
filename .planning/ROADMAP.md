@@ -49,7 +49,7 @@ See: .planning/milestones/v2.1-ROADMAP.md
 ### v3.0 OpenShell Removal (In Progress)
 
 - [x] **Phase 35: Remove OpenShell Stack** - Delete all OpenShell infrastructure, ArgoCD Applications, bootstrap steps, and tests (completed 2026-03-22)
-- [ ] **Phase 36: Restore OpenClaw StatefulSet** - Recreate OpenClaw as a standalone StatefulSet in openclaw namespace with K8s-native security
+- [x] **Phase 36: Restore OpenClaw StatefulSet** - Recreate OpenClaw as a standalone StatefulSet in openclaw namespace with K8s-native security (completed 2026-03-22)
 - [ ] **Phase 37: Validation** - Update BATS tests, validate manifests, verify make up works end-to-end
 
 ## Phase Details
@@ -80,11 +80,11 @@ Plans:
   3. NetworkPolicy provides default-deny with explicit allow for Envoy, DNS, HTTPS
   4. HTTPRoute routes localhost:80 to OpenClaw via Envoy Gateway
   5. ArgoCD Application `workload-openclaw` exists in both bootstrap directories
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 36-01-PLAN.md — Create all OpenClaw workload manifests and ArgoCD Applications
-- [ ] 36-02-PLAN.md — Update bootstrap.sh and Makefile for OpenClaw deployment
+- [x] 36-02-PLAN.md — Update bootstrap.sh and Makefile for OpenClaw deployment
 
 ### Phase 37: Validation
 **Goal**: All tests pass, manifests validate, and make up produces a working cluster

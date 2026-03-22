@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: OpenShell Removal
 status: executing
-stopped_at: Completed 36-01-PLAN.md
-last_updated: "2026-03-22T16:44:59.515Z"
+stopped_at: Completed 36-02-PLAN.md
+last_updated: "2026-03-22T16:49:56.831Z"
 last_activity: 2026-03-22
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 50
 ---
 
@@ -56,6 +56,7 @@ Progress: [█████░░░░░] 50%
 - [Phase 35]: OpenClaw CLI namespace updated from openshell to openclaw (Phase 36 will create workloads there)
 - [Phase 36]: Used infrastructure AppProject for workload-openclaw (workloads project deleted in Phase 35)
 - [Phase 36]: Removed all LiteLLM/nemoclaw references from ConfigMap and NetworkPolicy for clean v3.0
+- [Phase 36-02]: Soft-fail (warn+break) for OpenClaw wait -- cluster functional without it, ArgoCD will sync
 
 ### Pending Todos
 
@@ -68,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T16:44:59.513Z
-Stopped at: Completed 36-01-PLAN.md
+Last session: 2026-03-22T16:49:56.829Z
+Stopped at: Completed 36-02-PLAN.md
 Resume file: None

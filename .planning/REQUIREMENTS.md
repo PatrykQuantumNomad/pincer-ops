@@ -23,7 +23,7 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 - [x] **RST-03**: Security hardened: runAsNonRoot, runAsUser 1000, drop ALL capabilities, readOnlyRootFilesystem, seccomp RuntimeDefault
 - [x] **RST-04**: NetworkPolicy: default-deny + allow Envoy ingress (18789), DNS egress (53), HTTPS egress (443)
 - [x] **RST-05**: HTTPRoute routes localhost traffic to OpenClaw via Envoy Gateway
-- [ ] **RST-06**: `make up` bootstraps a fully functional cluster with OpenClaw accessible at localhost:80
+- [x] **RST-06**: `make up` bootstraps a fully functional cluster with OpenClaw accessible at localhost:80
 
 ### Validation
 
@@ -55,7 +55,7 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 | RST-03 | Phase 36 | Complete |
 | RST-04 | Phase 36 | Complete |
 | RST-05 | Phase 36 | Complete |
-| RST-06 | Phase 36 | Pending |
+| RST-06 | Phase 36 | Complete |
 | VAL-01 | Phase 37 | Pending |
 | VAL-02 | Phase 37 | Pending |
 | VAL-03 | Phase 37 | Pending |
