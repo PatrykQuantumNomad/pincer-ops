@@ -846,8 +846,8 @@ load '../test_helper'
 # Sandbox HTTPRoute (MIGR-03, MIGR-06)
 # ===========================================================================
 
-@test "sandbox HTTPRoute targets openclaw-sandbox service" {
-  run grep 'name: openclaw-sandbox' \
+@test "sandbox HTTPRoute targets openclaw-gateway service" {
+  run grep 'name: openclaw-gateway' \
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/httproute.yaml"
   assert_success
 }
@@ -1175,8 +1175,8 @@ load '../test_helper'
   assert_success
 }
 
-@test "sandbox CR has RuntimeDefault seccomp profile" {
-  run grep 'type: RuntimeDefault' \
+@test "sandbox CR has Unconfined seccomp profile" {
+  run grep 'type: Unconfined' \
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_success
 }
@@ -1185,8 +1185,8 @@ load '../test_helper'
 # Sandbox gRPC Policy Delivery (SUPV-06)
 # ===========================================================================
 
-@test "sandbox CR has OPENSHELL_GRPC_ENDPOINT env var" {
-  run grep 'OPENSHELL_GRPC_ENDPOINT' \
+@test "sandbox CR has OPENSHELL_ENDPOINT env var" {
+  run grep 'OPENSHELL_ENDPOINT' \
     "${PROJECT_ROOT}/workloads/openclaw-sandbox/base/sandbox.yaml"
   assert_success
 }
