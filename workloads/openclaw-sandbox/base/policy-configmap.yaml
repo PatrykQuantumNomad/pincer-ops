@@ -1,0 +1,93 @@
+# policy-configmap.yaml -- OpenShell security policy for the openclaw-sandbox.
+#
+# Contains the complete OpenShell policy schema v1 YAML that defines Landlock
+# filesystem rules, network namespace egress rules, and process identity.
+# The registration Job (Phase 31) mounts this ConfigMap and passes it to
+# `openshell policy set` to inject the policy into the gateway database.
+#
+# IMPORTANT: The supervisor binary applies its own built-in syscall filter at
+# sandbox creation time. The policy schema v1 has no field for this -- adding
+# one will cause `openshell policy set` to fail with a validation error.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openshell-sandbox-policy
+  namespace: openshell
+data:
+  policy.yaml: |
+    version: 1
+
+    # -- Filesystem Policy (Static) ------------------------------------------
+    # Landlock-enforced filesystem access control.
+    # Read-only: system libraries, Node.js runtime, supervisor binary.
+    # Read-write: OpenClaw data directory (PVC), temp, cache.
+    #
+    # Paths derived from workloads/openclaw-sandbox/base/sandbox.yaml
+    # volumeMounts and the OpenClaw runtime requirements.
+    filesystem_policy:
+      include_workdir: false
+      read_only:
+        # /usr          - System libraries and Node.js runtime binaries
+        - /usr
+        # /lib          - Shared libraries (glibc, libstdc++)
+        - /lib
+        # /lib64        - 64-bit shared libraries (some distros)
+        - /lib64
+        # /etc          - System config (resolv.conf, hosts, SSL certs)
+        - /etc
+        # /proc         - Process info (Node.js reads /proc/cpus, /proc/meminfo)
+        - /proc
+        # /dev/urandom  - Crypto random source (Node.js crypto module)
+        - /dev/urandom
+        # /opt/openshell/bin - Supervisor binary (DaemonSet-loaded via hostPath)
+        - /opt/openshell/bin
+      read_write:
+        # /home/node/.openclaw - PVC data directory (OpenClaw's main data store)
+        - /home/node/.openclaw
+        # /tmp                 - Temp files (emptyDir volume)
+        - /tmp
+        # /home/node/.cache    - Node.js cache directory (emptyDir volume)
+        - /home/node/.cache
+        # /dev/null            - Standard null device
+        - /dev/null
+
+    # -- Landlock LSM (Static) ------------------------------------------------
+    # best_effort: use highest Landlock ABI the host kernel supports.
+    # Gracefully degrades on older kernels without failing the sandbox.
+    # v2.1 intent: observe violations before switching to hard_requirement.
+    landlock:
+      compatibility: best_effort
+
+    # -- Process Identity (Static) --------------------------------------------
+    # Matches sandbox pod securityContext.runAsUser/runAsGroup: 1000.
+    # Must not be root/0 -- the supervisor rejects root process identity.
+    process:
+      run_as_user: "1000"
+      run_as_group: "1000"
+
+    # -- Network Policies (Dynamic, hot-reloadable) ---------------------------
+    # The supervisor creates a network namespace and runs an HTTP CONNECT
+    # proxy. All outbound traffic from the sandbox is intercepted by the
+    # proxy. Only endpoints listed here are forwarded.
+    #
+    # inference.local: resolved by the privacy router inside the supervisor.
+    # This does NOT need a network policy entry -- it is loopback within
+    # the supervisor's network stack.
+    #
+    # LLM provider hosts (api.anthropic.com, api.openai.com, etc.) are NOT
+    # listed here because the privacy router (outside the sandbox netns)
+    # makes those outbound calls.
+    #
+    # DNS: handled by the supervisor's netns resolver configuration, not
+    # by the policy endpoint list.
+    #
+    # This is the tightest viable set -- only the gateway gRPC endpoint.
+    network_policies:
+      openshell_gateway:
+        name: openshell-gateway-grpc
+        endpoints:
+          - host: openshell.openshell.svc.cluster.local
+            port: 8080
+            enforcement: enforce
+        binaries:
+          - path: /opt/openshell/bin/openshell-sandbox

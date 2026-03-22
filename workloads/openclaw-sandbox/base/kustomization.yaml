@@ -7,3 +7,4 @@ resources:
   - service.yaml
   - httproute.yaml
   - networkpolicy.yaml
+  - policy-configmap.yaml
