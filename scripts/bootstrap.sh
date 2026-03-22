@@ -237,7 +237,36 @@ else
 fi
 log_info "OpenShell namespaces created"
 
-# Step 8c: Generate TLS artifacts (mTLS certificates for OpenShell)
+# Step 8c: Ensure cert-manager is ready and selfsigned-issuer exists
+# Kinder provides cert-manager as an addon but does NOT create the
+# selfsigned-issuer ClusterIssuer. For KIND, cert-manager is deployed later
+# (step 15) but we need TLS artifacts now. Wait for CRDs + webhook, then
+# apply the ClusterIssuer before generating certificates.
+log_step "Waiting for cert-manager readiness..."
+CM_CRD_WAIT=0
+CM_CRD_TIMEOUT=120
+until kubectl get crd certificates.cert-manager.io >/dev/null 2>&1; do
+  if [ ${CM_CRD_WAIT} -ge ${CM_CRD_TIMEOUT} ]; then
+    log_error "Timed out waiting for cert-manager CRDs (${CM_CRD_TIMEOUT}s)"
+    exit 1
+  fi
+  sleep 5
+  CM_CRD_WAIT=$((CM_CRD_WAIT + 5))
+done
+run_cmd kubectl wait --for=condition=available deployment/cert-manager \
+  -n cert-manager --timeout=120s
+run_cmd kubectl wait --for=condition=available deployment/cert-manager-webhook \
+  -n cert-manager --timeout=120s
+log_info "cert-manager is ready"
+
+# Apply selfsigned-issuer ClusterIssuer (idempotent -- safe for both providers)
+CM_CLUSTERISSUER="${SCRIPT_DIR}/../infrastructure/cert-manager/base/selfsigned-clusterissuer.yaml"
+if [ -f "${CM_CLUSTERISSUER}" ]; then
+  run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
+  log_info "Self-signed ClusterIssuer applied"
+fi
+
+# Step 8d: Generate TLS artifacts (mTLS certificates for OpenShell)
 generate_tls_artifacts
 
 # Step 9: Apply root Application
@@ -469,17 +498,16 @@ if [ "${CLUSTER_PROVIDER}" = "kind" ]; then
   run_cmd kubectl wait --for=condition=available deployment/cert-manager-webhook \
     -n cert-manager --timeout=120s
 
-  # Apply ClusterIssuer after CRDs are established and webhook is ready.
-  # This is separate from the main cert-manager apply because CRDs must be
-  # registered before custom resources can be created.
+  # ClusterIssuer already applied at step 8c (idempotent for both providers).
+  # Re-apply here in case KIND's cert-manager deploy replaced CRDs.
   CM_CLUSTERISSUER="${CM_BASE_DIR}/selfsigned-clusterissuer.yaml"
   if [ -f "${CM_CLUSTERISSUER}" ]; then
     run_cmd kubectl apply --server-side --force-conflicts -f "${CM_CLUSTERISSUER}"
-    log_info "Self-signed ClusterIssuer applied"
+    log_info "Self-signed ClusterIssuer re-applied"
   fi
   log_info "cert-manager controller and webhook are ready"
 else
-  log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon)"
+  log_info "Skipping cert-manager deployment (${CLUSTER_PROVIDER} addon -- already ready from step 8c)"
 fi
 
 # Step 15b: Load OpenShell cluster image (supervisor binary source)
