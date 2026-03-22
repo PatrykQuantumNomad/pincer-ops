@@ -119,10 +119,6 @@ setup-mcp: ## Generate ArgoCD API token for MCP integration
 verify-netpol: ## Run runtime NetworkPolicy enforcement tests
 	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/verify-networkpolicy.sh
 
-.PHONY: verify-supervisor
-verify-supervisor: ## Run runtime supervisor isolation verification tests
-	@CLUSTER_PROVIDER=$(CLUSTER_PROVIDER) ./scripts/verify-supervisor.sh
-
 .PHONY: doctor
 doctor: ## Check cluster health for current provider
 	@echo "Provider: $(CLUSTER_PROVIDER)"
@@ -154,13 +150,6 @@ doctor: ## Check cluster health for current provider
 	  else \
 	    echo "  Sealed Secrets:  NOT FOUND"; \
 	  fi; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  REPLICAS=$$(kubectl get sandbox openclaw-sandbox -n openshell -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
-	  if [ -n "$$REPLICAS" ] && [ "$$REPLICAS" -gt 0 ] 2>/dev/null; then \
-	    echo "  OpenClaw:        $$REPLICAS ready"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  OpenClaw:        NOT FOUND"; \
-	  fi; \
 	  if [ "$(CLUSTER_PROVIDER)" = "kind" ]; then \
 	    TOTAL=$$((TOTAL + 1)); \
 	    REPLICAS=$$(kubectl get deploy controller -n metallb-system -o jsonpath='{.status.readyReplicas}' 2>/dev/null); \
@@ -176,44 +165,6 @@ doctor: ## Check cluster health for current provider
 	    else \
 	      echo "  cert-manager:    NOT FOUND"; \
 	    fi; \
-	  fi; \
-	  echo "--- OpenShell Infrastructure ---"; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  if kubectl get namespace openshell >/dev/null 2>&1; then \
-	    echo "  openshell ns:    exists"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  openshell ns:    NOT FOUND"; \
-	  fi; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  if kubectl get namespace agent-sandbox-system >/dev/null 2>&1; then \
-	    echo "  agent-sandbox ns: exists"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  agent-sandbox ns: NOT FOUND"; \
-	  fi; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  PSS_OPENSHELL=$$(kubectl get namespace openshell -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null); \
-	  if [ "$$PSS_OPENSHELL" = "privileged" ]; then \
-	    echo "  openshell PSS:   privileged (correct)"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  openshell PSS:   INCORRECT (expected privileged, got $$PSS_OPENSHELL)"; \
-	  fi; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  PSS_SANDBOX=$$(kubectl get namespace agent-sandbox-system -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null); \
-	  if [ "$$PSS_SANDBOX" = "restricted" ]; then \
-	    echo "  sandbox PSS:     restricted (correct)"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  sandbox PSS:     INCORRECT (expected restricted, got $$PSS_SANDBOX)"; \
-	  fi; \
-	  TOTAL=$$((TOTAL + 1)); \
-	  NODE_CONTAINER="$(CLUSTER_NAME)-control-plane"; \
-	  LSM_LIST=$$(docker exec "$$NODE_CONTAINER" cat /sys/kernel/security/lsm 2>/dev/null || echo ""); \
-	  KERN_VER=$$(docker exec "$$NODE_CONTAINER" uname -r 2>/dev/null || echo "unknown"); \
-	  if echo "$$LSM_LIST" | grep -q landlock; then \
-	    echo "  Landlock:        available (kernel $$KERN_VER)"; PASS=$$((PASS + 1)); \
-	  elif [ "$$(uname -s)" = "Darwin" ]; then \
-	    echo "  Landlock:        not available (kernel $$KERN_VER -- expected on macOS, requires Linux 5.13+)"; PASS=$$((PASS + 1)); \
-	  else \
-	    echo "  Landlock:        NOT AVAILABLE (kernel $$KERN_VER -- requires Linux 5.13+ with CONFIG_SECURITY_LANDLOCK=y)"; \
 	  fi; \
 	  ISSUES=$$((TOTAL - PASS)); \
 	  if [ "$$ISSUES" -eq 0 ]; then \
@@ -242,7 +193,7 @@ endif
 
 .PHONY: logs
 logs: ## Tail OpenClaw gateway logs
-	@kubectl logs -n openshell -l app.kubernetes.io/name=openclaw-gateway -f --tail=50
+	@kubectl logs -n openclaw -l app.kubernetes.io/name=openclaw-gateway -f --tail=50
 
 .PHONY: pods
 pods: ## List all pods across namespaces
@@ -252,8 +203,8 @@ pods: ## List all pods across namespaces
 # OpenClaw CLI
 # ---------------------------------------------------------------------------
 
-OPENCLAW_POD := openclaw-sandbox
-OPENCLAW_NS  := openshell
+OPENCLAW_POD := openclaw-gateway-0
+OPENCLAW_NS  := openclaw
 OPENCLAW_CLI := kubectl exec -it $(OPENCLAW_POD) -n $(OPENCLAW_NS) -- node dist/index.js
 
 .PHONY: openclaw-cli
