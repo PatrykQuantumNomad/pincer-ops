@@ -528,7 +528,41 @@ if docker image inspect "${PAUSE_IMAGE}" >/dev/null 2>&1; then
   run_cmd ${CLUSTER_PROVIDER} load docker-image "${PAUSE_IMAGE}" --name "${CLUSTER_NAME}"
 fi
 
-# Step 16: Deploy OpenClaw Sandbox
+# Step 16: Wait for supervisor DaemonSet (wave 3)
+# The supervisor binary must be on all nodes before the sandbox pod can start.
+# DaemonSet init container copies from ghcr.io/nvidia/openshell/cluster image
+# to /opt/openshell/bin/ on each node via hostPath.
+log_step "Waiting for supervisor DaemonSet..."
+SUPERVISOR_WAIT=0
+SUPERVISOR_TIMEOUT=120
+until kubectl get daemonset openshell-supervisor -n openshell >/dev/null 2>&1; do
+  if [ ${SUPERVISOR_WAIT} -ge ${SUPERVISOR_TIMEOUT} ]; then
+    log_error "Supervisor DaemonSet not deployed after ${SUPERVISOR_TIMEOUT}s"
+    exit 1
+  fi
+  sleep 5
+  SUPERVISOR_WAIT=$((SUPERVISOR_WAIT + 5))
+done
+run_cmd kubectl rollout status daemonset/openshell-supervisor -n openshell --timeout=120s
+log_info "Supervisor DaemonSet is ready (binary on all nodes)"
+
+# Step 17: Wait for OpenShell gateway (wave 5)
+# The gateway must be running before sandbox pod can fetch policy via gRPC.
+log_step "Waiting for OpenShell gateway..."
+GW_WAIT=0
+GW_TIMEOUT=180
+until kubectl get statefulset openshell -n openshell >/dev/null 2>&1; do
+  if [ ${GW_WAIT} -ge ${GW_TIMEOUT} ]; then
+    log_error "OpenShell gateway StatefulSet not deployed after ${GW_TIMEOUT}s"
+    exit 1
+  fi
+  sleep 5
+  GW_WAIT=$((GW_WAIT + 5))
+done
+run_cmd kubectl rollout status statefulset/openshell -n openshell --timeout=300s
+log_info "OpenShell gateway is ready"
+
+# Step 18: Deploy OpenClaw Sandbox
 # Strategy: Wait for Sandbox CRD, apply ArgoCD Application directly, poll for
 # Sandbox CR creation, kustomize direct-apply fallback on ComparisonError
 # timeout, then wait for Ready.
