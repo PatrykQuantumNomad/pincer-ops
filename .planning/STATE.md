@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: OpenShell Runtime Integration
-status: executing
-stopped_at: Completed 33-01-PLAN.md
-last_updated: "2026-03-22T11:30:00Z"
-last_activity: 2026-03-22 -- Phase 33 complete (1/1 plans)
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Completed 34-01-PLAN.md
+last_updated: "2026-03-22T11:58:30.031Z"
+last_activity: 2026-03-22
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
   percent: 80
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 Phase: 34 of 34 (Runtime Verification)
 Plan: 1 of 1 in Phase 33 (Structural Tests) -- COMPLETE
 Status: Phase 33 complete, ready for Phase 34
-Last activity: 2026-03-22 -- Phase 33 complete (68 new structural tests, all passing)
+Last activity: 2026-03-22
 
 Progress: [████████░░] 80%
 
@@ -48,6 +48,7 @@ Progress: [████████░░] 80%
 | 31-01 | Registration Job | 1min | 2 | 2 |
 | 32-01 | Supervisor Activation | 2min | 1 | 1 |
 | 33-01 | Structural Tests | 3min | 2 | 1 |
+| Phase 34-01 Pverify-supervisor | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Progress: [████████░░] 80%
 - [Phase 32-01]: defaultMode 256 (0o400) on tls-client Secret volume for restrictive cert file permissions
 - [Phase 32-01]: readOnlyRootFilesystem removed -- supervisor writes ephemeral CA certs for proxy TLS termination
 - [Phase 33]: grep-based BATS assertions against static YAML for maximum regression sensitivity (no regex approximations)
+- [Phase 34]: All in-container inspection uses /proc filesystem (no pgrep/ps dependency)
+- [Phase 34]: macOS Landlock absence passes with info (not failure) matching make doctor behavior
 
 ### Pending Todos
 
@@ -80,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T11:25:44.885Z
-Stopped at: Completed 33-01-PLAN.md
+Last session: 2026-03-22T11:58:30.029Z
+Stopped at: Completed 34-01-PLAN.md
 Resume file: None
