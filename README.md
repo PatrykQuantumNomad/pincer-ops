@@ -1,6 +1,8 @@
 # Pincer Ops
 
-GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) inside an [OpenShell](https://github.com/NVIDIA/OpenShell) sandbox with kernel-level isolation. Deploys the OpenShell sandbox runtime on Kubernetes via GitOps, inspired by the [NemoClaw](https://github.com/NVIDIA/NemoClaw) reference architecture — OpenShell gateway, agent-sandbox CRD controller, supervisor binary with Landlock + seccomp-BPF, mTLS, and privacy router inference routing. This repository is the **single source of truth** for cluster state.
+GitOps-driven Kubernetes platform for deploying and operating [OpenClaw](https://github.com/OpenClaw/OpenClaw) — an open-source, self-hosted AI agent runtime. Runs OpenClaw as a standalone StatefulSet with K8s-native security (NetworkPolicy, securityContext, Pod Security Standards). This repository is the **single source of truth** for cluster state.
+
+> **Future work:** We are evaluating [OpenShell](https://github.com/NVIDIA/OpenShell) sandbox isolation and the [NemoClaw](https://github.com/NVIDIA/NemoClaw) reference architecture for kernel-level isolation (Landlock, seccomp-BPF, network namespaces). These are not yet integrated — see the project roadmap for updates.
 
 ## Architecture
 
@@ -10,9 +12,7 @@ Kinder or KIND multi-node (1 control-plane + 2 workers)
   → [KIND: ArgoCD-managed MetalLB, Envoy GW controller, cert-manager]
     → Envoy Gateway DaemonSet + hostPort (ArgoCD-managed, both providers)
       → ArgoCD (App of Apps pattern, self-managing)
-        → OpenShell Gateway (mTLS StatefulSet, sandbox lifecycle, policy delivery)
-          → Agent-Sandbox CRD Controller (reconciles Sandbox CRs into pods)
-            → OpenClaw Sandbox CR (single replica, PVC-backed, supervisor isolation)
+        → OpenClaw Gateway (StatefulSet, single replica, PVC-backed)
 ```
 
 Everything deploys from a single root Application through ArgoCD sync waves:
@@ -23,13 +23,9 @@ Everything deploys from a single root Application through ArgoCD sync waves:
 |-5|MetalLB|LoadBalancer IPs needed by Gateway|
 |-4|Envoy Gateway controller|Gateway API CRDs and controller|
 |-3|Sealed Secrets|Decrypt SealedSecrets before workloads need them|
-|-2|cert-manager|TLS certificate infrastructure (mTLS CA chain)|
+|-2|cert-manager|TLS certificate infrastructure|
 |-1|Envoy Gateway config|Gateway + HTTPRoute resources (needs CRDs from -4)|
-|0|OpenShell namespaces|openshell + agent-sandbox-system topology|
-|2|Agent-Sandbox CRD|Sandbox CRD controller for pod reconciliation|
-|3|Supervisor DaemonSet|Binary side-loading for Landlock + seccomp-BPF|
-|5|OpenShell Gateway|mTLS gateway, sandbox lifecycle, privacy router|
-|+10|OpenClaw Sandbox|AI gateway as Sandbox CR with supervisor isolation|
+|+10|OpenClaw Gateway|AI agent runtime with PVC-backed storage|
 
 When using Kinder (default), waves -5 (MetalLB), -4 (Envoy Gateway controller), and -2 (cert-manager) are skipped -- these components are provided by Kinder as built-in addons.
 
@@ -64,7 +60,7 @@ make up                    # Bootstrap with Kinder (default)
 CLUSTER_PROVIDER=kind make up  # Bootstrap with KIND instead
 ```
 
-This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD, issues mTLS certificates, and deploys the full OpenShell + OpenClaw stack. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.
+This creates a 3-node cluster (1 control-plane + 2 workers), installs ArgoCD, and deploys the full stack. With Kinder, MetalLB, Envoy Gateway controller, and cert-manager are provided as built-in addons; with KIND, all infrastructure is ArgoCD-managed. Idempotent -- safe to run multiple times.
 
 After bootstrap completes (~4 minutes), OpenClaw is accessible at `http://localhost`.
 
@@ -100,19 +96,7 @@ make openclaw-cli CMD="devices approve <requestId>"
 # 4. Click "Connect" again — status should go Online
 ```
 
-LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and routed through the OpenShell privacy router — they are **not** set in deployment manifests or K8s Secrets.
-
-#### Validate OpenShell Stack
-
-The OpenShell runtime layer includes the gateway, agent-sandbox CRD controller, supervisor binary, and OpenClaw as a Sandbox CR. Validate all components are running:
-
-```bash
-kubectl get sandbox -n openshell              # Sandbox CR exists
-kubectl get pods -n openshell                 # Gateway, supervisor, sandbox pods running
-kubectl get pods -n agent-sandbox-system      # CRD controller running
-kubectl get certificates -n openshell         # mTLS certs issued
-kubectl get certificates -n cert-manager      # CA cert issued
-```
+LLM provider keys (Anthropic, OpenAI, etc.) are configured during onboarding and stored on the PVC — they are **not** set in deployment manifests or K8s Secrets.
 
 #### Managing Channels and Devices
 
@@ -186,21 +170,19 @@ pincer-ops/
 │   ├── kind/                         # KIND-specific ArgoCD Applications
 │   │   ├── root-app.yaml             # Root Application (includes all infra)
 │   │   ├── infra-*.yaml              # Infrastructure Applications (all components)
-│   │   └── ...
+│   │   └── workload-openclaw.yaml    # OpenClaw Application
 │   ├── kinder/                       # Kinder-specific ArgoCD Applications
 │   │   ├── root-app.yaml             # Root Application (excludes Kinder-provided infra)
 │   │   ├── infra-*.yaml              # Kinder-compatible infrastructure Applications
-│   │   └── ...
+│   │   └── workload-openclaw.yaml    # OpenClaw Application
 ├── infrastructure/
 │   ├── metallb/                      # MetalLB L2 LoadBalancer
 │   ├── envoy-gateway/                # Gateway API implementation
 │   ├── sealed-secrets/               # Bitnami Sealed Secrets controller
-│   ├── cert-manager/                 # TLS certificate management
-│   ├── openshell/                    # OpenShell gateway + supervisor + mTLS certs
-│   └── agent-sandbox/                # Sandbox CRD controller
+│   └── cert-manager/                 # TLS certificate management
 ├── workloads/
-│   └── openclaw-sandbox/
-│       ├── base/                     # Sandbox CR, Service, ConfigMap, HTTPRoute, NetworkPolicy
+│   └── openclaw/
+│       ├── base/                     # StatefulSet, Service, ConfigMap, HTTPRoute, NetworkPolicy
 │       └── overlays/dev/             # Kustomize dev overlay
 ├── cluster/
 │   ├── kind-config.yaml              # KIND cluster definition (3 nodes)
@@ -215,11 +197,9 @@ pincer-ops/
 │   ├── lib/common.sh                 # Shared helper library
 │   ├── lib/sealed-secrets.sh         # Sealing key backup/restore
 │   └── hooks/                        # Pre-commit hook for plaintext Secret detection
-├── schemas/
-│   └── agents.x-k8s.io/             # Local kubeconform schema for Sandbox CRD
 └── tests/
     ├── test_helper.bash              # Common BATS test infrastructure
-    ├── unit/                         # Unit tests (309 tests)
+    ├── unit/                         # Unit tests (107 tests)
     └── integration/                  # Integration tests (10 tests)
 ```
 
@@ -237,7 +217,7 @@ This single command must reconstruct the complete cluster state for the selected
 - **Gateway API over ingress-nginx** — Envoy Gateway implements the Gateway API standard, avoiding a future migration from the deprecated Ingress API
 - **Kustomize over Helm** — Declarative overlays without template complexity; better fit for GitOps state repositories
 - **SealedSecrets over SOPS/External Secrets** — Encrypted secrets committed directly to Git; simpler workflow for single-cluster
-- **Sandbox CR for OpenClaw** — ArgoCD-managed Sandbox CR with supervisor isolation (single replica, PVC-backed)
+- **StatefulSet for OpenClaw** — Single-replica with PVC for the file-backed monolith; K8s-native security (NetworkPolicy, seccomp, capabilities)
 - **DaemonSet with hostPort for Envoy** — Only viable path for `localhost` access on macOS/KIND (MetalLB VIPs unreachable from host)
 
 ## MCP Integration
@@ -254,7 +234,7 @@ This enables AI-assisted operations: checking pod status, viewing ArgoCD sync st
 
 - **Manifest validation** — `make validate` runs kubeconform against all local bases (also runs in CI on PRs)
 - **Pre-commit hook** — Rejects any commit containing a plaintext `kind: Secret` resource (`make hooks` to install)
-- **BATS test suite** — 319 tests covering all manifests and scripts (`make test`)
+- **BATS test suite** — 117 tests covering all manifests and scripts (`make test`)
 - **ArgoCD notifications** — Webhook triggers on sync failures and health degradation
 - **Automated backups** — CronJobs for OpenClaw PVC data (2AM) and sealing key export (3AM)
 
