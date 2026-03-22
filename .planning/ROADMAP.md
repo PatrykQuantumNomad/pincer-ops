@@ -82,11 +82,10 @@ Plans:
   1. `make up && make openclaw-onboard` produces a fully functional stack with supervisor actively enforcing isolation
   2. Supervisor pod logs show successful GetSandboxConfig call returning the registered policy from the gateway
   3. Live test confirms Landlock, seccomp-BPF, and network namespace enforcement are active (not just configured)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 34-01: TBD
-- [ ] 34-02: TBD
+- [ ] 34-01-PLAN.md -- Create verify-supervisor.sh runtime verification script and Makefile target
 
 ## Progress
 
@@ -99,4 +98,4 @@ Phases execute in numeric order: 30 -> 31 -> 32 -> 33 -> 34
 | 31. Registration Bridge | 1/1 | Complete   | 2026-03-22 |
 | 32. Supervisor Activation | 1/1 | Complete   | 2026-03-22 |
 | 33. Structural Tests | 1/1 | Complete   | 2026-03-22 |
-| 34. Runtime Verification | 0/? | Not started | - |
+| 34. Runtime Verification | 0/1 | Not started | - |
