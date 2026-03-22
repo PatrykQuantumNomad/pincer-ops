@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: OpenShell Runtime Integration
-status: executing
-stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-03-22T10:44:40Z"
-last_activity: 2026-03-22 -- Phase 32 complete (1/1 plans)
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-03-22T11:25:44.888Z"
+last_activity: 2026-03-22
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
   percent: 60
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 Phase: 33 of 34 (Structural Tests)
 Plan: 1 of 1 in Phase 32 (Supervisor Activation) -- COMPLETE
 Status: Phase 32 complete, ready for Phase 33
-Last activity: 2026-03-22 -- Phase 32 complete (supervisor activated as PID 1, validated)
+Last activity: 2026-03-22
 
 Progress: [######░░░░] 60%
 
@@ -47,6 +47,7 @@ Progress: [######░░░░] 60%
 | 30-01 | Policy ConfigMap | 2min | 2 | 2 |
 | 31-01 | Registration Job | 1min | 2 | 2 |
 | 32-01 | Supervisor Activation | 2min | 1 | 1 |
+| Phase 33 P01 | 3min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Progress: [######░░░░] 60%
 - [Phase 32-01]: No separate tls-ca volume -- ca.crt included in openshell-client-tls Secret alongside tls.crt/tls.key
 - [Phase 32-01]: defaultMode 256 (0o400) on tls-client Secret volume for restrictive cert file permissions
 - [Phase 32-01]: readOnlyRootFilesystem removed -- supervisor writes ephemeral CA certs for proxy TLS termination
+- [Phase 33]: grep-based BATS assertions against static YAML for maximum regression sensitivity (no regex approximations)
 
 ### Pending Todos
 
@@ -78,6 +80,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T10:44:40.931Z
-Stopped at: Completed 32-01-PLAN.md
+Last session: 2026-03-22T11:25:44.885Z
+Stopped at: Completed 33-01-PLAN.md
 Resume file: None

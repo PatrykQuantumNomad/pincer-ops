@@ -29,7 +29,7 @@ Requirements for OpenShell Runtime Integration milestone. Each maps to roadmap p
 - [ ] **VERT-01**: `make up && make openclaw-onboard` produces a fully functional stack with supervisor enforcing isolation
 - [ ] **VERT-02**: Live cluster test confirms supervisor successfully fetches policy from gateway via GetSandboxConfig
 - [ ] **VERT-03**: Live cluster test confirms Landlock, seccomp-BPF, and network namespace are enforced
-- [ ] **VERT-04**: BATS structural tests cover policy ConfigMap, registration Job, and updated sandbox manifests
+- [x] **VERT-04**: BATS structural tests cover policy ConfigMap, registration Job, and updated sandbox manifests
 
 ## Future Requirements
 
@@ -75,7 +75,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERT-01 | Phase 34 | Pending |
 | VERT-02 | Phase 34 | Pending |
 | VERT-03 | Phase 34 | Pending |
-| VERT-04 | Phase 33 | Pending |
+| VERT-04 | Phase 33 | Complete |
 
 **Coverage:**
 - v2.1 requirements: 15 total
