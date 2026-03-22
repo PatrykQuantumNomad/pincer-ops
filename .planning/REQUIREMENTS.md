@@ -13,7 +13,7 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 - [x] **REM-02**: Agent-sandbox CRD controller and Sandbox CR removed
 - [x] **REM-03**: Registration Job and policy ConfigMap removed
 - [x] **REM-04**: All ArgoCD Applications referencing OpenShell removed from both providers
-- [ ] **REM-05**: Bootstrap script cleaned of OpenShell-specific steps (TLS generation, image loading, supervisor/gateway waits)
+- [x] **REM-05**: Bootstrap script cleaned of OpenShell-specific steps (TLS generation, image loading, supervisor/gateway waits)
 - [x] **REM-06**: AppProject `openshell` removed from both providers
 
 ### Restoration
@@ -48,7 +48,7 @@ Requirements for OpenShell Removal milestone. Remove the non-functional OpenShel
 | REM-02 | Phase 35 | Complete |
 | REM-03 | Phase 35 | Complete |
 | REM-04 | Phase 35 | Complete |
-| REM-05 | Phase 35 | Pending |
+| REM-05 | Phase 35 | Complete |
 | REM-06 | Phase 35 | Complete |
 | RST-01 | Phase 36 | Pending |
 | RST-02 | Phase 36 | Pending |

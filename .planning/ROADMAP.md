@@ -48,7 +48,7 @@ See: .planning/milestones/v2.1-ROADMAP.md
 
 ### v3.0 OpenShell Removal (In Progress)
 
-- [ ] **Phase 35: Remove OpenShell Stack** - Delete all OpenShell infrastructure, ArgoCD Applications, bootstrap steps, and tests
+- [x] **Phase 35: Remove OpenShell Stack** - Delete all OpenShell infrastructure, ArgoCD Applications, bootstrap steps, and tests (completed 2026-03-22)
 - [ ] **Phase 36: Restore OpenClaw StatefulSet** - Recreate OpenClaw as a standalone StatefulSet in openclaw namespace with K8s-native security
 - [ ] **Phase 37: Validation** - Update BATS tests, validate manifests, verify make up works end-to-end
 
@@ -64,11 +64,11 @@ See: .planning/milestones/v2.1-ROADMAP.md
   3. No ArgoCD Application references OpenShell in either bootstrap directory
   4. `bootstrap.sh` has no OpenShell-specific steps (TLS, image loading, supervisor/gateway waits)
   5. `scripts/verify-supervisor.sh` does not exist
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 35-01-PLAN.md — Delete all OpenShell files, directories, ArgoCD Applications, and tests
-- [ ] 35-02-PLAN.md — Clean bootstrap.sh, Makefile, validate-manifests.sh, and test assertions
+- [x] 35-02-PLAN.md — Clean bootstrap.sh, Makefile, validate-manifests.sh, and test assertions
 
 ### Phase 36: Restore OpenClaw StatefulSet
 **Goal**: OpenClaw runs as a standalone StatefulSet in the openclaw namespace with K8s-native security, accessible via localhost:80

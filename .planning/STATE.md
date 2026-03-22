@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: OpenShell Removal
 status: executing
-stopped_at: Completed 35-01-PLAN.md
-last_updated: "2026-03-22T16:05:01.609Z"
-last_activity: 2026-03-22 -- Completed 35-01 (Delete OpenShell Stack)
+stopped_at: Completed 35-02-PLAN.md
+last_updated: "2026-03-22T16:12:09.256Z"
+last_activity: 2026-03-22
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 50
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 35 of 37 (Remove OpenShell Stack)
-Plan: 1 of 2 complete
+Plan: 2 of 2 complete
 Status: Executing Phase 35
-Last activity: 2026-03-22 -- Completed 35-01 (Delete OpenShell Stack)
+Last activity: 2026-03-22
 
 Progress: [█████░░░░░] 50%
 
@@ -52,6 +52,8 @@ Progress: [█████░░░░░] 50%
 - Move OpenClaw back to `openclaw` namespace (like v1.0)
 - Use K8s-native security (NetworkPolicy, securityContext, PSS) instead of OpenShell policy enforcement
 - [Phase 35-remove-openshell-stack]: Pure deletion of all OpenShell files -- no modifications to remaining files
+- [Phase 35]: Preserved cert-manager readiness wait and ClusterIssuer apply in bootstrap.sh for future TLS
+- [Phase 35]: OpenClaw CLI namespace updated from openshell to openclaw (Phase 36 will create workloads there)
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-22T16:05:01.606Z
-Stopped at: Completed 35-01-PLAN.md
+Last session: 2026-03-22T16:12:09.254Z
+Stopped at: Completed 35-02-PLAN.md
 Resume file: None
