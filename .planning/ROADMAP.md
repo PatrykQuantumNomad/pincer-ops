@@ -64,10 +64,11 @@ See: .planning/milestones/v2.1-ROADMAP.md
   3. No ArgoCD Application references OpenShell in either bootstrap directory
   4. `bootstrap.sh` has no OpenShell-specific steps (TLS, image loading, supervisor/gateway waits)
   5. `scripts/verify-supervisor.sh` does not exist
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 35-01: TBD
+- [ ] 35-01-PLAN.md — Delete all OpenShell files, directories, ArgoCD Applications, and tests
+- [ ] 35-02-PLAN.md — Clean bootstrap.sh, Makefile, validate-manifests.sh, and test assertions
 
 ### Phase 36: Restore OpenClaw StatefulSet
 **Goal**: OpenClaw runs as a standalone StatefulSet in the openclaw namespace with K8s-native security, accessible via localhost:80
@@ -107,6 +108,6 @@ Plans:
 | v2.0 OpenShell Sandbox | 23-29 | 17 | ✓ Complete | 2026-03-21 |
 | v2.1 OpenShell Runtime Integration | 30-34 | 5 | ✓ Complete | 2026-03-22 |
 
-| v3.0 OpenShell Removal | 35-37 | 0 | In Progress | - |
+| v3.0 OpenShell Removal | 35-37 | 2 | In Progress | - |
 
-**Totals:** 34 phases, 63 plans, 5 milestones shipped
+**Totals:** 34 phases, 65 plans, 5 milestones shipped
