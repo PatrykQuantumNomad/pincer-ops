@@ -94,10 +94,11 @@ Plans:
   1. `make validate` passes (kubeconform)
   2. `make test` passes (all BATS tests updated for new structure)
   3. `make up` completes without errors on Kinder
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 37-01: TBD
+- [ ] 37-01-PLAN.md — Fix BATS test assertions and remove phantom file references for v3.0 structure
+- [ ] 37-02-PLAN.md — End-to-end Kinder bootstrap verification
 
 ## Progress
 
@@ -109,6 +110,6 @@ Plans:
 | v2.0 OpenShell Sandbox | 23-29 | 17 | ✓ Complete | 2026-03-21 |
 | v2.1 OpenShell Runtime Integration | 30-34 | 5 | ✓ Complete | 2026-03-22 |
 
-| v3.0 OpenShell Removal | 35-37 | 4 | In Progress | - |
+| v3.0 OpenShell Removal | 35-37 | 6 | In Progress | - |
 
-**Totals:** 34 phases, 67 plans, 5 milestones shipped
+**Totals:** 34 phases, 69 plans, 5 milestones shipped
