@@ -1,5 +1,32 @@
 # Milestones: Pincer Ops
 
+## v2.1 OpenShell Runtime Integration (Shipped: 2026-03-22)
+
+**Delivered:** Closed the supervisor-to-gateway runtime gap — kernel-level isolation (Landlock, seccomp-BPF, network namespaces) and the privacy router are fully operational with declarative policy delivery, automated registration, and a runtime verification script proving enforcement on a live cluster.
+
+**Phases completed:** 30-34 (5 plans total)
+
+**Key accomplishments:**
+
+- Created declarative OpenShell security policy ConfigMap with Landlock filesystem rules, seccomp-BPF config, and network namespace egress rules with Kustomize overlay support
+- Built PostSync hook registration Job bridging GitOps to gateway database via mTLS-authenticated gRPC
+- Re-enabled supervisor as PID 1 with full kernel-level isolation (Landlock, seccomp-BPF, network namespace) and privacy router
+- Added 68 structural BATS tests covering policy ConfigMap, registration Job, and supervisor sandbox changes
+- Created runtime verification script (`make verify-supervisor`) with 6 tests proving isolation enforcement on live cluster
+
+**Stats:**
+
+- 30 files created/modified
+- +5,204 / -121 lines (net +5,083 LOC)
+- 5 phases, 5 plans, 15 requirements shipped (15/15)
+- 1 day (2026-03-22)
+
+**Git range:** `feat(30-01)` → `docs(phase-34)`
+
+**What's next:** Define next milestone goals with `/gsd:new-milestone`
+
+---
+
 ## v2.0 OpenShell Sandbox (Shipped: 2026-03-21)
 
 **Delivered:** Real OpenShell/NemoClaw deployment with agent-sandbox CRD controller, OpenClaw as Sandbox CR with kernel-level isolation (Landlock, seccomp-BPF, network namespaces), privacy router inference routing replacing LiteLLM, mTLS between gateway and sandbox, and 319 BATS tests.
